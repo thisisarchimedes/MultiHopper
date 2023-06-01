@@ -1,0 +1,7 @@
+@prb/test/=lib/prb-test/src/
+forge-std/=lib/forge-std/src/
+src/=src/
+openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+solmate=lib/solmate/src/
+pool-weighted=node_modules/@balancer-labs/v2-pool-weighted/contracts/
