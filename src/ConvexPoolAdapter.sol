@@ -192,7 +192,7 @@ contract ConvexPoolAdapter is Initializable {
         IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal);
         uint256 _underlyingBalance = underlyingBalance();
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
-        if (_underlyingBalance > healthyBalance) {
+        if (_underlyingBalance >= healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance;
         } else {
             storedUnderlyingBalance -= underlyingBal;

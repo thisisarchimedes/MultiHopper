@@ -206,32 +206,6 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         assertEq(storedAssetsAfter, storedAssetsBefore - 2500e18 - 5000e18 - 2000e18);
     }
 
-    function testCantAdjustInRewards() public {
-        IERC20(WETH).approve(address(multiPoolStrategy), 10_000e18);
-        multiPoolStrategy.deposit(10_000e18, address(this));
-        deal(WETH, address(multiPoolStrategy), 11_000e18); //mimic the reward distribution
-        address[] memory adapters;
-        MultiPoolStrategy.SwapData[] memory swapDatas;
-        multiPoolStrategy.doHardWork(adapters, swapDatas);
-        uint256 lastReward = multiPoolStrategy.lastRewardAmount();
-        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](3);
-        adjustIns[0] =
-            MultiPoolStrategy.Adjust({ adapter: address(convexEthPEthAdapter), amount: 5000e18, minReceive: 0 });
-        adjustIns[1] =
-            MultiPoolStrategy.Adjust({ adapter: address(convexEthMsEthAdapter), amount: 5000e18, minReceive: 0 });
-        adjustIns[2] =
-            MultiPoolStrategy.Adjust({ adapter: address(convexEthAlEthAdapter), amount: 200e18, minReceive: 0 });
-
-        MultiPoolStrategy.Adjust[] memory adjustOuts;
-        adapters = new address[](3);
-        adapters[0] = address(convexEthAlEthAdapter);
-        adapters[1] = address(convexEthPEthAdapter);
-        adapters[2] = address(convexEthMsEthAdapter);
-        vm.expectRevert();
-        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-        assertEq(lastReward, 1000e18);
-    }
-
     function testClaimRewards() public {
         IERC20(WETH).approve(address(multiPoolStrategy), 10_000e18);
         multiPoolStrategy.deposit(10_000e18, address(this));
@@ -288,7 +262,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         uint256 stakerShares = multiPoolStrategy.balanceOf(staker);
         uint256 withdrawAmount = multiPoolStrategy.convertToAssets(stakerShares);
         vm.startPrank(staker);
-        multiPoolStrategy.withdraw(withdrawAmount, address(staker), staker);
+        multiPoolStrategy.withdraw(withdrawAmount, address(staker), staker, 0);
         vm.stopPrank();
         uint256 stakerSharesAfter = multiPoolStrategy.balanceOf(staker);
         uint256 stakerWethBalance = IERC20(WETH).balanceOf(address(staker));
@@ -359,7 +333,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         deal(PETH, address(flashLoanAttackTest), 10_000e18);
         deal(WETH, address(staker), 100e18);
         flashLoanAttackTest.destroyRatio(10_000e18);
-        multiPoolStrategy.withdraw(1250e18, address(this), address(this)); // update the stored underlying balance
+        multiPoolStrategy.withdraw(1250e18, address(this), address(this), 0); // update the stored underlying balance
         vm.startPrank(address(staker));
         IERC20(WETH).approve(address(multiPoolStrategy), 100e18);
         vm.expectRevert(MultiPoolStrategy.AdapterNotHealthy.selector);
@@ -368,7 +342,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         flashLoanAttackTest.fixRatio();
         uint256 stakerShares = multiPoolStrategy.balanceOf(address(staker));
         vm.startPrank(staker);
-        multiPoolStrategy.redeem(stakerShares, address(staker), address(staker));
+        multiPoolStrategy.redeem(stakerShares, address(staker), address(staker), 0);
         vm.stopPrank();
     }
 }

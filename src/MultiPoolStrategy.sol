@@ -6,11 +6,12 @@ import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC2
 import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IAdapter } from "./interfaces/IAdapter.sol";
 import { IERC20UpgradeableDetailed } from "./interfaces/IERC20UpgradeableDetailed.sol";
+import { ERC4626UpgradeableModified } from "./ERC4626UpgradeableModified.sol";
 import { console2 } from "forge-std/console2.sol";
 import "solmate/utils/SafeCastLib.sol";
 // TODO - implement donation attack protection
 
-contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
+contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     using SafeCastLib for *;
 
     /// @notice addresses of the adapters
@@ -46,7 +47,6 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
 
     uint256 public storedTotalAssets;
 
-    uint256 public maxSlippage;
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
@@ -102,7 +102,6 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
         adjustOutInterval = 6 hours;
         minPercentage = 500; // 5%
         rewardsCycleLength = 7 days;
-        maxSlippage = 500; // 5%
     }
     /// OVERRIDEN FUNCTIONS
 
@@ -143,15 +142,9 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
         return shares;
     }
 
-    function mint(uint256 shares, address receiver) public override returns (uint256) {
-        uint256 assets = super.mint(shares, receiver);
-        storedTotalAssets += assets;
-        return assets;
-    }
-
-    function _withdrawFromAdapter(uint256 assets, uint256 currBal) internal returns (uint256) {
+    function _withdrawFromAdapter(uint256 assets, uint256 currBal, uint256 minimumReceive) internal returns (uint256) {
         address[] memory _adapters = adapters; // SSTORE
-        uint256 minReceive = assets - (assets * maxSlippage / 10_000);
+
         Adjust[] memory _adjustOuts = new Adjust[](adapters.length); //init with worst case scenario
         uint256 _assets = assets - currBal;
         uint256 adaptersLength = adapters.length;
@@ -180,7 +173,7 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
             }
         }
         assets = IERC20Upgradeable(asset()).balanceOf(address(this));
-        if (assets < minReceive) revert WithdrawTooLow();
+        if (assets < minimumReceive) revert WithdrawTooLow();
         storedTotalAssets = 0; // withdraw all assets from this contract
 
         return assets;
@@ -189,7 +182,16 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
      * @dev See {IERC4626-withdraw}.
      */
 
-    function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner,
+        uint256 minimumReceive
+    )
+        public
+        override
+        returns (uint256)
+    {
         require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
 
         uint256 shares = previewWithdraw(assets);
@@ -198,7 +200,7 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
 
         // in the contract
         if (assets > currBal) {
-            assets = _withdrawFromAdapter(assets, currBal);
+            assets = _withdrawFromAdapter(assets, currBal, minimumReceive);
         } else {
             storedTotalAssets -= assets;
         }
@@ -207,13 +209,22 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
         return shares;
     }
 
-    function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner,
+        uint256 minimumReceive
+    )
+        public
+        override
+        returns (uint256)
+    {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
 
         uint256 assets = previewRedeem(shares);
         uint256 currBal = IERC20Upgradeable(asset()).balanceOf(address(this));
         if (assets > currBal) {
-            assets = _withdrawFromAdapter(assets, currBal);
+            assets = _withdrawFromAdapter(assets, currBal, minimumReceive);
         } else {
             storedTotalAssets -= assets;
         }
@@ -299,21 +310,20 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
                 IERC20Upgradeable(asset()).transfer(feeRecipient, fee);
             }
         }
-        _syncRewards();
+        uint256 rewardAmount = totalClaimed - fee;
+        _syncRewards(rewardAmount);
         emit HardWork(totalClaimed, fee);
     }
 
     /// @notice Distributes rewards to xERC4626 holders.
     /// All surplus `asset` balance of the contract over the internal balance becomes queued for the next cycle.
-    function _syncRewards() internal {
+    function _syncRewards(uint256 nextRewards) internal {
         uint192 lastRewardAmount_ = lastRewardAmount;
         uint32 timestamp = block.timestamp.safeCastTo32();
 
         if (timestamp < rewardsCycleEnd) revert SyncError();
 
         uint256 storedTotalAssets_ = storedTotalAssets;
-        uint256 nextRewards =
-            IERC20Upgradeable(asset()).balanceOf(address(this)) - storedTotalAssets_ - lastRewardAmount_;
 
         storedTotalAssets = storedTotalAssets_ + lastRewardAmount_; // SSTORE
 
@@ -340,11 +350,11 @@ contract MultiPoolStrategy is ERC4626Upgradeable, OwnableUpgradeable {
         isAdapter[_adapter] = true;
         adapters.push(_adapter);
     }
+
     /**
      * @notice Remove an adapter from the list of adapters
      * @param _adapter Address of the adapter to remove
      */
-
     function removeAdapter(address _adapter) external onlyOwner {
         if (IAdapter(_adapter).underlyingBalance() > 0) revert AdapterIsNotEmpty();
         isAdapter[_adapter] = false;
