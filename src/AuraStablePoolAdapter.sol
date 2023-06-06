@@ -17,6 +17,12 @@ contract AuraStablePoolAdapter is AuraAdapterBase {
         }
         // get pool balances
         (, uint256[] memory _balances,) = vault.getPoolTokens(poolId);
+        // get scaling factors
+        uint256[] memory scalingFactors = IStablePool(pool).getScalingFactors();
+        // scale up the _balances
+        for (uint256 i; i < _balances.length; i++) {
+            _balances[i] = _balances[i] * scalingFactors[i] / 1e18;
+        }
         // get normalized weights
         (uint256 amp,,) = IStablePool(pool).getAmplificationParameter();
         // get total supply
@@ -24,11 +30,16 @@ contract AuraStablePoolAdapter is AuraAdapterBase {
         //get swap fee
         uint256 swapFeePercentage = IStablePool(pool).getSwapFeePercentage();
         // get invariant
-        (uint256 currentInvariant,) = IStablePool(pool).getLastInvariant();
+        uint256 currentInvariant = _calculateInvariant(amp, _balances);
 
         uint256 tokenOut = _calcTokenOutGivenExactBptIn(
             amp, _balances, tokenIndex, lpBal, lpTotalSupply, currentInvariant, swapFeePercentage
         );
+        uint256 scaleDownFactor = scalingFactors[tokenIndex] - 1e18;
+        if (scaleDownFactor > 0) {
+            tokenOut /= scaleDownFactor;
+        }
+
         return tokenOut;
     }
 
@@ -127,5 +138,75 @@ contract AuraStablePoolAdapter is AuraAdapterBase {
         }
 
         revert("STABLE_GET_BALANCE_DIDNT_CONVERGE");
+    }
+
+    function _calculateInvariant(
+        uint256 amplificationParameter,
+        uint256[] memory balances
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        /**
+         *
+         *     // invariant                                                                                 //
+         *     // D = invariant                                                  D^(n+1)                    //
+         *     // A = amplification coefficient      A  n^n S + D = A D n^n + -----------                   //
+         *     // S = sum of balances                                             n^n P                     //
+         *     // P = product of balances                                                                   //
+         *     // n = number of tokens                                                                      //
+         *
+         */
+
+        // Always round down, to match Vyper's arithmetic (which always truncates).
+
+        uint256 sum = 0; // S in the Curve version
+        uint256 numTokens = balances.length;
+        for (uint256 i = 0; i < numTokens; i++) {
+            sum = sum.add(balances[i]);
+        }
+        if (sum == 0) {
+            return 0;
+        }
+
+        uint256 prevInvariant; // Dprev in the Curve version
+        uint256 invariant = sum; // D in the Curve version
+        uint256 ampTimesTotal = amplificationParameter * numTokens; // Ann in the Curve version
+
+        for (uint256 i = 0; i < 255; i++) {
+            uint256 D_P = invariant;
+
+            for (uint256 j = 0; j < numTokens; j++) {
+                // (D_P * invariant) / (balances[j] * numTokens)
+                D_P = Math.divDown(Math.mul(D_P, invariant), Math.mul(balances[j], numTokens));
+            }
+
+            prevInvariant = invariant;
+
+            invariant = Math.divDown(
+                Math.mul(
+                    // (ampTimesTotal * sum) / AMP_PRECISION + D_P * numTokens
+                    (Math.divDown(Math.mul(ampTimesTotal, sum), _AMP_PRECISION).add(Math.mul(D_P, numTokens))),
+                    invariant
+                ),
+                // ((ampTimesTotal - _AMP_PRECISION) * invariant) / _AMP_PRECISION + (numTokens + 1) * D_P
+                (
+                    Math.divDown(Math.mul((ampTimesTotal - _AMP_PRECISION), invariant), _AMP_PRECISION).add(
+                        Math.mul((numTokens + 1), D_P)
+                    )
+                )
+            );
+
+            if (invariant > prevInvariant) {
+                if (invariant - prevInvariant <= 1) {
+                    return invariant;
+                }
+            } else if (prevInvariant - invariant <= 1) {
+                return invariant;
+            }
+        }
+
+        revert("STABLE_INVARIANT_DIDNT_CONVERGE");
     }
 }

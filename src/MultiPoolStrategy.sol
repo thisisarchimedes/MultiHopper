@@ -7,7 +7,6 @@ import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/access/Ow
 import { IAdapter } from "./interfaces/IAdapter.sol";
 import { IERC20UpgradeableDetailed } from "./interfaces/IERC20UpgradeableDetailed.sol";
 import { ERC4626UpgradeableModified } from "./ERC4626UpgradeableModified.sol";
-import { console2 } from "forge-std/console2.sol";
 import "solmate/utils/SafeCastLib.sol";
 // TODO - implement donation attack protection
 
