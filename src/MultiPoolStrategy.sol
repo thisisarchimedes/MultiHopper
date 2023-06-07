@@ -84,12 +84,12 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     constructor() {
         _disableInitializers();
     }
+
     /**
      *
      * @param _stakingToken address of the underlying token
      * @param _monitor  address of the monitor
      */
-
     function initalize(address _stakingToken, address _monitor) public initializer {
         __Ownable_init_unchained();
         __ERC20_init_unchained(
@@ -199,6 +199,12 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         return assets;
     }
 
+    /**
+     * @dev Withdraws tokens from the adapter in the case of assets amount being greater than the current balance.
+     * @param assets amount of assets to withdraw
+     * @param currBal current balance of the contract
+     * @param minimumReceive minimum amount of assets to receive
+     */
     function _withdrawFromAdapter(uint256 assets, uint256 currBal, uint256 minimumReceive) internal returns (uint256) {
         address[] memory _adapters = adapters; // SSTORE
 
@@ -208,9 +214,11 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         for (uint256 i = adaptersLength; i > 0;) {
             uint256 _adapterAssets = IAdapter(_adapters[i - 1]).underlyingBalance();
             if (_adapterAssets > 0) {
-                uint256 lpBal = IAdapter(_adapters[i - 1]).lpBalance();
-                uint256 _amount = _assets > _adapterAssets ? _adapterAssets : _assets;
-                uint256 _lpAmount = (_amount * 10 ** decimals() / _adapterAssets) * lpBal / (10 ** decimals());
+                uint256 lpBal = IAdapter(_adapters[i - 1]).lpBalance(); // check the lpbalance of the adapter
+                uint256 _amount = _assets > _adapterAssets ? _adapterAssets : _assets; // check if the underlying asset
+                    // amount in adapter is greater than the assets to be withdrawn
+                uint256 _lpAmount = (_amount * 10 ** decimals() / _adapterAssets) * lpBal / (10 ** decimals()); // calculate
+                    // the lp amount to be withdrawn based on asset amount
                 _adjustOuts[i - 1] = Adjust({ adapter: _adapters[i - 1], amount: _lpAmount, minReceive: 0 });
                 _assets -= _amount;
                 if (_assets == 0) break;
@@ -235,6 +243,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
 
         return assets;
     }
+
     /// ADMIN FUNCTIONS
     /**
      * @notice Adjust the underlying assets either out from adapters or in to adapters.Total adjust out amount must be
@@ -243,7 +252,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * @param _adjustOuts List of AdjustOut structs
      * @param sortedAdapters List of adapters sorted by lowest tvl to highest tvl
      */
-
     function adjust(
         Adjust[] calldata _adjustIns,
         Adjust[] calldata _adjustOuts,
@@ -347,7 +355,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * @notice Add an adapter to the list of adapters
      * @param _adapter Address of the adapter to add
      */
-
     function addAdapter(address _adapter) external onlyOwner {
         isAdapter[_adapter] = true;
         adapters.push(_adapter);
@@ -370,7 +377,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     }
 
     /**
-     * @notice Set the minimum percentage of assets that must be in this contract
+     * @notice Set the minimum percentage of assets that will be in this contract as idle for cheaper withdrawals
      * @param _minPercentage 10000 = 100%
      */
     function setMinimumPercentage(uint256 _minPercentage) external onlyOwner {
@@ -408,7 +415,30 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         paused = !paused;
     }
 
+    /**
+     * @notice change the adapter health factor. Health factor indicates how much of the underlying pool of adapter lost
+     * it's ratio
+     * @param _adapter Address of the adapter
+     * @param _healthFactor New health factor for the adapter. 10000 = 100%
+     */
     function changeAdapterHealthFactor(address _adapter, uint256 _healthFactor) external onlyOwner {
+        require(_healthFactor <= 10_000, "Health factor can't be more than 100%");
         IAdapter(_adapter).setHealthFactor(_healthFactor);
+    }
+
+    /**
+     * @notice Change the fee percentage
+     * @param _feePercentage New fee percentage. 10000 = 100%
+     */
+    function changeFeePercentage(uint256 _feePercentage) external onlyOwner {
+        feePercentage = _feePercentage;
+    }
+
+    /**
+     * @notice Change the fee recipient
+     * @param _feeRecipient New fee recipient
+     */
+    function changeFeeRecipient(address _feeRecipient) external onlyOwner {
+        feeRecipient = _feeRecipient;
     }
 }
