@@ -28,6 +28,11 @@ interface IBalancerVault {
     event TokensDeregistered(bytes32 indexed poolId, address[] tokens);
     event TokensRegistered(bytes32 indexed poolId, address[] tokens, address[] assetManagers);
 
+    enum SwapKind {
+        GIVEN_IN,
+        GIVEN_OUT
+    }
+
     struct BatchSwapStep {
         bytes32 poolId;
         uint256 assetInIndex;
@@ -89,15 +94,26 @@ interface IBalancerVault {
         FundManagement memory funds,
         int256[] memory limits,
         uint256 deadline
-    ) external payable returns (int256[] memory assetDeltas);
+    )
+        external
+        payable
+        returns (int256[] memory assetDeltas);
     function deregisterTokens(bytes32 poolId, address[] memory tokens) external;
     function exitPool(bytes32 poolId, address sender, address recipient, ExitPoolRequest memory request) external;
-    function flashLoan(address recipient, address[] memory tokens, uint256[] memory amounts, bytes memory userData)
+    function flashLoan(
+        address recipient,
+        address[] memory tokens,
+        uint256[] memory amounts,
+        bytes memory userData
+    )
         external;
     function getActionId(bytes4 selector) external view returns (bytes32);
     function getAuthorizer() external view returns (address);
     function getDomainSeparator() external view returns (bytes32);
-    function getInternalBalance(address user, address[] memory tokens)
+    function getInternalBalance(
+        address user,
+        address[] memory tokens
+    )
         external
         view
         returns (uint256[] memory balances);
@@ -107,7 +123,10 @@ interface IBalancerVault {
         view
         returns (bool paused, uint256 pauseWindowEndTime, uint256 bufferPeriodEndTime);
     function getPool(bytes32 poolId) external view returns (address, uint8);
-    function getPoolTokenInfo(bytes32 poolId, address token)
+    function getPoolTokenInfo(
+        bytes32 poolId,
+        address token
+    )
         external
         view
         returns (uint256 cash, uint256 managed, uint256 lastChangeBlock, address assetManager);
@@ -117,7 +136,12 @@ interface IBalancerVault {
         returns (address[] memory tokens, uint256[] memory balances, uint256 lastChangeBlock);
     function getProtocolFeesCollector() external view returns (address);
     function hasApprovedRelayer(address user, address relayer) external view returns (bool);
-    function joinPool(bytes32 poolId, address sender, address recipient, JoinPoolRequest memory request)
+    function joinPool(
+        bytes32 poolId,
+        address sender,
+        address recipient,
+        JoinPoolRequest memory request
+    )
         external
         payable;
     function managePoolBalance(PoolBalanceOp[] memory ops) external;
@@ -127,13 +151,20 @@ interface IBalancerVault {
         BatchSwapStep[] memory swaps,
         address[] memory assets,
         FundManagement memory funds
-    ) external returns (int256[] memory);
+    )
+        external
+        returns (int256[] memory);
     function registerPool(uint8 specialization) external returns (bytes32);
     function registerTokens(bytes32 poolId, address[] memory tokens, address[] memory assetManagers) external;
     function setAuthorizer(address newAuthorizer) external;
     function setPaused(bool paused) external;
     function setRelayerApproval(address sender, address relayer, bool approved) external;
-    function swap(SingleSwap memory singleSwap, FundManagement memory funds, uint256 limit, uint256 deadline)
+    function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory funds,
+        uint256 limit,
+        uint256 deadline
+    )
         external
         payable
         returns (uint256 amountCalculated);

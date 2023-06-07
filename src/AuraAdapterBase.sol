@@ -4,7 +4,6 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import { IBalancerVault } from "./interfaces/IBalancerVault.sol";
 
-import { console2 } from "forge-std/console2.sol";
 import { FixedPoint } from "./utils/FixedPoint.sol";
 import { IBooster } from "./interfaces/IBooster.sol";
 import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
@@ -82,7 +81,7 @@ contract AuraAdapterBase is Initializable {
         }
     }
 
-    function deposit(uint256 _amount, uint256 _minBalancerLpAmount) external onlyMultiPoolStrategy {
+    function deposit(uint256 _amount, uint256 _minBalancerLpAmount) external virtual onlyMultiPoolStrategy {
         (address[] memory tokens,,) = vault.getPoolTokens(poolId);
         uint256[] memory maxAmountsIn = new uint256[](tokens.length);
         maxAmountsIn[tokenIndex] = _amount;
@@ -95,7 +94,7 @@ contract AuraAdapterBase is Initializable {
         storedUnderlyingBalance = underlyingBalance();
     }
 
-    function withdraw(uint256 _amount, uint256 _minReceiveAmount) external onlyMultiPoolStrategy {
+    function withdraw(uint256 _amount, uint256 _minReceiveAmount) external virtual onlyMultiPoolStrategy {
         (address[] memory tokens,,) = vault.getPoolTokens(poolId);
         uint256[] memory minAmountsOut = new uint256[](tokens.length);
         minAmountsOut[tokenIndex] = _minReceiveAmount;

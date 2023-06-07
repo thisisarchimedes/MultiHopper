@@ -6,6 +6,7 @@ import { ConvexPoolAdapter } from "src/ConvexPoolAdapter.sol";
 import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
 import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
+import { AuraComposableStablePoolAdapter } from "src/AuraComposableStablePoolAdapter.sol";
 
 contract MultiPoolStrategyFactory is Ownable {
     using Clones for address;
@@ -14,6 +15,7 @@ contract MultiPoolStrategyFactory is Ownable {
     address public auraWeightedAdapterImplementation;
     address public auraStableAdapterImplementation;
     address public multiPoolStrategyImplementation;
+    address public auraComposableStablePoolAdapterImplementation;
     address public monitor;
 
     constructor(address _monitor) Ownable() {
@@ -21,6 +23,8 @@ contract MultiPoolStrategyFactory is Ownable {
         multiPoolStrategyImplementation = address(new MultiPoolStrategy());
         auraWeightedAdapterImplementation = address(new AuraWeightedPoolAdapter());
         auraStableAdapterImplementation = address(new AuraStablePoolAdapter());
+        auraComposableStablePoolAdapterImplementation = address(new AuraComposableStablePoolAdapter());
+
         monitor = _monitor;
     }
 
@@ -78,6 +82,21 @@ contract MultiPoolStrategyFactory is Ownable {
             keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
         );
         AuraStablePoolAdapter(payable(auraAdapter)).initialize(_poolId, _multiPoolStrategy, _auraPid);
+    }
+
+    function createAuraComposableStablePoolAdapter(
+        bytes32 _poolId,
+        address _multiPoolStrategy,
+        uint256 _auraPid
+    )
+        external
+        onlyOwner
+        returns (address auraAdapter)
+    {
+        auraAdapter = auraComposableStablePoolAdapterImplementation.cloneDeterministic(
+            keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
+        );
+        AuraComposableStablePoolAdapter(payable(auraAdapter)).initialize(_poolId, _multiPoolStrategy, _auraPid);
     }
 
     function createMultiPoolStrategy(
