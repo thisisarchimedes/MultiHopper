@@ -13,4 +13,5 @@ interface IAdapter {
     function lpBalance() external view returns (uint256);
     function totalClaimable() external view returns (RewardData[] memory);
     function isHealthy() external view returns (bool);
+    function setHealthFactor(uint256 _newHealthFactor) external;
 }

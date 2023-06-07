@@ -56,6 +56,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     error AdapterIsNotEmpty();
     error WithdrawTooLow();
     error AdapterNotHealthy();
+    error StrategyPaused();
     /// @dev thrown when syncing before cycle ends.
     error SyncError();
 
@@ -131,6 +132,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     }
 
     function deposit(uint256 assets, address receiver) public override returns (uint256 shares) {
+        if (paused) revert StrategyPaused();
         address[] memory _adapters = adapters; // SSTORE
         for (uint256 i = 0; i < _adapters.length; i++) {
             bool isHealthy = IAdapter(_adapters[i]).isHealthy();
@@ -365,32 +367,47 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
             }
         }
     }
+
     /**
      * @notice Set the minimum percentage of assets that must be in this contract
      * @param _minPercentage 10000 = 100%
      */
-
     function setMinimumPercentage(uint256 _minPercentage) external onlyOwner {
         minPercentage = _minPercentage;
     }
+
     /**
      * @notice Set the monitor address
      * @param _monitor Address of the monitor
      */
-
     function setMonitor(address _monitor) external onlyOwner {
         monitor = _monitor;
     }
 
+    /**
+     * @notice Change interval for adjusting in to adapters
+     * @param _adjustInInterval New interval in seconds
+     */
     function changeAdjustInInterval(uint256 _adjustInInterval) external onlyOwner {
         adjustInInterval = _adjustInInterval;
     }
 
+    /**
+     * @notice Change interval for adjusting out from adapters
+     * @param _adjustOutInterval New interval in seconds
+     */
     function changeAdjustOutInterval(uint256 _adjustOutInterval) external onlyOwner {
         adjustOutInterval = _adjustOutInterval;
     }
 
+    /**
+     * @notice Pause the strategy
+     */
     function togglePause() external onlyOwner {
         paused = !paused;
+    }
+
+    function changeAdapterHealthFactor(address _adapter, uint256 _healthFactor) external onlyOwner {
+        IAdapter(_adapter).setHealthFactor(_healthFactor);
     }
 }

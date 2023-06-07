@@ -12,6 +12,7 @@ import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
+import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -28,6 +29,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 35;
 
     uint256 forkBlockNumber;
+    uint256 tokenDecimals;
 
     function getQuoteLiFi(
         address srcToken,
@@ -116,9 +118,9 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
             )
         );
         multiPoolStrategy.addAdapter(address(auraWeightedPoolAdapter));
-
-        deal(UNDERLYING_TOKEN, address(this), 10_000e18);
-        deal(UNDERLYING_TOKEN, staker, 50e18);
+        tokenDecimals = IERC20Metadata(UNDERLYING_TOKEN).decimals();
+        deal(UNDERLYING_TOKEN, address(this), 10_000 * 10 ** tokenDecimals);
+        deal(UNDERLYING_TOKEN, staker, 50 * 10 ** tokenDecimals);
     }
 
     function testDeposit() public {
@@ -130,11 +132,15 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     }
 
     function testAdjustIn() public {
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), 500e18);
-        multiPoolStrategy.deposit(500e18, address(this));
+        uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
+        multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        adjustIns[0] =
-            MultiPoolStrategy.Adjust({ adapter: address(auraWeightedPoolAdapter), amount: 440e18, minReceive: 0 });
+        adjustIns[0] = MultiPoolStrategy.Adjust({
+            adapter: address(auraWeightedPoolAdapter),
+            amount: depositAmount * 94 / 100,
+            minReceive: 0
+        });
 
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
@@ -143,16 +149,20 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
-        assertEq(storedAssetsBefore, 500e18);
-        assertEq(storedAssetsAfter, storedAssetsBefore - 440e18);
+        assertEq(storedAssetsBefore, depositAmount);
+        assertEq(storedAssetsAfter, storedAssetsBefore - depositAmount * 94 / 100);
     }
 
     function testClaimRewards() public {
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), 500e18);
-        multiPoolStrategy.deposit(500e18, address(this));
+        uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
+        multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        adjustIns[0] =
-            MultiPoolStrategy.Adjust({ adapter: address(auraWeightedPoolAdapter), amount: 440e18, minReceive: 0 });
+        adjustIns[0] = MultiPoolStrategy.Adjust({
+            adapter: address(auraWeightedPoolAdapter),
+            amount: depositAmount * 94 / 100,
+            minReceive: 0
+        });
 
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
@@ -183,10 +193,10 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     }
 
     function testWithdrawExceedContractBalance() public {
-        uint256 depositAmount = 100e18;
+        uint256 depositAmount = 100 * 10 ** tokenDecimals;
         vm.startPrank(staker);
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), 50e18);
-        multiPoolStrategy.deposit(50e18, address(staker));
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
+        multiPoolStrategy.deposit(50 * 10 ** tokenDecimals, address(staker));
         vm.stopPrank();
         harvest(depositAmount);
         vm.warp(block.timestamp + 10 days);

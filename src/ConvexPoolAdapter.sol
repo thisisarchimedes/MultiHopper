@@ -61,6 +61,7 @@ contract ConvexPoolAdapter is Initializable {
     }
 
     error Unauthorized();
+    error InvalidHealthFactor();
 
     modifier onlyMultiPoolStrategy() {
         if (msg.sender != multiPoolStrategy) revert Unauthorized();
@@ -252,6 +253,13 @@ contract ConvexPoolAdapter is Initializable {
             }
         }
         return rewards;
+    }
+
+    function setHealthFactor(uint256 _newHealthFactor) external onlyMultiPoolStrategy {
+        if (_newHealthFactor > 10_000) {
+            revert InvalidHealthFactor();
+        }
+        healthFactor = _newHealthFactor;
     }
 
     receive() external payable { }
