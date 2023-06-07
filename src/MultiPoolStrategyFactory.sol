@@ -34,9 +34,9 @@ contract MultiPoolStrategyFactory is Ownable {
         uint256 _convexPid,
         uint256 _tokensLength,
         address _zapper,
-        bool _isMetaPool,
         bool _useEth,
-        bool _indexUint
+        bool _indexUint,
+        int128 _underlyingTokenIndex
     )
         external
         onlyOwner
@@ -45,12 +45,26 @@ contract MultiPoolStrategyFactory is Ownable {
         convexAdapter = convexAdapterImplementation.cloneDeterministic(
             keccak256(
                 abi.encodePacked(
-                    _curvePool, _multiPoolStrategy, _convexPid, _tokensLength, _zapper, _isMetaPool, _useEth, _indexUint
+                    _curvePool,
+                    _multiPoolStrategy,
+                    _convexPid,
+                    _tokensLength,
+                    _zapper,
+                    _useEth,
+                    _indexUint,
+                    _underlyingTokenIndex
                 )
             )
         );
         ConvexPoolAdapter(payable(convexAdapter)).initialize(
-            _curvePool, _multiPoolStrategy, _convexPid, _tokensLength, _zapper, _isMetaPool, _useEth, _indexUint
+            _curvePool,
+            _multiPoolStrategy,
+            _convexPid,
+            _tokensLength,
+            _zapper,
+            _useEth,
+            _indexUint,
+            _underlyingTokenIndex
         );
     }
 

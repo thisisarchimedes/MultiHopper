@@ -38,8 +38,7 @@ contract ConvexPoolAdapter is Initializable {
     address[] public rewardTokens;
     /// @notice The number of tokens in the curve pool.
     uint256 public tokensLength;
-    /// @notice The meta pool flag.
-    bool public metaPool;
+
     /// @notice The zapper contract if pool is a meta pool.
     address public zapper;
     /// @notice The useEth flag. If true, the adapter will wrap/unwrap ETH.
@@ -80,9 +79,9 @@ contract ConvexPoolAdapter is Initializable {
         uint256 _convexPid,
         uint256 _tokensLength,
         address _zapper,
-        bool _metaPool,
         bool _useEth,
-        bool _indexUint
+        bool _indexUint,
+        int128 _underlyingTokenPoolIndex
     )
         external
         initializer
@@ -97,11 +96,10 @@ contract ConvexPoolAdapter is Initializable {
 
         tokensLength = _tokensLength;
         zapper = _zapper;
-        metaPool = _metaPool;
         useEth = _useEth;
         indexUint = _indexUint;
         healthFactor = 200; // 2%
-
+        underlyingTokenPoolIndex = _underlyingTokenPoolIndex;
         IERC20(curveLpToken).approve(CONVEX_BOOSTER, type(uint256).max);
         IERC20(underlyingToken).approve(address(curvePool), type(uint256).max);
         if (zapper != address(0)) {
@@ -113,20 +111,12 @@ contract ConvexPoolAdapter is Initializable {
                 rewardTokens.push(IBaseRewardPool(convexRewardPool.extraRewards(i)).rewardToken());
             }
         }
-
-        for (uint256 i; i < tokensLength; i++) {
-            address token = ICurveBasePool(curvePool).coins(i);
-            if (token == underlyingToken || (token == WETH && underlyingToken == ETH)) {
-                underlyingTokenPoolIndex = int128(uint128(i));
-                break;
-            }
-        }
     }
 
     function _addCurvePoolLiquidity(uint256 _amount, uint256 _minCurveLpAmount) internal {
         uint256[5] memory amounts;
         amounts[uint256(uint128(underlyingTokenPoolIndex))] = _amount;
-        if (metaPool) {
+        if (zapper != address(0)) {
             if (tokensLength == 2) {
                 IPoolFactory2(zapper).add_liquidity{ value: address(this).balance }(
                     curvePool, [amounts[0], amounts[1]], _minCurveLpAmount
@@ -164,7 +154,7 @@ contract ConvexPoolAdapter is Initializable {
     }
 
     function _removeCurvePoolLiquidity(uint256 _amount, uint256 _minReceiveAmount) internal {
-        if (metaPool) {
+        if (zapper != address(0)) {
             ICurveMetaPool(curvePool).remove_liquidity_one_coin(
                 curveLpToken, _amount, underlyingTokenPoolIndex, _minReceiveAmount
             );
@@ -218,7 +208,7 @@ contract ConvexPoolAdapter is Initializable {
     function underlyingBalance() public view returns (uint256 underlyingBal) {
         uint256 lpBal = convexRewardPool.balanceOf(address(this));
         if (lpBal == 0) return 0;
-        if (metaPool) {
+        if (zapper != address(0)) {
             underlyingBal = ICurveMetaPool(zapper).calc_withdraw_one_coin(curveLpToken, lpBal, underlyingTokenPoolIndex);
         } else {
             if (indexUint) {

@@ -42,6 +42,7 @@ contract AuraAdapterBase is Initializable {
     }
 
     error Unauthorized();
+    error InvalidHealthFactor();
 
     modifier onlyMultiPoolStrategy() {
         if (msg.sender != multiPoolStrategy) revert Unauthorized();
@@ -153,5 +154,12 @@ contract AuraAdapterBase is Initializable {
         uint256 underlyingBal = underlyingBalance();
         uint256 healthThreshold = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         return underlyingBal >= healthThreshold;
+    }
+
+    function setHealthFactor(uint256 _newHealthFactor) external onlyMultiPoolStrategy {
+        if (_newHealthFactor > 10_000) {
+            revert InvalidHealthFactor();
+        }
+        healthFactor = _newHealthFactor;
     }
 }

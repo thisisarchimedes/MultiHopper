@@ -136,35 +136,21 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         convexEthPEthAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
-                    CURVE_ETH_PETH, address(multiPoolStrategy), CONVEX_ETH_PETH_PID, 2, address(0), false, true, false
+                    CURVE_ETH_PETH, address(multiPoolStrategy), CONVEX_ETH_PETH_PID, 2, address(0), true, false, 0
                 )
             )
         );
         convexEthMsEthAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
-                    CURVE_ETH_MS_ETH,
-                    address(multiPoolStrategy),
-                    CONVEX_ETH_MS_ETH_PID,
-                    2,
-                    address(0),
-                    false,
-                    true,
-                    false
+                    CURVE_ETH_MS_ETH, address(multiPoolStrategy), CONVEX_ETH_MS_ETH_PID, 2, address(0), true, false, 0
                 )
             )
         );
         convexEthAlEthAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
-                    CURVE_ETH_AL_ETH,
-                    address(multiPoolStrategy),
-                    CONVEX_ETH_AL_ETH_PID,
-                    2,
-                    address(0),
-                    false,
-                    true,
-                    false
+                    CURVE_ETH_AL_ETH, address(multiPoolStrategy), CONVEX_ETH_AL_ETH_PID, 2, address(0), true, false, 0
                 )
             )
         );
