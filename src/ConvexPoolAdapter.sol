@@ -174,19 +174,20 @@ contract ConvexPoolAdapter is Initializable {
     }
 
     function withdraw(uint256 _amount, uint256 _minReceiveAmount) external onlyMultiPoolStrategy {
+        uint256 _underlyingBalance = underlyingBalance(); // underlying token balance that this adapter holds
         convexRewardPool.withdrawAndUnwrap(_amount, false);
         _removeCurvePoolLiquidity(_amount, _minReceiveAmount);
         if (useEth) {
             IWETH(payable(WETH)).deposit{ value: address(this).balance }();
         }
-        uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
+        uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this)); // what we withdrawn from curve
         IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal);
-        uint256 _underlyingBalance = underlyingBalance();
-        uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
+        uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000); // acceptable  underlying
+            // token amount that this adapter holds
         if (_underlyingBalance >= healthyBalance) {
-            storedUnderlyingBalance = _underlyingBalance;
+            storedUnderlyingBalance = _underlyingBalance - underlyingBal;
         } else {
-            storedUnderlyingBalance -= underlyingBal;
+            storedUnderlyingBalance -= underlyingBal; // only update with amount that goes out from this adapter
         }
     }
 

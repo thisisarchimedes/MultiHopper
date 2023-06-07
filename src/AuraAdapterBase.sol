@@ -96,6 +96,7 @@ contract AuraAdapterBase is Initializable {
     }
 
     function withdraw(uint256 _amount, uint256 _minReceiveAmount) external virtual onlyMultiPoolStrategy {
+        uint256 _underlyingBalance = underlyingBalance();
         (address[] memory tokens,,) = vault.getPoolTokens(poolId);
         uint256[] memory minAmountsOut = new uint256[](tokens.length);
         minAmountsOut[tokenIndex] = _minReceiveAmount;
@@ -105,10 +106,9 @@ contract AuraAdapterBase is Initializable {
         vault.exitPool(poolId, address(this), address(this), pr);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
         IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal);
-        uint256 _underlyingBalance = underlyingBalance();
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         if (_underlyingBalance > healthyBalance) {
-            storedUnderlyingBalance = _underlyingBalance;
+            storedUnderlyingBalance = _underlyingBalance - underlyingBal;
         } else {
             storedUnderlyingBalance -= underlyingBal;
         }

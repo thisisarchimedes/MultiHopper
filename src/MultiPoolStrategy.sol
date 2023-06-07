@@ -28,9 +28,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     /// @notice timestamp of the last adjust out
     uint256 public lastAdjustOut;
     /// @notice Minimum percentage of assets that must be in this contract
-    uint256 public minPercentage;
+    uint256 public minPercentage; // 10000 = 100%
     /// @notice Percentage of the fee
-    uint256 public feePercentage;
+    uint256 public feePercentage; // 10000 = 100%
     /// @notice Address of the fee recipient
     address public feeRecipient;
     /// @notice Flag for pausing the contract
@@ -102,6 +102,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         adjustOutInterval = 6 hours;
         minPercentage = 500; // 5%
         rewardsCycleLength = 7 days;
+        feePercentage = 1500; // 15%
     }
     /// OVERRIDEN FUNCTIONS
 
@@ -143,42 +144,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         return shares;
     }
 
-    function _withdrawFromAdapter(uint256 assets, uint256 currBal, uint256 minimumReceive) internal returns (uint256) {
-        address[] memory _adapters = adapters; // SSTORE
-
-        Adjust[] memory _adjustOuts = new Adjust[](adapters.length); //init with worst case scenario
-        uint256 _assets = assets - currBal;
-        uint256 adaptersLength = adapters.length;
-        for (uint256 i = adaptersLength; i > 0;) {
-            uint256 _adapterAssets = IAdapter(_adapters[i - 1]).underlyingBalance();
-            if (_adapterAssets > 0) {
-                uint256 lpBal = IAdapter(_adapters[i - 1]).lpBalance();
-                uint256 _amount = _assets > _adapterAssets ? _adapterAssets : _assets;
-                uint256 _lpAmount = (_amount * (10 ** decimals()) / _adapterAssets) * lpBal / (10 ** decimals());
-                _adjustOuts[i - 1] = Adjust({ adapter: _adapters[i - 1], amount: _lpAmount, minReceive: 0 });
-                _assets -= _amount;
-                if (_assets == 0) break;
-            }
-            unchecked {
-                --i;
-            }
-        }
-        for (uint256 i = _adjustOuts.length; i > 0;) {
-            if (_adjustOuts[i - 1].adapter != address(0)) {
-                IAdapter(_adjustOuts[i - 1].adapter).withdraw(_adjustOuts[i - 1].amount, _adjustOuts[i - 1].minReceive);
-            } else {
-                break;
-            }
-            unchecked {
-                --i;
-            }
-        }
-        assets = IERC20Upgradeable(asset()).balanceOf(address(this));
-        if (assets < minimumReceive) revert WithdrawTooLow();
-        storedTotalAssets = 0; // withdraw all assets from this contract
-
-        return assets;
-    }
     /**
      * @dev See {IERC4626-withdraw}.
      */
@@ -234,6 +199,42 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         return assets;
     }
 
+    function _withdrawFromAdapter(uint256 assets, uint256 currBal, uint256 minimumReceive) internal returns (uint256) {
+        address[] memory _adapters = adapters; // SSTORE
+
+        Adjust[] memory _adjustOuts = new Adjust[](adapters.length); //init with worst case scenario
+        uint256 _assets = assets - currBal;
+        uint256 adaptersLength = adapters.length;
+        for (uint256 i = adaptersLength; i > 0;) {
+            uint256 _adapterAssets = IAdapter(_adapters[i - 1]).underlyingBalance();
+            if (_adapterAssets > 0) {
+                uint256 lpBal = IAdapter(_adapters[i - 1]).lpBalance();
+                uint256 _amount = _assets > _adapterAssets ? _adapterAssets : _assets;
+                uint256 _lpAmount = (_amount * 10 ** decimals() / _adapterAssets) * lpBal / (10 ** decimals());
+                _adjustOuts[i - 1] = Adjust({ adapter: _adapters[i - 1], amount: _lpAmount, minReceive: 0 });
+                _assets -= _amount;
+                if (_assets == 0) break;
+            }
+            unchecked {
+                --i;
+            }
+        }
+        for (uint256 i = _adjustOuts.length; i > 0;) {
+            if (_adjustOuts[i - 1].adapter != address(0)) {
+                IAdapter(_adjustOuts[i - 1].adapter).withdraw(_adjustOuts[i - 1].amount, _adjustOuts[i - 1].minReceive);
+            } else {
+                break;
+            }
+            unchecked {
+                --i;
+            }
+        }
+        assets = IERC20Upgradeable(asset()).balanceOf(address(this));
+        if (assets < minimumReceive) revert WithdrawTooLow();
+        storedTotalAssets = 0; // withdraw all assets from this contract
+
+        return assets;
+    }
     /// ADMIN FUNCTIONS
     /**
      * @notice Adjust the underlying assets either out from adapters or in to adapters.Total adjust out amount must be
