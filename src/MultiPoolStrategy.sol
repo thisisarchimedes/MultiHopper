@@ -250,12 +250,12 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * smaller/equal to storedTotalAssets - (storedTotalAssets * minPercentage / 10000)
      * @param _adjustIns List of AdjustIn structs
      * @param _adjustOuts List of AdjustOut structs
-     * @param sortedAdapters List of adapters sorted by lowest tvl to highest tvl
+     * @param _sortedAdapters List of adapters sorted by lowest tvl to highest tvl
      */
     function adjust(
         Adjust[] calldata _adjustIns,
         Adjust[] calldata _adjustOuts,
-        address[] calldata sortedAdapters
+        address[] calldata _sortedAdapters
     )
         external
     {
@@ -289,26 +289,29 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         if (storedTotalAssets < _totalAssets * minPercentage / 10_000) {
             revert AdjustmentWrong();
         }
-        if (sortedAdapters.length > 0) adapters = sortedAdapters;
+        if (_sortedAdapters.length > 0) adapters = _sortedAdapters;
     }
 
     /**
      * @notice Claim rewards from the adapters and swap them for the underlying asset. Only callable once per reward
-     * cycle
+     * cycle. Can be callable by monitor or owner.
      * @param _adaptersToClaim List of adapters to claim from
-     * @param _swapData List of SwapData structs
+     * @param _swapDatas List of SwapData structs
      */
-    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapData) external {
+    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external {
         if (_msgSender() != monitor || _msgSender() != owner()) revert Unauthorized();
         for (uint256 i = 0; i < _adaptersToClaim.length; i++) {
             IAdapter(_adaptersToClaim[i]).claim();
         }
         uint256 underlyingBalanceBefore = IERC20Upgradeable(asset()).balanceOf(address(this));
-        for (uint256 i = 0; i < _swapData.length; i++) {
-            IERC20Upgradeable(_swapData[i].token).approve(LIFI_DIAMOND, 0);
-            IERC20Upgradeable(_swapData[i].token).approve(LIFI_DIAMOND, _swapData[i].amount);
-            (bool success,) = LIFI_DIAMOND.call(_swapData[i].callData);
+        for (uint256 i = 0; i < _swapDatas.length; i++) {
+            IERC20Upgradeable(_swapDatas[i].token).approve(LIFI_DIAMOND, 0);
+            IERC20Upgradeable(_swapDatas[i].token).approve(LIFI_DIAMOND, _swapDatas[i].amount);
+            (bool success,) = LIFI_DIAMOND.call(_swapDatas[i].callData);
             if (!success) revert SwapFailed();
+            unchecked {
+                ++i;
+            }
         }
         uint256 underlyingBalanceAfter = IERC20Upgradeable(asset()).balanceOf(address(this));
         uint256 totalClaimed = underlyingBalanceAfter - underlyingBalanceBefore;
