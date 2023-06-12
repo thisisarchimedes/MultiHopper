@@ -57,6 +57,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     error WithdrawTooLow();
     error AdapterNotHealthy();
     error StrategyPaused();
+    error AdapterAlreadyAdded();
     /// @dev thrown when syncing before cycle ends.
     error SyncError();
 
@@ -359,8 +360,21 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * @param _adapter Address of the adapter to add
      */
     function addAdapter(address _adapter) external onlyOwner {
+        if (isAdapter[_adapter]) revert AdapterAlreadyAdded();
         isAdapter[_adapter] = true;
         adapters.push(_adapter);
+    }
+
+    /**
+     * @notice Add multiple adapters to the list of adapters
+     * @param _adapters Addresses of the adapters to add
+     */
+    function addAdapters(address[] calldata _adapters) external onlyOwner {
+        for (uint256 i = 0; i < _adapters.length; i++) {
+            if (isAdapter[_adapters[i]]) revert AdapterAlreadyAdded();
+            isAdapter[_adapters[i]] = true;
+            adapters.push(_adapters[i]);
+        }
     }
 
     /**
