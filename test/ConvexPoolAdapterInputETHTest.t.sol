@@ -194,7 +194,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
         //// need to approve shares to zapper so the zapper can spend the shares on behalf of this contract
         multiPoolStrategy.approve(address(ethZapper), 0);
         multiPoolStrategy.approve(address(ethZapper), shares);
-        //// withdraw by asset (real withdraw )
+        //// withdraw by asset ( withdraw )
         uint256 assetstoWithdraw = multiPoolStrategy.previewRedeem(shares);
         ethZapper.withdrawETH(assetstoWithdraw, address(this), address(this), 0);
         uint256 underlyingBalanceInAdapterAfterWithdraw = convexPoolAdapter.underlyingBalance();
