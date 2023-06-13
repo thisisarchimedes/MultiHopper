@@ -5,27 +5,29 @@ import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { MultiPoolStrategyFactory } from "../src/MultiPoolStrategyFactory.sol";
+import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
 import { IBaseRewardPool } from "../src/interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
-import { AuraStablePoolAdapter } from "../src/AuraStablePoolAdapter.sol";
+import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
+contract MultiPoolStrategyTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
-    AuraStablePoolAdapter auraStablePoolAdapter;
+    ConvexPoolAdapter convexGenericAdapter;
 
     address public staker = makeAddr("staker");
     ///CONSTANTS
-    address constant UNDERLYING_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
-    /// POOL CONSTANTS
-    bytes32 public constant BALANCER_STABLE_POOL_ID = 0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080;
-    uint256 public constant AURA_PID = 29;
+    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // strategy underlying asset such as
+        // UNDERLYING_ASSET,USDC
+    address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
+    ///ETH/PETH
+    address constant CURVE_POOL = 0x9848482da3Ee3076165ce6497eDA906E66bB85C5;
+    uint256 constant CONVEX_PID = 122;
 
     uint256 forkBlockNumber;
     uint8 tokenDecimals;
@@ -66,33 +68,34 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
     }
 
     function harvest(uint256 _depositAmount) internal {
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), _depositAmount);
+        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), _depositAmount);
         multiPoolStrategy.deposit(_depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        uint256 wethBalanceOfMultiPool = IERC20(UNDERLYING_TOKEN).balanceOf(address(multiPoolStrategy));
+        uint256 wethBalanceOfMultiPool = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
         adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraStablePoolAdapter),
-            amount: wethBalanceOfMultiPool * 94 / 100, // %94
+            adapter: address(convexGenericAdapter),
+            amount: wethBalanceOfMultiPool * 94 / 100, // %50
             minReceive: 0
         });
 
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
-        adapters[0] = address(auraStablePoolAdapter);
+        adapters[0] = address(convexGenericAdapter);
 
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         vm.warp(block.timestamp + 10 weeks);
-        IBooster(AURA_BOOSTER).earmarkRewards(AURA_PID);
+        IBooster(CONVEX_BOOSTER).earmarkRewards(CONVEX_PID);
+
         vm.warp(block.timestamp + 10 weeks);
 
-        /// GRAVI AURA UNDERLYING_TOKEN REWARD DATA
-        AuraStablePoolAdapter.RewardData[] memory rewardData = auraStablePoolAdapter.totalClaimable();
+        /// ETH PETH REWARD DATA
+        ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
 
-        assertGt(rewardData[0].amount, 0); // expect some BAL rewards
+        assertGt(rewardData[0].amount, 0); // expect some CRV rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
         (uint256 quote, bytes memory txData) =
-            getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
+            getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
@@ -107,67 +110,65 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         }
 
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_421_496 : forkBlockNumber });
+        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_359_389 : forkBlockNumber });
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(address(this));
-        multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat"));
-        auraStablePoolAdapter = AuraStablePoolAdapter(
-            multiPoolStrategyFactory.createAuraStablePoolAdapter(
-                BALANCER_STABLE_POOL_ID, address(multiPoolStrategy), AURA_PID
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+        );
+        convexGenericAdapter = ConvexPoolAdapter(
+            payable(
+                multiPoolStrategyFactory.createConvexAdapter(
+                    CURVE_POOL, address(multiPoolStrategy), CONVEX_PID, 2, address(0), true, false, 0
+                )
             )
         );
-        multiPoolStrategy.addAdapter(address(auraStablePoolAdapter));
-        tokenDecimals = IERC20Metadata(UNDERLYING_TOKEN).decimals();
-        deal(UNDERLYING_TOKEN, address(this), 10_000 * 10 ** tokenDecimals);
-        deal(UNDERLYING_TOKEN, staker, 50 * 10 ** tokenDecimals);
+
+        multiPoolStrategy.addAdapter(address(convexGenericAdapter));
+        tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
+        deal(UNDERLYING_ASSET, address(this), 10_000e18);
+        deal(UNDERLYING_ASSET, staker, 50e18);
     }
 
     function testDeposit() public {
         getBlockNumber();
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
-        multiPoolStrategy.deposit(10_000 * 10 ** tokenDecimals, address(this));
+        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), 500 * 10 ** tokenDecimals);
+        multiPoolStrategy.deposit(500 * 10 ** tokenDecimals, address(this));
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
-        assertEq(storedAssets, 10_000 * 10 ** tokenDecimals);
+        assertEq(storedAssets, 500 * 10 ** tokenDecimals);
     }
 
     function testAdjustIn() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
-        multiPoolStrategy.deposit(depositAmount, address(this));
-        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraStablePoolAdapter),
-            amount: depositAmount * 94 / 100, // %94
-            minReceive: 0
-        });
-
-        MultiPoolStrategy.Adjust[] memory adjustOuts;
-        address[] memory adapters = new address[](1);
-        adapters[0] = address(auraStablePoolAdapter);
-
-        uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
-        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-        uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
-        uint256 totalAssets = multiPoolStrategy.totalAssets();
-        uint256 underlyingBalance = auraStablePoolAdapter.underlyingBalance();
-
-        assertEq(storedAssetsBefore, depositAmount);
-        assertEq(storedAssetsAfter, storedAssetsBefore - depositAmount * 94 / 100);
-        assertAlmostEq(totalAssets, depositAmount, depositAmount * 2 / 100); // %2 slippage
-    }
-
-    function testAdjustOut() public {
-        uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustInAmount = depositAmount * 94 / 100;
         adjustIns[0] =
-            MultiPoolStrategy.Adjust({ adapter: address(auraStablePoolAdapter), amount: adjustInAmount, minReceive: 0 });
+            MultiPoolStrategy.Adjust({ adapter: address(convexGenericAdapter), amount: adjustInAmount, minReceive: 0 });
 
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
-        adapters[0] = address(auraStablePoolAdapter);
+        adapters[0] = address(convexGenericAdapter);
+
+        uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
+        assertEq(storedAssetsBefore, depositAmount);
+        assertEq(storedAssetsAfter, storedAssetsBefore - adjustInAmount);
+    }
+
+    function testAdjustOut() public {
+        uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        multiPoolStrategy.deposit(depositAmount, address(this));
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
+        uint256 adjustInAmount = depositAmount * 94 / 100;
+        adjustIns[0] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexGenericAdapter), amount: adjustInAmount, minReceive: 0 });
+
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(convexGenericAdapter);
 
         uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
@@ -175,9 +176,9 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
 
         adjustIns = new MultiPoolStrategy.Adjust[](0);
         adjustOuts = new MultiPoolStrategy.Adjust[](1);
-        uint256 adapterLpBalance = auraStablePoolAdapter.lpBalance();
+        uint256 adapterLpBalance = convexGenericAdapter.lpBalance();
         adjustOuts[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraStablePoolAdapter),
+            adapter: address(convexGenericAdapter),
             amount: adapterLpBalance,
             minReceive: 0
         });
@@ -191,26 +192,26 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
 
     function testWithdraw() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adapterAdjustAmount = depositAmount * 94 / 100; // %94
         adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraStablePoolAdapter),
+            adapter: address(convexGenericAdapter),
             amount: adapterAdjustAmount,
             minReceive: 0
         });
 
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
-        adapters[0] = address(auraStablePoolAdapter);
+        adapters[0] = address(convexGenericAdapter);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-        uint256 underlyingBalanceInAdapterBeforeWithdraw = auraStablePoolAdapter.underlyingBalance();
+        uint256 underlyingBalanceInAdapterBeforeWithdraw = convexGenericAdapter.underlyingBalance();
         uint256 shares = multiPoolStrategy.balanceOf(address(this));
-        uint256 underlyingBalanceOfThisBeforeRedeem = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        uint256 underlyingBalanceOfThisBeforeRedeem = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         multiPoolStrategy.redeem(shares, address(this), address(this), 0);
-        uint256 underlyingBalanceInAdapterAfterWithdraw = auraStablePoolAdapter.underlyingBalance();
-        uint256 underlyingBalanceOfThisAfterRedeem = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        uint256 underlyingBalanceInAdapterAfterWithdraw = convexGenericAdapter.underlyingBalance();
+        uint256 underlyingBalanceOfThisAfterRedeem = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
         assertEq(underlyingBalanceInAdapterAfterWithdraw, 0);
         assertAlmostEq(
@@ -221,48 +222,46 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
     }
 
     function testClaimRewards() public {
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
-        multiPoolStrategy.deposit(500 * 10 ** tokenDecimals, address(this));
+        uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraStablePoolAdapter),
-            amount: 440 * 10 ** tokenDecimals,
-            minReceive: 0
-        });
+        uint256 adjustInAmount = depositAmount * 94 / 100;
+        adjustIns[0] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexGenericAdapter), amount: adjustInAmount, minReceive: 0 });
 
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
-        adapters[0] = address(auraStablePoolAdapter);
-
+        adapters[0] = address(convexGenericAdapter);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         vm.warp(block.timestamp + 1 weeks);
-        IBooster(AURA_BOOSTER).earmarkRewards(AURA_PID);
+        IBooster(CONVEX_BOOSTER).earmarkRewards(CONVEX_PID);
         vm.warp(block.timestamp + 1 weeks);
 
         /// ETH PETH REWARD DATA
-        AuraStablePoolAdapter.RewardData[] memory rewardData = auraStablePoolAdapter.totalClaimable();
+        ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
 
-        assertGt(rewardData[0].amount, 0); // expect some BAL rewards
+        assertGt(rewardData[0].amount, 0); // expect some CRV rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
         (uint256 quote, bytes memory txData) =
-            getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
+            getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
-        uint256 wethBalanceBefore = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         multiPoolStrategy.doHardWork(adapters, swapDatas);
-        uint256 wethBalanceAfter = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         assertEq(crvBalanceAfter, 0);
-        assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_TOKEN
+        assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
     }
 
     function testWithdrawExceedContractBalance() public {
-        uint256 depositAmount = 100 * 10 ** tokenDecimals;
+        uint256 depositAmount = 100e18;
         vm.startPrank(staker);
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
-        multiPoolStrategy.deposit(50 * 10 ** tokenDecimals, address(staker));
+        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount / 2);
+        multiPoolStrategy.deposit(depositAmount / 2, address(staker));
         vm.stopPrank();
         harvest(depositAmount);
         vm.warp(block.timestamp + 10 days);
@@ -272,9 +271,9 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         multiPoolStrategy.withdraw(withdrawAmount, address(staker), staker, 0);
         vm.stopPrank();
         uint256 stakerSharesAfter = multiPoolStrategy.balanceOf(staker);
-        uint256 stakerWethBalance = IERC20(UNDERLYING_TOKEN).balanceOf(address(staker));
-        assertGt(withdrawAmount, 50 * 10 ** tokenDecimals);
+        uint256 stakerWethBalance = IERC20(UNDERLYING_ASSET).balanceOf(address(staker));
+        assertGt(withdrawAmount, depositAmount / 2);
         assertEq(stakerSharesAfter, 0);
-        assertAlmostEq(stakerWethBalance, withdrawAmount, withdrawAmount * 300 / 10_000); // %3 slippage
+        assertAlmostEq(stakerWethBalance, withdrawAmount, withdrawAmount * 100 / 10_000); // %1 margin of error
     }
 }

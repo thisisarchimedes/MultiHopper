@@ -153,6 +153,42 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         assertEq(storedAssetsAfter, storedAssetsBefore - depositAmount * 94 / 100);
     }
 
+    function testAdjustOut() public {
+        uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
+        multiPoolStrategy.deposit(depositAmount, address(this));
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
+        uint256 adjustInAmount = depositAmount * 94 / 100;
+        adjustIns[0] = MultiPoolStrategy.Adjust({
+            adapter: address(auraWeightedPoolAdapter),
+            amount: adjustInAmount,
+            minReceive: 0
+        });
+
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(auraWeightedPoolAdapter);
+
+        uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
+
+        adjustIns = new MultiPoolStrategy.Adjust[](0);
+        adjustOuts = new MultiPoolStrategy.Adjust[](1);
+        uint256 adapterLpBalance = auraWeightedPoolAdapter.lpBalance();
+        adjustOuts[0] = MultiPoolStrategy.Adjust({
+            adapter: address(auraWeightedPoolAdapter),
+            amount: adapterLpBalance,
+            minReceive: 0
+        });
+
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        uint256 storedAssetAfterAdjustTwo = multiPoolStrategy.storedTotalAssets();
+        assertEq(storedAssetsBefore, depositAmount);
+        assertEq(storedAssetsAfter, storedAssetsBefore - adjustInAmount);
+        assertAlmostEq(storedAssetAfterAdjustTwo, depositAmount, depositAmount * 2 / 100);
+    }
+
     function testClaimRewards() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
         IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
@@ -190,6 +226,37 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         assertEq(crvBalanceAfter, 0);
         assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_TOKEN
+    }
+
+    function testWithdraw() public {
+        uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
+        multiPoolStrategy.deposit(depositAmount, address(this));
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
+        uint256 adapterAdjustAmount = depositAmount * 94 / 100; // %94
+        adjustIns[0] = MultiPoolStrategy.Adjust({
+            adapter: address(auraWeightedPoolAdapter),
+            amount: adapterAdjustAmount,
+            minReceive: 0
+        });
+
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(auraWeightedPoolAdapter);
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        uint256 underlyingBalanceInAdapterBeforeWithdraw = auraWeightedPoolAdapter.underlyingBalance();
+        uint256 shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 underlyingBalanceOfThisBeforeRedeem = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        multiPoolStrategy.redeem(shares, address(this), address(this), 0);
+        uint256 underlyingBalanceInAdapterAfterWithdraw = auraWeightedPoolAdapter.underlyingBalance();
+        uint256 underlyingBalanceOfThisAfterRedeem = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
+        assertEq(underlyingBalanceInAdapterAfterWithdraw, 0);
+        assertAlmostEq(
+            underlyingBalanceOfThisAfterRedeem - underlyingBalanceOfThisBeforeRedeem,
+            depositAmount,
+            depositAmount * 2 / 100
+        );
     }
 
     function testWithdrawExceedContractBalance() public {

@@ -159,6 +159,42 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
         assertAlmostEq(underlyingBalance, adapterAdjustAmount, adapterAdjustAmount * 1 / 100);
     }
 
+    function testAdjustOut() public {
+        uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
+        multiPoolStrategy.deposit(depositAmount, address(this));
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
+        uint256 adjustInAmount = depositAmount * 94 / 100;
+        adjustIns[0] = MultiPoolStrategy.Adjust({
+            adapter: address(auraComposableStablePoolAdapter),
+            amount: adjustInAmount,
+            minReceive: 0
+        });
+
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(auraComposableStablePoolAdapter);
+
+        uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
+
+        adjustIns = new MultiPoolStrategy.Adjust[](0);
+        adjustOuts = new MultiPoolStrategy.Adjust[](1);
+        uint256 adapterLpBalance = auraComposableStablePoolAdapter.lpBalance();
+        adjustOuts[0] = MultiPoolStrategy.Adjust({
+            adapter: address(auraComposableStablePoolAdapter),
+            amount: adapterLpBalance,
+            minReceive: 0
+        });
+
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        uint256 storedAssetAfterAdjustTwo = multiPoolStrategy.storedTotalAssets();
+        assertEq(storedAssetsBefore, depositAmount);
+        assertEq(storedAssetsAfter, storedAssetsBefore - adjustInAmount);
+        assertAlmostEq(storedAssetAfterAdjustTwo, depositAmount, depositAmount * 2 / 100);
+    }
+
     function testWithdraw() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
         IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
