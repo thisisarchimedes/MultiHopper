@@ -21,11 +21,12 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
 
     address public staker = makeAddr("staker");
     ///CONSTANTS
-    address constant UNDERLYING_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant UNDERLYING_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; //strategy underlying asset such as
+        // WETH,USDC,DAI,USDT etc.
     address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
     /// POOL CONSTANTS
-    bytes32 public constant BALANCER_STABLE_POOL_ID = 0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080;
-    uint256 public constant AURA_PID = 29;
+    bytes32 public constant BALANCER_STABLE_POOL_ID = 0xb08885e6026bab4333a80024ec25a1a3e1ff2b8a000200000000000000000445;
+    uint256 public constant AURA_PID = 63;
 
     uint256 forkBlockNumber;
     uint8 tokenDecimals;

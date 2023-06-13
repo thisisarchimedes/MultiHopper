@@ -104,6 +104,7 @@ contract ConvexPoolAdapter is Initializable {
         IERC20(underlyingToken).approve(address(curvePool), type(uint256).max);
         if (zapper != address(0)) {
             IERC20(underlyingToken).approve(zapper, type(uint256).max);
+            IERC20(curvePool).approve(zapper, type(uint256).max);
         }
         uint256 extraRewardsLength = convexRewardPool.extraRewardsLength();
         if (extraRewardsLength > 0) {
@@ -155,7 +156,7 @@ contract ConvexPoolAdapter is Initializable {
 
     function _removeCurvePoolLiquidity(uint256 _amount, uint256 _minReceiveAmount) internal {
         if (zapper != address(0)) {
-            ICurveMetaPool(curvePool).remove_liquidity_one_coin(
+            ICurveMetaPool(zapper).remove_liquidity_one_coin(
                 curveLpToken, _amount, underlyingTokenPoolIndex, _minReceiveAmount
             );
         } else {

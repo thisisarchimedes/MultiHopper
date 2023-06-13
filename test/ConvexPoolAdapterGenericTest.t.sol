@@ -21,13 +21,19 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
     ConvexPoolAdapter convexGenericAdapter;
 
     address public staker = makeAddr("staker");
+    address public feeRecipient = makeAddr("feeRecipient");
     ///CONSTANTS
-    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // strategy underlying asset such as
-        // UNDERLYING_ASSET,USDC
+    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // strategy underlying asset such as
+        // USDC,WETH etc.
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
     ///ETH/PETH
-    address constant CURVE_POOL = 0x9848482da3Ee3076165ce6497eDA906E66bB85C5;
-    uint256 constant CONVEX_PID = 122;
+    address constant CURVE_POOL = 0x68934F60758243eafAf4D2cFeD27BF8010bede3a;
+    uint256 constant CONVEX_PID = 158;
+    bool constant USE_ETH = false;
+    int128 constant CURVE_POOL_TOKEN_INDEX = 2;
+    bool constant IS_INDEX_UINT = false;
+    uint256 constant POOL_TOKEN_LENGTH = 3;
+    address constant ZAPPER = 0x08780fb7E580e492c1935bEe4fA5920b94AA95Da;
 
     uint256 forkBlockNumber;
     uint8 tokenDecimals;
@@ -118,13 +124,21 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
-                    CURVE_POOL, address(multiPoolStrategy), CONVEX_PID, 2, address(0), true, false, 0
+                    CURVE_POOL,
+                    address(multiPoolStrategy),
+                    CONVEX_PID,
+                    POOL_TOKEN_LENGTH,
+                    ZAPPER,
+                    USE_ETH,
+                    IS_INDEX_UINT,
+                    CURVE_POOL_TOKEN_INDEX
                 )
             )
         );
 
         multiPoolStrategy.addAdapter(address(convexGenericAdapter));
         tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
+        multiPoolStrategy.changeFeeRecipient(feeRecipient);
         deal(UNDERLYING_ASSET, address(this), 10_000e18);
         deal(UNDERLYING_ASSET, staker, 50e18);
     }
@@ -258,7 +272,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
     }
 
     function testWithdrawExceedContractBalance() public {
-        uint256 depositAmount = 100e18;
+        uint256 depositAmount = 100 * 10 ** tokenDecimals;
         vm.startPrank(staker);
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount / 2);
         multiPoolStrategy.deposit(depositAmount / 2, address(staker));
