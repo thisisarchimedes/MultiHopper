@@ -18,7 +18,7 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { IBooster } from "./interfaces/IBooster.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
-import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
+
 //// ERRRORS
 
 error StrategyPaused();
@@ -28,18 +28,16 @@ error StrategyPaused();
  * It wraps ETH into WETH and interacts with the MultiPoolStrategy contract to perform the operations.
  */
 
-contract ETHZapper is Ownable {
+contract ETHZapper {
     IMultiPoolStrategy public multipoolStrategy;
 
-    constructor() { }
+    constructor(address _strategyAddress) {
+        multipoolStrategy = IMultiPoolStrategy(_strategyAddress);
+    }
     /**
      * @dev Initializes the contract with the address of the MultiPoolStrategy contract.
      * @param _strategyAddress The address of the MultiPoolStrategy contract to use.
      */
-
-    function initialize(address _strategyAddress) public onlyOwner {
-        multipoolStrategy = IMultiPoolStrategy(_strategyAddress);
-    }
 
     /**
      * @dev Deposits ETH into the MultiPoolStrategy contract.
@@ -78,7 +76,6 @@ contract ETHZapper is Ownable {
         public
         returns (uint256)
     {
-        require(assets <= multipoolStrategy.maxWithdraw(_owner), "ERC4626: withdraw more than max");
         /// withdraw from strategy and get WETH
         uint256 shares = multipoolStrategy.withdraw(assets, address(this), _owner, minimumReceive);
         /// unwrap WETH to ETH and send to receiver
@@ -105,7 +102,6 @@ contract ETHZapper is Ownable {
         public
         returns (uint256)
     {
-        require(shares <= multipoolStrategy.maxRedeem(_owner), "ERC4626: redeem more than max");
         // redeem shares and get WETH from strategy
         uint256 received = multipoolStrategy.redeem(shares, address(this), _owner, minimumReceive);
         // unwrap WETH to ETH and send to receiver

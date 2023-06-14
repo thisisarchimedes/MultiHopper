@@ -28,7 +28,8 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
 
     /// POOL CONSTANTS
-    address public constant CURVE_POOL_ADDRESS = 0xc897b98272AA23714464Ea2A0Bd5180f1B8C0025;
+    // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
+    address public constant CURVE_POOL_ADDRESS = 0xc897b98272AA23714464Ea2A0Bd5180f1B8C0025; // ETH/msETH curve pool
     uint256 public constant CONVEX_PID = 145;
 
     uint256 forkBlockNumber;
@@ -111,8 +112,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
         );
         multiPoolStrategy.addAdapter(address(convexPoolAdapter));
         // create and initialize the ETHzapper
-        ethZapper = new ETHZapper();
-        ethZapper.initialize(address(multiPoolStrategy));
+        ethZapper = new ETHZapper(address(multiPoolStrategy));
         tokenDecimals = IERC20Metadata(UNDERLYING_TOKEN).decimals();
         deal(UNDERLYING_TOKEN, address(this), 50_000 * 10 ** tokenDecimals);
         deal(UNDERLYING_TOKEN, staker, 10_000 * 10 ** tokenDecimals);
