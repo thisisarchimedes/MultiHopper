@@ -58,7 +58,7 @@ contract DeployConvex is BaseScript {
         require(CONVEX_PID != 0, "Deploy: convex pid not set");
         require(CONVEX_BOOSTER != address(0), "Deploy: convex booster address not set");
 
-        console2.log("Deployer Address: %s", deployer);
+        console2.log("Owner Address: %s", owner);
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
@@ -96,7 +96,7 @@ contract DeployConvex is BaseScript {
         // test that everything works correctly doing a deposit through the zapper | this is just QoL for deployment on
         // fork, uncomment if needed
 
-        // ethZapper.depositETH{ value: 10e18 }(10e18, deployer);
+        // ethZapper.depositETH{ value: 10e18 }(10e18, owner);
         // uint256 strategyTotalAssets = multiPoolStrategy.totalAssets();
         // console2.log("Strategy total assets: %s", strategyTotalAssets / 1e18);
     }
