@@ -90,5 +90,12 @@ contract DeployConvex is BaseScript {
         ethZapper.depositETH{ value: 10e18 }(10e18, deployer);
         uint256 strategyTotalAssets = multiPoolStrategy.totalAssets();
         console2.log("Strategy total assets: %s", strategyTotalAssets / 1e18);
+        /// everything successful log the output of the script
+        console2.log(
+            " created multiPoolStrategyContract on address %s and added Convex adapter on address %s with ethZapper on address %s ",
+            address(multiPoolStrategy),
+            address(convexPoolAdapter),
+            address(ethZapper)
+        );
     }
 }
