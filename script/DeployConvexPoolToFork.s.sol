@@ -10,17 +10,38 @@ import { console2 } from "forge-std/console2.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 /// @dev See the Solidity Scripting tutorial: https://book.getfoundry.sh/tutorials/solidity-scripting
+/**
+ * @title DeployConvex
+ *
+ * @dev A contract for deploying and configuring a Single pool Strategy using the ETH/msETH Curve pool
+ * @notice not intended for use on mainnet
+ */
 
-contract Deploy is BaseScript {
-    // address MONITOR = address(0); // TODO : set monitor address before deploy
-    ///CONSTANTS
+contract DeployConvex is BaseScript {
+    /*
+
+    @dev Address of the underlying token used in the integration.
+    */
     address constant UNDERLYING_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    /**
+     * @dev Address of the Convex booster contract.
+     */
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
-    address public constant FACTORY_ADDRESS = 0xE052F5b563bc18D56cFf096Eb7Ec512C2a6C2FEB; // factory address from
-        // previous script
-    /// POOL CONSTANTS
-    // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
-    address public constant CURVE_POOL_ADDRESS = 0xc897b98272AA23714464Ea2A0Bd5180f1B8C0025; // ETH/msETH curve pool
+
+    /**
+     * @dev Address of the MultiPoolStrategyFactory contract.
+     */
+    address public constant FACTORY_ADDRESS = 0xE052F5b563bc18D56cFf096Eb7Ec512C2a6C2FEB;
+
+    /**
+     * @dev Address of the Curve pool used in the integration.
+     */
+    address public constant CURVE_POOL_ADDRESS = 0xc897b98272AA23714464Ea2A0Bd5180f1B8C0025; // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
+
+    /**
+     * @dev Convex pool ID used in the integration.
+     */
     uint256 public constant CONVEX_PID = 145;
 
     function run() public broadcaster {
@@ -30,10 +51,11 @@ contract Deploy is BaseScript {
         //// test underlying WETH contract works
         console2.log("deployer eth balance %s", deployer.balance / 1e18);
         IWETH(payable(UNDERLYING_TOKEN)).deposit{ value: 1e18 }();
-        uint256 deployerWETHBalance = IERC20(payable(UNDERLYING_TOKEN)).balanceOf(deployer);
+        uint256 deployerWETHBalance = IERC20(UNDERLYING_TOKEN).balanceOf(deployer);
         console2.log("WETH balance: %s", deployerWETHBalance / 1e18);
-        MultiPoolStrategy multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat"));
+        MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_TOKEN)), "ETHX Strat")
+        );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
         ConvexPoolAdapter convexPoolAdapter = ConvexPoolAdapter(
             payable(
@@ -64,7 +86,8 @@ contract Deploy is BaseScript {
         // create  the ETHzapper
         ETHZapper ethZapper = new ETHZapper(address(multiPoolStrategy));
         console2.log("ETHZapper: %s", address(ethZapper));
-        // ethZapper.depositETH{ value: 10e18 }(10e18, deployer);
+        // test that everything works correctly doing a deposit through the zapper
+        ethZapper.depositETH{ value: 10e18 }(10e18, deployer);
         uint256 strategyTotalAssets = multiPoolStrategy.totalAssets();
         console2.log("Strategy total assets: %s", strategyTotalAssets / 1e18);
     }
