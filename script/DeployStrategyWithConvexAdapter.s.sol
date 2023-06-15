@@ -52,6 +52,17 @@ contract DeployConvex is BaseScript {
      */
     string public constant STRATEGY_NAME = "ETH/msETH Strat";
 
+    /**
+     * @dev Executes the deployment and configuration of the Convex Pool Strategy.
+     * It performs the following steps:
+     * 1. Gets the instance of the MultiPoolStrategyFactory contract deployed previously.
+     * 2. Creates an instance of the MultiPoolStrategy contract by calling createMultiPoolStrategy function
+     *    of the MultiPoolStrategyFactory contract.
+     * 3. Creates an instance of the ConvexPoolAdapter contract by calling createConvexAdapter function
+     *    of the MultiPoolStrategyFactory contract with the parameters defined.
+     * 4. Adds the ConvexPoolAdapter to the MultiPoolStrategy contract by calling the addAdapter function.
+     * 5. Creates an instance of the ETHZapper contract with the MultiPoolStrategy contract as a parameter.
+     */
     function run() public broadcaster {
         require(FACTORY_ADDRESS != address(0), "Deploy: factory address not set");
         require(CURVE_POOL_ADDRESS != address(0), "Deploy: curve pool address not set");

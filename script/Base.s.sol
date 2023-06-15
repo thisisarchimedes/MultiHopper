@@ -17,6 +17,13 @@ abstract contract BaseScript is Script {
         owner = vm.rememberKey(vm.envUint("OWNER_PKEY"));
     }
 
+    /**
+     * @dev Modifier to enable broadcasting of events and logs.
+     * It starts the broadcast, executes the modified function's body, and stops the broadcast.
+     * vm.startBroadcast starts a broadcast, which indicates that the following logic should take place on-chain.
+     * vm.stopBroadcast stops the broadcast
+     * https://book.getfoundry.sh/tutorials/solidity-scripting?highlight=broadcast#deploying-our-contract
+     */
     modifier broadcaster() {
         vm.startBroadcast(owner);
         _;
