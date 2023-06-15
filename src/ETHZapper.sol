@@ -34,10 +34,6 @@ contract ETHZapper {
     constructor(address _strategyAddress) {
         multipoolStrategy = IMultiPoolStrategy(_strategyAddress);
     }
-    /**
-     * @dev Initializes the contract with the address of the MultiPoolStrategy contract.
-     * @param _strategyAddress The address of the MultiPoolStrategy contract to use.
-     */
 
     /**
      * @dev Deposits ETH into the MultiPoolStrategy contract.
