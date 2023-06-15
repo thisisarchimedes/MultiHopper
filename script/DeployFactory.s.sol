@@ -14,7 +14,7 @@ import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
  *
  */
 contract DeployFactory is BaseScript {
-    address MONITOR = 0x026055f2d5e8b7047B438E6e9291bB39325D1d82; // TODO : set monitor address before deploy
+    address MONITOR = address(0); // TODO : set monitor address before deploy
 
     function run() public broadcaster returns (MultiPoolStrategyFactory factory) {
         require(MONITOR != address(0), "Deploy: monitor address not set");
