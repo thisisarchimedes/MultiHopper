@@ -68,24 +68,14 @@ contract DeployConvex is BaseScript {
         ConvexPoolAdapter convexPoolAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
-                    /**
-                     *   address _curvePool,
-                     *     address _multiPoolStrategy,
-                     *     uint256 _convexPid,
-                     *     uint256 _tokensLength,
-                     *     address _zapper,
-                     *     bool _useEth,
-                     *     bool _indexUint,
-                     *     int128 _underlyingTokenIndex
-                     */
-                    CURVE_POOL_ADDRESS,
-                    address(multiPoolStrategy),
-                    CONVEX_PID,
-                    2,
-                    address(0),
-                    true,
-                    false,
-                    0
+                    CURVE_POOL_ADDRESS, // address _curvePool
+                    address(multiPoolStrategy), // address _multiPoolStrategy
+                    CONVEX_PID, // uint256 _convexPid
+                    2, // uint256 _tokensLength
+                    address(0), // address _zapper
+                    true, // bool _useEth
+                    false, // bool _indexUint
+                    0 // int128 _underlyingTokenIndex
                 )
             )
         );
