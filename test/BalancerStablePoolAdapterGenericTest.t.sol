@@ -109,7 +109,20 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_421_496 : forkBlockNumber });
-        multiPoolStrategyFactory = new MultiPoolStrategyFactory(address(this));
+        //// we only deploy the adapters we will use in this test
+        address ConvexPoolAdapterImplementation = address(0);
+        address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
+        address AuraWeightedPoolAdapterImplementation = address(0);
+        address AuraStablePoolAdapterImplementation = address(new AuraStablePoolAdapter());
+        address AuraComposableStablePoolAdapterImplementation = address(new AuraComposableStablePoolAdapter());
+        multiPoolStrategyFactory = new MultiPoolStrategyFactory(
+            address(this),
+            ConvexPoolAdapterImplementation,
+            MultiPoolStrategyImplementation,
+            AuraWeightedPoolAdapterImplementation,
+            AuraStablePoolAdapterImplementation,
+            AuraComposableStablePoolAdapterImplementation
+            );
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat"));
         auraStablePoolAdapter = AuraStablePoolAdapter(

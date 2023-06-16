@@ -9,7 +9,6 @@ import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
 import { IBaseRewardPool } from "../src/interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
-import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
@@ -131,7 +130,20 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_359_389 : forkBlockNumber });
-        multiPoolStrategyFactory = new MultiPoolStrategyFactory(address(this));
+        //// only eploy the adapter contracts we will use
+        address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
+        address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
+        address AuraWeightedPoolAdapterImplementation = address(0);
+        address AuraStablePoolAdapterImplementation = address(0);
+        address AuraComposableStablePoolAdapterImplementation = address(0);
+        multiPoolStrategyFactory = new MultiPoolStrategyFactory(
+            address(this),
+            ConvexPoolAdapterImplementation,
+            MultiPoolStrategyImplementation,
+            AuraWeightedPoolAdapterImplementation,
+            AuraStablePoolAdapterImplementation,
+            AuraComposableStablePoolAdapterImplementation
+            );
         multiPoolStrategy = MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(WETH, "ETHX Strat"));
         convexEthPEthAdapter = ConvexPoolAdapter(
             payable(

@@ -7,13 +7,12 @@ import { StdCheats } from "forge-std/StdCheats.sol";
 import { MultiPoolStrategyFactory } from "../src/MultiPoolStrategyFactory.sol";
 import { IBaseRewardPool } from "../src/interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { ETHZapper } from "../src/ETHZapper.sol";
 import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
 import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
-
-import { ETHZapper } from "../src/ETHZapper.sol";
 
 /// @title ConvexPoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged convex pool (ETH/msETH) with native ETH input from user using zapper
@@ -83,7 +82,19 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_421_496 : forkBlockNumber });
         // create and initialize the multiPoolStrategy and adapter
-        multiPoolStrategyFactory = new MultiPoolStrategyFactory(address(this));
+        address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
+        address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
+        address AuraWeightedPoolAdapterImplementation = address(0);
+        address AuraStablePoolAdapterImplementation = address(0);
+        address AuraComposableStablePoolAdapterImplementation = address(0);
+        multiPoolStrategyFactory = new MultiPoolStrategyFactory(
+            address(this),
+            ConvexPoolAdapterImplementation,
+            MultiPoolStrategyImplementation,
+            AuraWeightedPoolAdapterImplementation,
+            AuraStablePoolAdapterImplementation,
+            AuraComposableStablePoolAdapterImplementation
+            );
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat"));
         convexPoolAdapter = ConvexPoolAdapter(
