@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 import "./AuraAdapterBase.sol";
 import { FixedPoint } from "./utils/FixedPoint.sol";
 import { Math } from "./utils/Math.sol";
-import { IStablePool } from "./interfaces/IStablePool.sol";
+import { IStablePool } from "./interfaces/IStablepool.sol";
 
 contract AuraStablePoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;

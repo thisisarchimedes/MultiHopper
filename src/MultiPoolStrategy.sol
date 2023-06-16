@@ -49,7 +49,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
-    //// ERRRORS
+    //// ERRORS
     error Unauthorized();
     error AdjustmentWrong();
     error SwapFailed();
