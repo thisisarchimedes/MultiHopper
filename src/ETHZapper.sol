@@ -19,7 +19,7 @@ import { IBooster } from "./interfaces/IBooster.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
 
-//// ERRRORS
+//// ERRORS
 
 error StrategyPaused();
 /**
