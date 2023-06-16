@@ -32,6 +32,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
     uint256 public constant CONVEX_PID = 145;
 
     uint256 forkBlockNumber;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
     uint256 tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests
@@ -80,7 +81,10 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
             return;
         }
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_421_496 : forkBlockNumber });
+        vm.createSelectFork({
+            urlOrAlias: "mainnet",
+            blockNumber: forkBlockNumber == 0 ? DEFAULT_FORK_BLOCK_NUMBER : forkBlockNumber
+        });
         // create and initialize the multiPoolStrategy and adapter
         address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
         address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());

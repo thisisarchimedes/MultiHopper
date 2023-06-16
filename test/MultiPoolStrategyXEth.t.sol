@@ -35,6 +35,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
     address constant CURVE_ETH_AL_ETH = 0xC4C319E2D4d66CcA4464C0c2B32c9Bd23ebe784e;
     uint256 constant CONVEX_ETH_AL_ETH_PID = 49;
     uint256 forkBlockNumber;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
 
     function getQuoteLiFi(
         address srcToken,
@@ -129,7 +130,10 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         }
 
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_359_389 : forkBlockNumber });
+        vm.createSelectFork({
+            urlOrAlias: "mainnet",
+            blockNumber: forkBlockNumber == 0 ? DEFAULT_FORK_BLOCK_NUMBER : forkBlockNumber
+        });
         //// only eploy the adapter contracts we will use
         address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
         address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
