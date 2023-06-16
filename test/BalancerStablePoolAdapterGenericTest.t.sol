@@ -114,7 +114,7 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(new AuraStablePoolAdapter());
-        address AuraComposableStablePoolAdapterImplementation = address(new AuraComposableStablePoolAdapter());
+        address AuraComposableStablePoolAdapterImplementation = address(0);
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
