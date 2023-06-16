@@ -19,7 +19,7 @@ import { console2 } from "forge-std/console2.sol";
  *
  */
 contract DeployFactory is BaseScript {
-    address MONITOR = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266); // TODO : set monitor address before deploy
+    address MONITOR = address(0); // TODO : set monitor address before deploy
 
     function run() public broadcaster returns (MultiPoolStrategyFactory factory) {
         require(MONITOR != address(0), "Deploy: monitor address not set");
