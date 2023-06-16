@@ -18,13 +18,21 @@ contract MultiPoolStrategyFactory is Ownable {
     address public auraComposableStablePoolAdapterImplementation;
     address public monitor;
 
-    constructor(address _monitor) Ownable() {
-        convexAdapterImplementation = address(new ConvexPoolAdapter());
-        multiPoolStrategyImplementation = address(new MultiPoolStrategy());
-        auraWeightedAdapterImplementation = address(new AuraWeightedPoolAdapter());
-        auraStableAdapterImplementation = address(new AuraStablePoolAdapter());
-        auraComposableStablePoolAdapterImplementation = address(new AuraComposableStablePoolAdapter());
-
+    constructor(
+        address _monitor,
+        address _convexPoolAdapterImplementation,
+        address _multiPoolStrategyImplementation,
+        address _auraWeightedAdapterImplementation,
+        address _auraStableAdapterImplementation,
+        address _auraComposableStablePoolAdapterImplementation
+    )
+        Ownable()
+    {
+        convexAdapterImplementation = _convexPoolAdapterImplementation;
+        multiPoolStrategyImplementation = _multiPoolStrategyImplementation;
+        auraWeightedAdapterImplementation = _auraWeightedAdapterImplementation;
+        auraStableAdapterImplementation = _auraStableAdapterImplementation;
+        auraComposableStablePoolAdapterImplementation = _auraComposableStablePoolAdapterImplementation;
         monitor = _monitor;
     }
 

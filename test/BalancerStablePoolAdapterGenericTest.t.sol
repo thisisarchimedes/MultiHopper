@@ -29,6 +29,7 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 63;
 
     uint256 forkBlockNumber;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -108,8 +109,24 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         }
 
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_421_496 : forkBlockNumber });
-        multiPoolStrategyFactory = new MultiPoolStrategyFactory(address(this));
+        vm.createSelectFork({
+            urlOrAlias: "mainnet",
+            blockNumber: forkBlockNumber == 0 ? DEFAULT_FORK_BLOCK_NUMBER : forkBlockNumber
+        });
+        //// we only deploy the adapters we will use in this test
+        address ConvexPoolAdapterImplementation = address(0);
+        address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
+        address AuraWeightedPoolAdapterImplementation = address(0);
+        address AuraStablePoolAdapterImplementation = address(new AuraStablePoolAdapter());
+        address AuraComposableStablePoolAdapterImplementation = address(0);
+        multiPoolStrategyFactory = new MultiPoolStrategyFactory(
+            address(this),
+            ConvexPoolAdapterImplementation,
+            MultiPoolStrategyImplementation,
+            AuraWeightedPoolAdapterImplementation,
+            AuraStablePoolAdapterImplementation,
+            AuraComposableStablePoolAdapterImplementation
+            );
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat"));
         auraStablePoolAdapter = AuraStablePoolAdapter(

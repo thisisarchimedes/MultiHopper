@@ -36,6 +36,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
     address constant ZAPPER = 0x08780fb7E580e492c1935bEe4fA5920b94AA95Da;
 
     uint256 forkBlockNumber;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -116,8 +117,23 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         }
 
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: forkBlockNumber == 0 ? 17_359_389 : forkBlockNumber });
-        multiPoolStrategyFactory = new MultiPoolStrategyFactory(address(this));
+        vm.createSelectFork({
+            urlOrAlias: "mainnet",
+            blockNumber: forkBlockNumber == 0 ? DEFAULT_FORK_BLOCK_NUMBER : forkBlockNumber
+        });
+        address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
+        address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
+        address AuraWeightedPoolAdapterImplementation = address(0);
+        address AuraStablePoolAdapterImplementation = address(0);
+        address AuraComposableStablePoolAdapterImplementation = address(0);
+        multiPoolStrategyFactory = new MultiPoolStrategyFactory(
+            address(this),
+            ConvexPoolAdapterImplementation,
+            MultiPoolStrategyImplementation,
+            AuraWeightedPoolAdapterImplementation,
+            AuraStablePoolAdapterImplementation,
+            AuraComposableStablePoolAdapterImplementation
+            );
         multiPoolStrategy = MultiPoolStrategy(
             multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
         );
