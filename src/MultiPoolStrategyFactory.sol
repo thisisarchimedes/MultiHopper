@@ -135,4 +135,25 @@ contract MultiPoolStrategyFactory is Ownable {
         MultiPoolStrategy(multiPoolStrategy).initalize(_underlyingToken, monitor);
         MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);
     }
+
+    function setMonitorAddress(address _newMonitor) external onlyOwner {
+        monitor = _newMonitor;
+    }
+
+    //// Setters for adapter factory addresses
+    function setConvexAdapterImplementation(address _newConvexAdapterImplementation) external {
+        convexAdapterImplementation = _newConvexAdapterImplementation;
+    }
+
+    function setAuraStableImplementation(address _newAuraStableImplementation) external {
+        auraStableAdapterImplementation = _newAuraStableImplementation;
+    }
+
+    function setAuraWeightedImplementation(address _newAuraWeightedImplementation) external {
+        auraWeightedAdapterImplementation = _newAuraWeightedImplementation;
+    }
+
+    function setAuraComposableStableImplementation(address _newAuraComposableStableImplementation) external {
+        auraComposableStablePoolAdapterImplementation = _newAuraComposableStableImplementation;
+    }
 }
