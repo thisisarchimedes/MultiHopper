@@ -27,13 +27,13 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         // USDC,WETH etc.
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
     ///ETH/PETH
-    address constant CURVE_POOL = 0x68934F60758243eafAf4D2cFeD27BF8010bede3a;
-    uint256 constant CONVEX_PID = 158;
+    address constant CURVE_POOL = 0xAF4264916B467e2c9C8aCF07Acc22b9EDdDaDF33;
+    uint256 constant CONVEX_PID = 170;
     bool constant USE_ETH = false;
     int128 constant CURVE_POOL_TOKEN_INDEX = 2;
-    bool constant IS_INDEX_UINT = false;
+    bool constant IS_INDEX_UINT = true;
     uint256 constant POOL_TOKEN_LENGTH = 3;
-    address constant ZAPPER = 0x08780fb7E580e492c1935bEe4fA5920b94AA95Da;
+    address constant ZAPPER = 0x5De4EF4879F4fe3bBADF2227D2aC5d0E2D76C895;
 
     uint256 forkBlockNumber;
     uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
@@ -169,8 +169,11 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
 
     function testAdjustIn() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
+        console2.log("dep amount", depositAmount);
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
+        uint256 curveLPBalance = IERC20(CURVE_POOL).balanceOf(address(this));
+        console2.log("curveLPBAlance", curveLPBalance);
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustInAmount = depositAmount * 94 / 100;
         adjustIns[0] =

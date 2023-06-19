@@ -1,21 +1,6 @@
 pragma solidity ^0.8.10;
 
-import {
-    ICurveBasePool,
-    IPool2,
-    IPool3,
-    IPool4,
-    IPool5,
-    IPoolFactory2,
-    IPoolFactory3,
-    IPoolFactory4,
-    IPoolFactory5,
-    ICurveMetaPool
-} from "./interfaces/ICurvePool.sol";
-import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
-import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { IBooster } from "./interfaces/IBooster.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
 

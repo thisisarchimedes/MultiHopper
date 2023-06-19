@@ -104,7 +104,7 @@ contract ConvexPoolAdapter is Initializable {
         IERC20(underlyingToken).approve(address(curvePool), type(uint256).max);
         if (zapper != address(0)) {
             IERC20(underlyingToken).approve(zapper, type(uint256).max);
-            IERC20(curvePool).approve(zapper, type(uint256).max);
+            IERC20(curveLpToken).approve(zapper, type(uint256).max);
         }
         uint256 extraRewardsLength = convexRewardPool.extraRewardsLength();
         if (extraRewardsLength > 0) {
