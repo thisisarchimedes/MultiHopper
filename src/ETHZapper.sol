@@ -37,12 +37,12 @@ contract ETHZapper {
 
     /**
      * @dev Deposits ETH into the MultiPoolStrategy contract.
-     * @param assets The amount of ETH to deposit must match msg.value.
      * @param receiver The address to receive the shares.
      * @return shares The amount of shares received.
      */
-    function depositETH(uint256 assets, address receiver) public payable returns (uint256 shares) {
+    function depositETH(address receiver) public payable returns (uint256 shares) {
         if (multipoolStrategy.paused()) revert StrategyPaused();
+        uint256 assets = msg.value;
         require(assets == msg.value, "ERC4626: ETH value mismatch");
         // wrap ether and then call deposit
         IWETH(payable(multipoolStrategy.asset())).deposit{ value: msg.value }();
@@ -57,23 +57,14 @@ contract ETHZapper {
      * @dev Withdraws native ETH from the MultiPoolStrategy contract by assets.
      * @param assets The amount of ETH to withdraw.
      * @param receiver The address to receive the withdrawn native ETH.
-     * @param _owner The owner's address for withdrawal.
      * @param minimumReceive The minimum amount of ETH to receive.
      * @return The amount of shares burned.
      * @notice to run this function user needs to approve the zapper to spend strategy token (shares)
      */
 
-    function withdrawETH(
-        uint256 assets,
-        address receiver,
-        address _owner,
-        uint256 minimumReceive
-    )
-        public
-        returns (uint256)
-    {
+    function withdrawETH(uint256 assets, address receiver, uint256 minimumReceive) public returns (uint256) {
         /// withdraw from strategy and get WETH
-        uint256 shares = multipoolStrategy.withdraw(assets, address(this), _owner, minimumReceive);
+        uint256 shares = multipoolStrategy.withdraw(assets, address(this), msg.sender, minimumReceive);
         /// unwrap WETH to ETH and send to receiver
         IWETH(payable(multipoolStrategy.asset())).withdraw(assets);
         payable(address(receiver)).transfer(assets);
@@ -83,23 +74,14 @@ contract ETHZapper {
      * @dev Withdraws native ETH from the MultiPoolStrategy contract by shares (redeem).
      * @param shares The amount of shares to redeem.
      * @param receiver The address to receive the redeemed ETH.
-     * @param _owner The owner's address for redemption.
      * @param minimumReceive The minimum amount of ETH to receive.
      * @return The amount of redeemed ETH received.
      * @notice to run this function user needs to approve the zapper to spend strategy token (shares)
      */
 
-    function redeemETH(
-        uint256 shares,
-        address receiver,
-        address _owner,
-        uint256 minimumReceive
-    )
-        public
-        returns (uint256)
-    {
+    function redeemETH(uint256 shares, address receiver, uint256 minimumReceive) public returns (uint256) {
         // redeem shares and get WETH from strategy
-        uint256 received = multipoolStrategy.redeem(shares, address(this), _owner, minimumReceive);
+        uint256 received = multipoolStrategy.redeem(shares, address(this), msg.sender, minimumReceive);
         // unwrap WETH to ETH and send to receiver
         IWETH(payable(multipoolStrategy.asset())).withdraw(received);
         payable(address(receiver)).transfer(received);
