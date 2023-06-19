@@ -14,11 +14,13 @@ import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { IBooster } from "../src/interfaces/IBooster.sol";
 
-contract MultiPoolStrategyTest is PRBTest, StdCheats {
+contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
     ConvexPoolAdapter convexGenericAdapter;
+    IERC20 curveLpToken;
 
     address public staker = makeAddr("staker");
     address public feeRecipient = makeAddr("feeRecipient");
@@ -155,6 +157,8 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         multiPoolStrategy.addAdapter(address(convexGenericAdapter));
         tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
         multiPoolStrategy.changeFeeRecipient(feeRecipient);
+        (address _curveLpToken,,,,,) = IBooster(CONVEX_BOOSTER).poolInfo(CONVEX_PID);
+        curveLpToken = IERC20(_curveLpToken);
         deal(UNDERLYING_ASSET, address(this), 10_000e18);
         deal(UNDERLYING_ASSET, staker, 50e18);
     }
@@ -172,8 +176,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         console2.log("dep amount", depositAmount);
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
-        uint256 curveLPBalance = IERC20(CURVE_POOL).balanceOf(address(this));
-        console2.log("curveLPBAlance", curveLPBalance);
+        uint256 curveLPBalance = curveLpToken.balanceOf(address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustInAmount = depositAmount * 94 / 100;
         adjustIns[0] =

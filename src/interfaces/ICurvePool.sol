@@ -11,11 +11,14 @@ interface ICurveBasePool {
     function get_dy_underlying(int128 i, int128 j, uint256 dx) external view returns (uint256);
     function get_virtual_price() external view returns (uint256);
     function remove_liquidity_one_coin(uint256 _token_amount, int128 i, uint256 min_amount) external;
+    function remove_liquidity_one_coin(uint256 _token_amount, uint256 i, uint256 min_amount) external;
 }
 
 interface ICurveMetaPool {
     function calc_withdraw_one_coin(address _pool, uint256 _token_amount, int128 i) external view returns (uint256);
+    function calc_withdraw_one_coin(address _pool, uint256 _token_amount, uint256 i) external view returns (uint256);
     function remove_liquidity_one_coin(address _pool, uint256 _token_amount, int128 i, uint256 min_amount) external;
+    function remove_liquidity_one_coin(address _pool, uint256 _token_amount, uint256 i, uint256 min_amount) external;
 }
 
 interface IPool2 is ICurveBasePool {
