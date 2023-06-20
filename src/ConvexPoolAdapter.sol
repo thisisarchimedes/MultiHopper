@@ -156,11 +156,25 @@ contract ConvexPoolAdapter is Initializable {
 
     function _removeCurvePoolLiquidity(uint256 _amount, uint256 _minReceiveAmount) internal {
         if (zapper != address(0)) {
-            ICurveMetaPool(zapper).remove_liquidity_one_coin(
-                curveLpToken, _amount, underlyingTokenPoolIndex, _minReceiveAmount
-            );
+            if (indexUint) {
+                ICurveMetaPool(zapper).remove_liquidity_one_coin(
+                    curveLpToken, _amount, uint256(uint128(underlyingTokenPoolIndex)), _minReceiveAmount
+                );
+            } else {
+                ICurveMetaPool(zapper).remove_liquidity_one_coin(
+                    curveLpToken, _amount, underlyingTokenPoolIndex, _minReceiveAmount
+                );
+            }
         } else {
-            ICurveBasePool(curvePool).remove_liquidity_one_coin(_amount, underlyingTokenPoolIndex, _minReceiveAmount);
+            if (indexUint) {
+                ICurveBasePool(curvePool).remove_liquidity_one_coin(
+                    _amount, uint256(uint128(underlyingTokenPoolIndex)), _minReceiveAmount
+                );
+            } else {
+                ICurveBasePool(curvePool).remove_liquidity_one_coin(
+                    _amount, underlyingTokenPoolIndex, _minReceiveAmount
+                );
+            }
         }
     }
 
@@ -211,7 +225,14 @@ contract ConvexPoolAdapter is Initializable {
         uint256 lpBal = convexRewardPool.balanceOf(address(this));
         if (lpBal == 0) return 0;
         if (zapper != address(0)) {
-            underlyingBal = ICurveMetaPool(zapper).calc_withdraw_one_coin(curveLpToken, lpBal, underlyingTokenPoolIndex);
+            if (indexUint) {
+                underlyingBal = ICurveMetaPool(zapper).calc_withdraw_one_coin(
+                    curvePool, lpBal, uint256(uint128(underlyingTokenPoolIndex))
+                );
+            } else {
+                underlyingBal =
+                    ICurveMetaPool(zapper).calc_withdraw_one_coin(curvePool, lpBal, underlyingTokenPoolIndex);
+            }
         } else {
             if (indexUint) {
                 underlyingBal =
