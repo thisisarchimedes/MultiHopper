@@ -142,10 +142,10 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
 
     function testDeposit() public {
         getBlockNumber();
-        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), 10_000e18);
-        multiPoolStrategy.deposit(10_000e18, address(this));
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), 10_000 * 10 ** tokenDecimals);
+        multiPoolStrategy.deposit(10_000 * 10 ** tokenDecimals, address(this));
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
-        assertEq(storedAssets, 10_000e18);
+        assertEq(storedAssets, 10_000 * 10 ** tokenDecimals);
     }
 
     function testAdjustIn() public {
@@ -291,7 +291,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         vm.stopPrank();
         uint256 stakerSharesAfter = multiPoolStrategy.balanceOf(staker);
         uint256 stakerWethBalance = IERC20(UNDERLYING_TOKEN).balanceOf(address(staker));
-        assertGt(withdrawAmount, 50e18);
+        assertGt(withdrawAmount, 50 * 10 ** tokenDecimals);
         assertEq(stakerSharesAfter, 0);
         assertAlmostEq(stakerWethBalance, withdrawAmount, withdrawAmount * 300 / 10_000); // %3 slippage
     }
