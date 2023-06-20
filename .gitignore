@@ -2,6 +2,7 @@
 cache
 node_modules
 out
+venv
 
 # files
 *.env
