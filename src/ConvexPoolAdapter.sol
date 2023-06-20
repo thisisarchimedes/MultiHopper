@@ -158,11 +158,11 @@ contract ConvexPoolAdapter is Initializable {
         if (zapper != address(0)) {
             if (indexUint) {
                 ICurveMetaPool(zapper).remove_liquidity_one_coin(
-                    curveLpToken, _amount, uint256(uint128(underlyingTokenPoolIndex)), _minReceiveAmount
+                    curvePool, _amount, uint256(uint128(underlyingTokenPoolIndex)), _minReceiveAmount
                 );
             } else {
                 ICurveMetaPool(zapper).remove_liquidity_one_coin(
-                    curveLpToken, _amount, underlyingTokenPoolIndex, _minReceiveAmount
+                    curvePool, _amount, underlyingTokenPoolIndex, _minReceiveAmount
                 );
             }
         } else {

@@ -303,13 +303,16 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
         vm.warp(block.timestamp + 10 days);
         uint256 stakerShares = multiPoolStrategy.balanceOf(staker);
         uint256 withdrawAmount = multiPoolStrategy.convertToAssets(stakerShares);
+        uint256 stakerUnderlyingBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(staker));
         vm.startPrank(staker);
         multiPoolStrategy.withdraw(withdrawAmount, address(staker), staker, 0);
         vm.stopPrank();
         uint256 stakerSharesAfter = multiPoolStrategy.balanceOf(staker);
-        uint256 stakerWethBalance = IERC20(UNDERLYING_ASSET).balanceOf(address(staker));
+        uint256 stakerUnderlyingBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(staker));
         assertGt(withdrawAmount, depositAmount / 2);
         assertEq(stakerSharesAfter, 0);
-        assertAlmostEq(stakerWethBalance, withdrawAmount, withdrawAmount * 100 / 10_000); // %1 margin of error
+        assertAlmostEq(
+            stakerUnderlyingBalanceAfter - stakerUnderlyingBalanceBefore, withdrawAmount, withdrawAmount * 100 / 10_000
+        ); // %1 margin of error
     }
 }
