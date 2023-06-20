@@ -21,11 +21,11 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
 
     address public staker = makeAddr("staker");
     ///CONSTANTS
-    address constant UNDERLYING_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant UNDERLYING_TOKEN = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
     /// POOL CONSTANTS
-    bytes32 public constant BALANCER_STABLE_POOL_ID = 0x793f2d5cd52dfafe7a1a1b0b3988940ba2d6a63d0000000000000000000004f8;
-    uint256 public constant AURA_PID = 96;
+    bytes32 public constant BALANCER_STABLE_POOL_ID = 0x79c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7;
+    uint256 public constant AURA_PID = 76;
 
     uint256 forkBlockNumber;
     uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;

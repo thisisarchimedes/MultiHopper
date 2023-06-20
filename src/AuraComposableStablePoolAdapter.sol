@@ -34,20 +34,21 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
 
         uint256[] memory _balancesWithoutBpt = _dropBptItem(_balances, poolTokenIndex);
         uint256 _tokenIndex = tokenIndex;
-        if (tokenIndex >= _balancesWithoutBpt.length) {
-            _tokenIndex = _balancesWithoutBpt.length - 1;
+        if (tokenIndex > poolTokenIndex) {
+            _tokenIndex = _tokenIndex - 1;
         }
+
         // get invariant
         uint256 currentInvariant = _calculateInvariant(amp, _balancesWithoutBpt);
 
         uint256 tokenOut = _calcTokenOutGivenExactBptIn(
             amp, _balancesWithoutBpt, _tokenIndex, lpBal, lpTotalSupply, currentInvariant, swapFeePercentage
         );
-        uint256 scaleDownFactor = scalingFactors[tokenIndex] - 1e18;
+        uint256 scaleDownFactor = scalingFactors[tokenIndex] / 1e18;
+
         if (scaleDownFactor > 0) {
             tokenOut /= scaleDownFactor;
         }
-
         return tokenOut;
     }
 
