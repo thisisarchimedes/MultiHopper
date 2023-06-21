@@ -5,8 +5,8 @@ import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
 
 //// ERRORS
-
 error StrategyPaused();
+error StrategyAssetNotWETH();
 /**
  * @title ETHZapper
  * @dev This contract allows users to deposit, withdraw, and redeem into a MultiPoolStrategy contract using native ETH.
@@ -14,6 +14,8 @@ error StrategyPaused();
  */
 
 contract ETHZapper {
+    address constant WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
     constructor() { }
 
     /**
@@ -54,6 +56,7 @@ contract ETHZapper {
         public
         returns (uint256)
     {
+        if (!strategyUsesWETH(_strategyAddress)) revert StrategyAssetNotWETH();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(_strategyAddress);
         /// withdraw from strategy and get WETH
         uint256 shares = multipoolStrategy.withdraw(assets, address(this), msg.sender, minimumReceive);
@@ -81,6 +84,7 @@ contract ETHZapper {
         public
         returns (uint256)
     {
+        if (!strategyUsesWETH(_strategyAddress)) revert StrategyAssetNotWETH();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(_strategyAddress);
         // redeem shares and get WETH from strategy
         uint256 received = multipoolStrategy.redeem(shares, address(this), msg.sender, minimumReceive);
@@ -88,6 +92,16 @@ contract ETHZapper {
         IWETH(payable(multipoolStrategy.asset())).withdraw(received);
         payable(address(receiver)).transfer(received);
         return received;
+    }
+
+    /**
+     * @dev Checks if the MultiPoolStrategy contract uses WETH as its asset.
+     * @param _strategyAddress The address of the MultiPoolStrategy contract to check.
+     * @return True if the MultiPoolStrategy contract uses WETH as its asset, false otherwise.
+     */
+    function strategyUsesWETH(address _strategyAddress) public view returns (bool) {
+        IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(_strategyAddress);
+        return multipoolStrategy.asset() == address(WETH_ADDRESS);
     }
 
     receive() external payable { }
