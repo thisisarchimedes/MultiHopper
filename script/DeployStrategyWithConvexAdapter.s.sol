@@ -22,7 +22,7 @@ contract DeployConvex is BaseScript {
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     /**
      * @dev Address of the Convex booster contract.
@@ -33,24 +33,50 @@ contract DeployConvex is BaseScript {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.
      */
-    address public constant FACTORY_ADDRESS = 0xE052F5b563bc18D56cFf096Eb7Ec512C2a6C2FEB;
+    address public constant FACTORY_ADDRESS = 0x745D9719de1826773e665E131D4b6B6e66e7A525;
 
     /**
      * @dev Address of the Curve pool used in the integration.
      * default: ETH/msETH Curve pool
      */
-    address public constant CURVE_POOL_ADDRESS = 0xc897b98272AA23714464Ea2A0Bd5180f1B8C0025; // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
+    address public constant CURVE_POOL_ADDRESS = 0xAF4264916B467e2c9C8aCF07Acc22b9EDdDaDF33; // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
 
     /**
      * @dev Convex pool ID used in the integration.
      * default: ETH/msETH Curve pool PID
      */
-    uint256 public constant CONVEX_PID = 145;
+    uint256 public constant CONVEX_PID = 170;
 
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "ETH/msETH Strat";
+    string public constant STRATEGY_NAME = "COIL/FRAXBP Strat";
+
+    /**
+     * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
+     */
+    bool constant USE_ETH = false;
+
+    /**
+     * @dev The index of the strategies underlying asset in the pool tokens array
+     * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
+     */
+    int128 constant CURVE_POOL_TOKEN_INDEX = 2;
+
+    /**
+     * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
+     */
+    bool constant IS_INDEX_UINT = true;
+
+    /**
+     * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
+     */
+    uint256 constant POOL_TOKEN_LENGTH = 3;
+
+    /**
+     * @dev address of zapper for pool if needed
+     */
+    address constant ZAPPER = 0x5De4EF4879F4fe3bBADF2227D2aC5d0E2D76C895;
 
     /**
      * @dev Executes the deployment and configuration of the Convex Pool Strategy.
@@ -69,11 +95,10 @@ contract DeployConvex is BaseScript {
         require(CONVEX_PID != 0, "Deploy: convex pid not set");
         require(CONVEX_BOOSTER != address(0), "Deploy: convex booster address not set");
 
-        console2.log("Owner Address: %s", owner);
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_TOKEN)), STRATEGY_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME)
         );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
         ConvexPoolAdapter convexPoolAdapter = ConvexPoolAdapter(
@@ -82,11 +107,11 @@ contract DeployConvex is BaseScript {
                     CURVE_POOL_ADDRESS, // address _curvePool
                     address(multiPoolStrategy), // address _multiPoolStrategy
                     CONVEX_PID, // uint256 _convexPid
-                    2, // uint256 _tokensLength
-                    address(0), // address _zapper
-                    true, // bool _useEth
-                    false, // bool _indexUint
-                    0 // int128 _underlyingTokenIndex
+                    POOL_TOKEN_LENGTH, // uint256 _tokensLength
+                    ZAPPER, // address _zapper
+                    USE_ETH, // bool _useEth
+                    IS_INDEX_UINT, // bool _indexUint
+                    CURVE_POOL_TOKEN_INDEX // int128 _underlyingTokenIndex
                 )
             )
         );

@@ -25,20 +25,63 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
     address public staker = makeAddr("staker");
     address public feeRecipient = makeAddr("feeRecipient");
     ///CONSTANTS
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // strategy underlying asset such as
-        // USDC,WETH etc.
+    /**
+     * @dev Address of the underlying token used in the integration.
+     * default: WETH
+     */
+    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+
+    /**
+     * @dev Address of the Convex booster contract.
+     * default: https://etherscan.io/address/0xF403C135812408BFbE8713b5A23a04b3D48AAE31
+     */
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
-    ///ETH/PETH
-    address constant CURVE_POOL = 0xAF4264916B467e2c9C8aCF07Acc22b9EDdDaDF33;
-    uint256 constant CONVEX_PID = 170;
+
+    /**
+     * @dev Address of the Curve pool used in the integration.
+     * default: ETH/msETH Curve pool
+     */
+    address public constant CURVE_POOL_ADDRESS = 0x68934F60758243eafAf4D2cFeD27BF8010bede3a; // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
+
+    /**
+     * @dev Convex pool ID used in the integration.
+     * default: ETH/msETH Curve pool PID
+     */
+    uint256 public constant CONVEX_PID = 158;
+
+    /**
+     * @dev Name of the strategy.
+     */
+    string public constant STRATEGY_NAME = "FAXBP/UZD Strat";
+
+    /**
+     * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
+     */
     bool constant USE_ETH = false;
+
+    /**
+     * @dev The index of the strategies underlying asset in the pool tokens array
+     * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
+     */
     int128 constant CURVE_POOL_TOKEN_INDEX = 2;
-    bool constant IS_INDEX_UINT = true;
+
+    /**
+     * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
+     */
+    bool constant IS_INDEX_UINT = false;
+
+    /**
+     * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
+     */
     uint256 constant POOL_TOKEN_LENGTH = 3;
-    address constant ZAPPER = 0x5De4EF4879F4fe3bBADF2227D2aC5d0E2D76C895;
+
+    /**
+     * @dev address of zapper for pool if needed
+     */
+    address constant ZAPPER = 0x08780fb7E580e492c1935bEe4fA5920b94AA95Da;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_522_065;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -142,7 +185,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
-                    CURVE_POOL,
+                    CURVE_POOL_ADDRESS,
                     address(multiPoolStrategy),
                     CONVEX_PID,
                     POOL_TOKEN_LENGTH,
@@ -309,6 +352,8 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
         vm.stopPrank();
         uint256 stakerSharesAfter = multiPoolStrategy.balanceOf(staker);
         uint256 stakerUnderlyingBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(staker));
+        console2.log("balance", stakerUnderlyingBalanceAfter - stakerUnderlyingBalanceBefore);
+        console2.log("withdrawAmount", withdrawAmount);
         assertGt(withdrawAmount, depositAmount / 2);
         assertEq(stakerSharesAfter, 0);
         assertAlmostEq(
