@@ -119,7 +119,7 @@ contract DeployConvex is BaseScript {
         //// add created adapter to strategy
         multiPoolStrategy.addAdapter(address(convexPoolAdapter));
         // create  the ETHzapper
-        ETHZapper ethZapper = new ETHZapper(address(multiPoolStrategy));
+        ETHZapper ethZapper = new ETHZapper();
         console2.log("ETHZapper: %s", address(ethZapper));
         /// everything successful log the output of the script
         console2.log(
@@ -132,7 +132,7 @@ contract DeployConvex is BaseScript {
         // test that everything works correctly doing a deposit through the zapper | this is just QoL for deployment on
         // fork, uncomment if needed
 
-        // ethZapper.depositETH{ value: 10e18 }(10e18, owner);
+        // ethZapper.depositETH{ value: 10e18 }(owner,address(multiPoolStrategy));
         // uint256 strategyTotalAssets = multiPoolStrategy.totalAssets();
         // console2.log("Strategy total assets: %s", strategyTotalAssets / 1e18);
     }

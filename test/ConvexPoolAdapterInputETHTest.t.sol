@@ -127,7 +127,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
         );
         multiPoolStrategy.addAdapter(address(convexPoolAdapter));
         // create and initialize the ETHzapper
-        ethZapper = new ETHZapper(address(multiPoolStrategy));
+        ethZapper = new ETHZapper();
         tokenDecimals = IERC20Metadata(UNDERLYING_TOKEN).decimals();
         deal(UNDERLYING_TOKEN, address(this), 50_000 * 10 ** tokenDecimals);
         deal(UNDERLYING_TOKEN, staker, 10_000 * 10 ** tokenDecimals);
@@ -136,7 +136,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
     //// ensure deposit works by depositing 10k WETH and checking the stored assets
     function testETHDeposit() public {
         getBlockNumber();
-        ethZapper.depositETH{ value: 10_000e18 }(address(this));
+        ethZapper.depositETH{ value: 10_000e18 }(address(this), address(multiPoolStrategy));
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
         assertEq(storedAssets, 10_000e18);
         assertEq(multiPoolStrategy.balanceOf(address(ethZapper)), 0);
@@ -155,7 +155,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
     function testETHRedeem() public {
         //// deposit 5k WETH using this address
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        ethZapper.depositETH{ value: depositAmount }(address(this));
+        ethZapper.depositETH{ value: depositAmount }(address(this), address(multiPoolStrategy));
         /// adjust in 94% of the assets to the adapter
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adapterAdjustAmount = (depositAmount) * 94 / 100; // %94
@@ -176,7 +176,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
         multiPoolStrategy.approve(address(ethZapper), 0);
         multiPoolStrategy.approve(address(ethZapper), shares);
         //// withdraw by shares (reedem)
-        ethZapper.redeemETH(shares, address(this), 0);
+        ethZapper.redeemETH(shares, address(this), 0, address(multiPoolStrategy));
         uint256 underlyingBalanceInAdapterAfterWithdraw = convexPoolAdapter.underlyingBalance();
         uint256 ETHBalanceOfThisAfterRedeem = address(this).balance;
         assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
@@ -189,7 +189,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
     function testETHWithdraw() public {
         // //// deposit 5k WETH using this address
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        ethZapper.depositETH{ value: depositAmount }(address(this));
+        ethZapper.depositETH{ value: depositAmount }(address(this), address(multiPoolStrategy));
         /// adjust in 94% of the assets to the adapter
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adapterAdjustAmount = (depositAmount) * 94 / 100; // %94
@@ -211,7 +211,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
         multiPoolStrategy.approve(address(ethZapper), shares);
         //// withdraw by asset ( withdraw )
         uint256 assetstoWithdraw = multiPoolStrategy.previewRedeem(shares);
-        ethZapper.withdrawETH(assetstoWithdraw, address(this), 0);
+        ethZapper.withdrawETH(assetstoWithdraw, address(this), 0, address(multiPoolStrategy));
         uint256 underlyingBalanceInAdapterAfterWithdraw = convexPoolAdapter.underlyingBalance();
         uint256 ETHBalanceOfThisAfterRedeem = address(this).balance;
         assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
