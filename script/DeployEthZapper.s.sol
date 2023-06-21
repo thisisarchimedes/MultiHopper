@@ -18,7 +18,7 @@ contract DeployETHZapper is BaseScript {
     function run() public broadcaster {
         require(MULTIPOOL_STRATEGY != address(0), "Deploy: strategy address not set");
         // create  the ETHzapper
-        ETHZapper ethZapper = new ETHZapper(address(MULTIPOOL_STRATEGY));
+        ETHZapper ethZapper = new ETHZapper();
         console2.log("ETHZapper: %s", address(ethZapper));
         console2.log(
             "deployed ETHZapper contract at address %s for strategy %s", address(ethZapper), MULTIPOOL_STRATEGY
