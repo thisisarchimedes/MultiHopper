@@ -38,42 +38,15 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
 
     /**
-     * @dev Address of the Curve pool used in the integration.
-     * default: ETH/msETH Curve pool
-     */
-    address public constant CURVE_POOL_ADDRESS = 0x68934F60758243eafAf4D2cFeD27BF8010bede3a; // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
-
-    /**
      * @dev Convex pool ID used in the integration.
      * default: ETH/msETH Curve pool PID
      */
-    uint256 public constant CONVEX_PID = 158;
+    uint256 public constant CONVEX_PID = 170;
 
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "FAXBP/UZD Strat";
-
-    /**
-     * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
-     */
-    bool constant USE_ETH = false;
-
-    /**
-     * @dev The index of the strategies underlying asset in the pool tokens array
-     * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
-     */
-    int128 constant CURVE_POOL_TOKEN_INDEX = 2;
-
-    /**
-     * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
-     */
-    bool constant IS_INDEX_UINT = false;
-
-    /**
-     * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
-     */
-    uint256 constant POOL_TOKEN_LENGTH = 3;
+    string public constant STRATEGY_NAME = "COIL/FRAXBP Strat";
 
     /**
      * @dev address of zapper for pool if needed
