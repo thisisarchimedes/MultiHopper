@@ -16,6 +16,11 @@ import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
 
+/*
+ * @title ConvexDoHardWorkTest
+ * @dev This contract is used for testing the Convex finance integration
+ * @dev Test assumes that strategy is already deployed in main net and ran for a bit to accumulate some rewards
+ */
 contract ConvexDoHardWorkTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
@@ -24,7 +29,9 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
 
     address public staker = makeAddr("staker");
     address public feeRecipient = makeAddr("feeRecipient");
-    ///CONSTANTS
+
+    ////////////////////////  CONSTANTS ////////////////////////
+
     /**
      * @dev Address of the underlying token used in the integration.
      * default: WETH
@@ -39,21 +46,22 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
 
     /**
      * @dev Convex pool ID used in the integration.
-     * default: ETH/msETH Curve pool PID
      */
     uint256 public constant CONVEX_PID = 170;
 
     /**
-     * @dev Name of the strategy.
+     * @dev Name of the strategy. Not really used here - but as reference
      */
     string public constant STRATEGY_NAME = "COIL/FRAXBP Strat";
 
     /**
-     * @dev address of zapper for pool if needed
+     * @dev MultiPoolStrategy mainnet address
      */
-    address constant ZAPPER = 0x08780fb7E580e492c1935bEe4fA5920b94AA95Da;
-
     address constant STRATEGY_ADDRESS = 0x46f1325b17Ac070DfbF66F6B87fCaE4bd2570869;
+
+    /**
+     * @dev MultiPoolStrategy adopter address
+     */
     address constant ADAPTER_ADDRESS = 0x05Ab0440577Cc5E468B133B62F5eDDE2944A6F19;
 
     uint256 forkBlockNumber;
@@ -95,6 +103,8 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
         return blockNumber;
     }
 
+    /// @notice Sets up the test environment
+    /// @dev This function is called before each test
     function setUp() public virtual {
         // solhint-disable-previous-line no-empty-blocks
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -116,6 +126,8 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
         curveLpToken = IERC20(_curveLpToken);
     }
 
+    // @notice Tests the claimRewards function
+    /// @dev This function tests the process of claiming rewards (CRV & CVX) from the Convex booster
     function testClaimRewards() public {
         address[] memory adapters = new address[](1);
         adapters[0] = address(ADAPTER_ADDRESS);
