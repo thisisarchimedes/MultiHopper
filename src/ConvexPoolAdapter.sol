@@ -263,28 +263,27 @@ contract ConvexPoolAdapter is Initializable {
 
     function totalClaimable() external view returns (RewardData[] memory) {
         uint256 rewardTokensLength = rewardTokens.length;
-        RewardData[] memory rewards = new RewardData[](rewardTokensLength + 1);
+        RewardData[] memory rewards = new RewardData[](rewardTokensLength + 2);
         rewards[0] = RewardData({ token: CURVE_TOKEN, amount: convexRewardPool.earned(address(this)) });
+        uint256 cvxSupply = ICVX(CVX).totalSupply();
+        uint256 reductionPerCliff = ICVX(CVX).reductionPerCliff();
+        uint256 totalCliffs = ICVX(CVX).totalCliffs();
+        uint256 cliff = cvxSupply / reductionPerCliff;
+        uint256 _rewardAmount;
+        if (cliff < totalCliffs) {
+            uint256 reduction = totalCliffs - cliff;
+            _rewardAmount = rewards[0].amount * reduction / totalCliffs;
+            uint256 amtTillMax = CVX_MAX_SUPPLY - cvxSupply;
+            if (_rewardAmount > amtTillMax) {
+                _rewardAmount = amtTillMax;
+            }
+        }
+        rewards[1] = RewardData({ token: CVX, amount: _rewardAmount });
         if (rewardTokensLength > 0) {
             for (uint256 i; i < rewardTokensLength; i++) {
-                uint256 _rewardAmount;
-                if (rewardTokens[i] == CVX) {
-                    uint256 cvxSupply = ICVX(CVX).totalSupply();
-                    uint256 reductionPerCliff = ICVX(CVX).reductionPerCliff();
-                    uint256 totalCliffs = ICVX(CVX).totalCliffs();
-                    uint256 cliff = cvxSupply / reductionPerCliff;
-                    if (cliff < totalCliffs) {
-                        uint256 reduction = totalCliffs - cliff;
-                        _rewardAmount = rewards[0].amount * reduction / totalCliffs;
-                        uint256 amtTillMax = CVX_MAX_SUPPLY - cvxSupply;
-                        if (_rewardAmount > amtTillMax) {
-                            _rewardAmount = amtTillMax;
-                        }
-                    }
-                } else {
-                    _rewardAmount = IBaseRewardPool(convexRewardPool.extraRewards(i)).earned(address(this));
-                }
-                rewards[i + 1] = RewardData({ token: rewardTokens[i], amount: _rewardAmount });
+                if (rewardTokens[i] == CVX) continue;
+                else _rewardAmount = IBaseRewardPool(convexRewardPool.extraRewards(i)).earned(address(this));
+                rewards[i + 2] = RewardData({ token: rewardTokens[i], amount: _rewardAmount });
             }
         }
         return rewards;
