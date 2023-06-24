@@ -319,8 +319,9 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
 
         /// ETH PETH REWARD DATA
         ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
-
+        console2.log("convexRewards", rewardData[1].amount);
         assertGt(rewardData[0].amount, 0); // expect some CRV rewards
+        assertGt(rewardData[1].amount, 0); // expect some CVX rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
         (uint256 quote, bytes memory txData) =
