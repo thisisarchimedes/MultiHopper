@@ -13,6 +13,7 @@ import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ICVX } from "../src/interfaces/ICVX.sol";
 
 contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -26,6 +27,8 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
     /// POOL CONSTANTS
     bytes32 public constant BALANCER_STABLE_POOL_ID = 0x79c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7;
     uint256 public constant AURA_PID = 76;
+
+    address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
 
     uint256 forkBlockNumber;
     uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
@@ -49,6 +52,30 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
         inputs[5] = vm.toString(fromAddress);
 
         return abi.decode(vm.ffi(inputs), (uint256, bytes));
+    }
+
+    function _calculateAuraRewards(uint256 _balRewards) internal view returns (uint256) {
+        (,,, address _auraRewardPool,,) = IBooster(AURA_BOOSTER).poolInfo(AURA_PID);
+        uint256 rewardMultiplier = IBooster(AURA_BOOSTER).getRewardMultipliers(_auraRewardPool);
+        uint256 auraMaxSupply = 5e25; //50m
+        uint256 auraInitMintAmount = 5e25; //50m
+        uint256 totalCliffs = 500;
+        bytes32 slotVal = vm.load(AURA, bytes32(uint256(7)));
+        uint256 minterMinted = uint256(slotVal);
+        uint256 mintAmount = _balRewards * rewardMultiplier / 10_000;
+        uint256 emissionsMinted = IERC20(AURA).totalSupply() - auraInitMintAmount - minterMinted;
+        uint256 cliff = emissionsMinted / ICVX(AURA).reductionPerCliff();
+        uint256 auraRewardAmount;
+
+        if (cliff < totalCliffs) {
+            uint256 reduction = (totalCliffs - cliff) * 5 / 2 + 700;
+            auraRewardAmount = mintAmount * reduction / totalCliffs;
+            uint256 amtTillMax = auraMaxSupply - emissionsMinted;
+            if (auraRewardAmount > amtTillMax) {
+                auraRewardAmount = amtTillMax;
+            }
+        }
+        return auraRewardAmount;
     }
 
     function getBlockNumber() internal returns (uint256) {
@@ -267,13 +294,19 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
             auraComposableStablePoolAdapter.totalClaimable();
 
         assertGt(rewardData[0].amount, 0); // expect some BAL rewards
+        uint256 totalBalRewards = rewardData[0].amount;
+        console2.log("totalBalRewards", totalBalRewards);
+        //// AURA REWARD DATA
+        uint256 auraRewardAmount = _calculateAuraRewards(totalBalRewards);
+        console2.log("auraRewardAmount", auraRewardAmount);
+        assertGt(auraRewardAmount, 0); //expect some AURA rewards
+        //////
 
-        uint256 totalCrvRewards = rewardData[0].amount;
         (uint256 quote, bytes memory txData) =
-            getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
+            getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalBalRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
-            MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
+            MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalBalRewards, callData: txData });
         uint256 wethBalanceBefore = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
         multiPoolStrategy.doHardWork(adapters, swapDatas);
         uint256 wethBalanceAfter = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));

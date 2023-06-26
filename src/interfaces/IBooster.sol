@@ -63,4 +63,5 @@ interface IBooster {
     function withdraw(uint256 _pid, uint256 _amount) external returns (bool);
     function withdrawAll(uint256 _pid) external returns (bool);
     function withdrawTo(uint256 _pid, uint256 _amount, address _to) external returns (bool);
+    function getRewardMultipliers(address) external view returns (uint256);
 }
