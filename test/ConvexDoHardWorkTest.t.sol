@@ -171,7 +171,7 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
         (quote, txData) = getQuoteLiFi(CVX, UNDERLYING_ASSET, _crvRewardAmount, address(multiPoolStrategy));
         swapDatas[1] = MultiPoolStrategy.SwapData({ token: CVX, amount: _cvxRewardAmount, callData: txData });
 
-        uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
 
         // getting the address of the owner and setting it to also "monitor" so we can "prank"
         // there is a bug in the contract require owner and monitor to be the same
@@ -184,9 +184,12 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
         address monitor = multiPoolStrategy.monitor();
         console2.log("monitor: ", monitor);
 
+        // make sure fee recipient is not 0x0..0
+        multiPoolStrategy.changeFeeRecipient(owner);
+
         multiPoolStrategy.doHardWork(adapters, swapDatas);
 
-        uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         uint256 cvxBalanceAfter = IERC20(rewardData[1].token).balanceOf(address(multiPoolStrategy));
 
@@ -197,6 +200,6 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
 
         assertEq(crvBalanceAfter, 0);
         assertEq(cvxBalanceAfter, 0);
-        assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
+        assertGt(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
     }
 }
