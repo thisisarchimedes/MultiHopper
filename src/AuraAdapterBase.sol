@@ -35,6 +35,7 @@ contract AuraAdapterBase is Initializable {
     //// CONSTANTS
     address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
     address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
+    address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
 
     struct RewardData {
         address token;
@@ -122,8 +123,13 @@ contract AuraAdapterBase is Initializable {
         if (balBalance > 0) {
             IERC20(BAL).transfer(multiPoolStrategy, balBalance);
         }
+        uint256 auraBal = IERC20(AURA).balanceOf(address(this));
+        if (auraBal > 0) {
+            IERC20(AURA).transfer(multiPoolStrategy, auraBal);
+        }
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
+            if (rewardTokens[i] == AURA) continue;
             uint256 rewardTokenBal = IERC20(rewardTokens[i]).balanceOf(address(this));
             if (rewardTokenBal > 0) {
                 IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal);
@@ -141,6 +147,7 @@ contract AuraAdapterBase is Initializable {
         rewards[0] = RewardData({ token: BAL, amount: auraRewardPool.earned(address(this)) });
         if (rewardTokensLength > 0) {
             for (uint256 i; i < rewardTokensLength; i++) {
+                if (rewardTokens[i] == AURA) continue;
                 rewards[i + 1] = RewardData({
                     token: rewardTokens[i],
                     amount: IBaseRewardPool(auraRewardPool.extraRewards(i)).earned(address(this))
