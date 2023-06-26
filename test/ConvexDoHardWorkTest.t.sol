@@ -69,7 +69,7 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
     address constant ADAPTER_ADDRESS = 0x05Ab0440577Cc5E468B133B62F5eDDE2944A6F19;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_550_982;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_566_587;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -192,14 +192,17 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
         uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         uint256 cvxBalanceAfter = IERC20(rewardData[1].token).balanceOf(address(multiPoolStrategy));
+        uint256 fees = IERC20(UNDERLYING_ASSET).balanceOf(multiPoolStrategy.feeRecipient());
 
         console2.log("wethBalanceBefore: ", wethBalanceBefore);
         console2.log("wethBalanceAfter: ", wethBalanceAfter);
         console2.log("crvBalanceAfter: ", crvBalanceAfter);
         console2.log("cvxBalanceAfter: ", cvxBalanceAfter);
+        console2.log("fees collected: ", fees);
 
         assertEq(crvBalanceAfter, 0);
         assertEq(cvxBalanceAfter, 0);
         assertGt(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
+        assertGt(fees, 0);
     }
 }
