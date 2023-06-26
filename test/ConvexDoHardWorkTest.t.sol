@@ -173,14 +173,19 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
 
         uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
 
-        // getting the address of the monitor and owner so we can "prank"
+        // getting the address of the owner and setting it to also "monitor" so we can "prank"
+        // there is a bug in the contract require owner and monitor to be the same
+        address owner = multiPoolStrategy.owner();
+        vm.startPrank(owner);
+
+        multiPoolStrategy.setMonitor(owner);
+        console2.log("owner: ", owner);
+
         address monitor = multiPoolStrategy.monitor();
         console2.log("monitor: ", monitor);
-        address owner = multiPoolStrategy.owner();
-        console2.log("owner: ", owner);
-        vm.startPrank(monitor);
 
         multiPoolStrategy.doHardWork(adapters, swapDatas);
+
         uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         uint256 cvxBalanceAfter = IERC20(rewardData[1].token).balanceOf(address(multiPoolStrategy));
