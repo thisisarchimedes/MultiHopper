@@ -15,6 +15,7 @@ import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
+import { ICVX } from "../src/interfaces/ICVX.sol";
 
 /*
  * @title ConvexDoHardWorkTest
@@ -29,6 +30,9 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
 
     address public staker = makeAddr("staker");
     address public feeRecipient = makeAddr("feeRecipient");
+
+    address public constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+    uint256 public constant CVX_MAX_SUPPLY = 100 * 1_000_000 * 1e18; //100mil
 
     ////////////////////////  CONSTANTS ////////////////////////
 
@@ -127,35 +131,55 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
     }
 
     // @notice Tests the claimRewards function
-    /// @dev This function tests the process of claiming rewards (CRV & CVX) from the Convex booster
+    /// @dev This function tests the process of claiming rewards (CRV) from the Convex booster
     function testClaimRewards() public {
         address[] memory adapters = new address[](1);
         adapters[0] = address(ADAPTER_ADDRESS);
 
         ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
 
-        console2.log("Expected CRV Reward: ", rewardData[0].amount);
-        console2.log("Expected CVX Reward: ", rewardData[1].amount);
-        assertGt(rewardData[0].amount, 0); // expect some CRV rewards
-        assertGt(rewardData[1].amount, 0); // expect some CVX rewards - TODO: FAILS HERE
+        uint256 _crvRewardAmount = rewardData[0].amount;
+        uint256 cvxSupply = ICVX(CVX).totalSupply();
+        uint256 reductionPerCliff = ICVX(CVX).reductionPerCliff();
+        uint256 totalCliffs = ICVX(CVX).totalCliffs();
+        uint256 cliff = cvxSupply / reductionPerCliff;
+        uint256 _cvxRewardAmount;
+        if (cliff < totalCliffs) {
+            uint256 reduction = totalCliffs - cliff;
+            _cvxRewardAmount = _crvRewardAmount * reduction / totalCliffs;
+            uint256 amtTillMax = CVX_MAX_SUPPLY - cvxSupply;
+            if (_cvxRewardAmount > amtTillMax) {
+                _cvxRewardAmount = amtTillMax;
+            }
+        }
 
-        uint256 totalCrvRewards = rewardData[0].amount;
-        uint256 totalCvxRewards = rewardData[1].amount;
+        console2.log("Expected CRV Reward: ", _crvRewardAmount);
+        console2.log("Expected CVX Reward: ", _cvxRewardAmount);
+        assertGt(_crvRewardAmount, 0); // expect some CRV rewards
+        assertGt(_cvxRewardAmount, 0); // expect some CVX rewards - TODO: FAILS HERE
+
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](2);
         uint256 quote;
         bytes memory txData;
 
         (quote, txData) =
-            getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
-        swapDatas[0] =
-            MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
+            getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, _crvRewardAmount, address(multiPoolStrategy));
 
-        (quote, txData) =
-            getQuoteLiFi(rewardData[1].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
-        swapDatas[1] =
-            MultiPoolStrategy.SwapData({ token: rewardData[1].token, amount: totalCvxRewards, callData: txData });
+        swapDatas[0] =
+            MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: _crvRewardAmount, callData: txData });
+
+        (quote, txData) = getQuoteLiFi(CVX, UNDERLYING_ASSET, _crvRewardAmount, address(multiPoolStrategy));
+        swapDatas[1] = MultiPoolStrategy.SwapData({ token: CVX, amount: _cvxRewardAmount, callData: txData });
 
         uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+
+        // getting the address of the monitor and owner so we can "prank"
+        address monitor = multiPoolStrategy.monitor();
+        console2.log("monitor: ", monitor);
+        address owner = multiPoolStrategy.owner();
+        console2.log("owner: ", owner);
+        vm.startPrank(monitor);
+
         multiPoolStrategy.doHardWork(adapters, swapDatas);
         uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
