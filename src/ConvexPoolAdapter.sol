@@ -18,6 +18,7 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { IBooster } from "./interfaces/IBooster.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
+import { ICVX } from "./interfaces/ICVX.sol";
 
 contract ConvexPoolAdapter is Initializable {
     /// @notice The address of the curve pool.
@@ -53,6 +54,8 @@ contract ConvexPoolAdapter is Initializable {
     address public constant CURVE_TOKEN = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+    uint256 public constant CVX_MAX_SUPPLY = 100 * 1_000_000 * 1e18; //100mil
 
     struct RewardData {
         address token;
@@ -212,8 +215,13 @@ contract ConvexPoolAdapter is Initializable {
         if (crvBal > 0) {
             IERC20(CURVE_TOKEN).transfer(multiPoolStrategy, crvBal);
         }
+        uint256 cvxBal = IERC20(CVX).balanceOf(address(this));
+        if (cvxBal > 0) {
+            IERC20(CVX).transfer(multiPoolStrategy, cvxBal);
+        }
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
+            if (rewardTokens[i] == CVX) continue;
             uint256 rewardTokenBal = IERC20(rewardTokens[i]).balanceOf(address(this));
             if (rewardTokenBal > 0) {
                 IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal);
@@ -255,14 +263,27 @@ contract ConvexPoolAdapter is Initializable {
 
     function totalClaimable() external view returns (RewardData[] memory) {
         uint256 rewardTokensLength = rewardTokens.length;
-        RewardData[] memory rewards = new RewardData[](rewardTokensLength + 1);
+        RewardData[] memory rewards = new RewardData[](rewardTokensLength + 2);
         rewards[0] = RewardData({ token: CURVE_TOKEN, amount: convexRewardPool.earned(address(this)) });
+        uint256 cvxSupply = ICVX(CVX).totalSupply();
+        uint256 reductionPerCliff = ICVX(CVX).reductionPerCliff();
+        uint256 totalCliffs = ICVX(CVX).totalCliffs();
+        uint256 cliff = cvxSupply / reductionPerCliff;
+        uint256 _rewardAmount;
+        if (cliff < totalCliffs) {
+            uint256 reduction = totalCliffs - cliff;
+            _rewardAmount = rewards[0].amount * reduction / totalCliffs;
+            uint256 amtTillMax = CVX_MAX_SUPPLY - cvxSupply;
+            if (_rewardAmount > amtTillMax) {
+                _rewardAmount = amtTillMax;
+            }
+        }
+        rewards[1] = RewardData({ token: CVX, amount: _rewardAmount });
         if (rewardTokensLength > 0) {
             for (uint256 i; i < rewardTokensLength; i++) {
-                rewards[i + 1] = RewardData({
-                    token: rewardTokens[i],
-                    amount: IBaseRewardPool(convexRewardPool.extraRewards(i)).earned(address(this))
-                });
+                if (rewardTokens[i] == CVX) continue;
+                else _rewardAmount = IBaseRewardPool(convexRewardPool.extraRewards(i)).earned(address(this));
+                rewards[i + 2] = RewardData({ token: rewardTokens[i], amount: _rewardAmount });
             }
         }
         return rewards;

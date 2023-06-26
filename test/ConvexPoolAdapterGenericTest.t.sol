@@ -321,6 +321,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
         ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
 
         assertGt(rewardData[0].amount, 0); // expect some CRV rewards
+        assertGt(rewardData[1].amount, 0); // expect some CVX rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
         (uint256 quote, bytes memory txData) =
