@@ -260,7 +260,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
     )
         external
     {
-        if ((_msgSender() != monitor && paused) || (_msgSender() != owner() && !paused)) revert Unauthorized();
+        if ((_msgSender() != monitor && !paused) || (_msgSender() != owner() && paused)) revert Unauthorized();
         uint256 adjustOutLength = _adjustOuts.length;
 
         if (adjustOutLength > 0 && block.timestamp - lastAdjustOut > adjustOutInterval) {
@@ -300,7 +300,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * @param _swapDatas List of SwapData structs
      */
     function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external {
-        if (_msgSender() != monitor || _msgSender() != owner()) revert Unauthorized();
+        if (_msgSender() != monitor && _msgSender() != owner()) revert Unauthorized();
         for (uint256 i = 0; i < _adaptersToClaim.length; i++) {
             IAdapter(_adaptersToClaim[i]).claim();
         }

@@ -21,6 +21,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
     ConvexPoolAdapter convexEthAlEthAdapter;
 
     address public staker = makeAddr("staker");
+    address public monitor = makeAddr("monitor");
     ///CONSTANTS
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
@@ -97,6 +98,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         adapters[0] = address(convexEthAlEthAdapter);
         adapters[2] = address(convexEthPEthAdapter);
         adapters[1] = address(convexEthMsEthAdapter);
+        vm.prank(monitor);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         vm.warp(block.timestamp + 10 weeks);
         IBooster(CONVEX_BOOSTER).earmarkRewards(CONVEX_ETH_PETH_PID);
@@ -141,7 +143,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
-            address(this),
+            monitor,
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
@@ -202,10 +204,63 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         adapters[1] = address(convexEthPEthAdapter);
         adapters[2] = address(convexEthMsEthAdapter);
         uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
+        vm.prank(monitor);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
         assertEq(storedAssetsBefore, 10_000e18);
         assertEq(storedAssetsAfter, storedAssetsBefore - 2500e18 - 5000e18 - 2000e18);
+    }
+
+    function testOnlyMonitorCanCallAdjust() public {
+        IERC20(WETH).approve(address(multiPoolStrategy), 10_000e18);
+        multiPoolStrategy.deposit(10_000e18, address(this));
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](3);
+        adjustIns[0] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexEthPEthAdapter), amount: 2500e18, minReceive: 0 });
+        adjustIns[1] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexEthMsEthAdapter), amount: 5000e18, minReceive: 0 });
+        adjustIns[2] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexEthAlEthAdapter), amount: 2000e18, minReceive: 0 });
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](3);
+        adapters[0] = address(convexEthAlEthAdapter);
+        adapters[1] = address(convexEthPEthAdapter);
+        adapters[2] = address(convexEthMsEthAdapter);
+        vm.expectRevert(MultiPoolStrategy.Unauthorized.selector);
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+    }
+
+    function testOnlyOwnerCanCallAdjustWhenPaused() public {
+        IERC20(WETH).approve(address(multiPoolStrategy), 10_000e18);
+        multiPoolStrategy.deposit(10_000e18, address(this));
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](3);
+        adjustIns[0] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexEthPEthAdapter), amount: 2500e18, minReceive: 0 });
+        adjustIns[1] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexEthMsEthAdapter), amount: 5000e18, minReceive: 0 });
+        adjustIns[2] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexEthAlEthAdapter), amount: 2000e18, minReceive: 0 });
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](3);
+        adapters[0] = address(convexEthAlEthAdapter);
+        adapters[1] = address(convexEthPEthAdapter);
+        adapters[2] = address(convexEthMsEthAdapter);
+        multiPoolStrategy.togglePause();
+        vm.prank(monitor);
+        vm.expectRevert(MultiPoolStrategy.Unauthorized.selector);
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+    }
+
+    function testOnlyOwnerOrMonitorCanCallHardwork() public {
+        address[] memory adapters = new address[](3);
+        adapters[0] = address(convexEthAlEthAdapter);
+        adapters[1] = address(convexEthPEthAdapter);
+        adapters[2] = address(convexEthMsEthAdapter);
+        MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
+
+        vm.expectRevert(MultiPoolStrategy.Unauthorized.selector);
+        vm.prank(staker);
+        multiPoolStrategy.doHardWork(adapters, swapDatas);
     }
 
     function testClaimRewards() public {
@@ -223,6 +278,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         adapters[0] = address(convexEthAlEthAdapter);
         adapters[1] = address(convexEthPEthAdapter);
         adapters[2] = address(convexEthMsEthAdapter);
+        vm.prank(monitor);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         vm.warp(block.timestamp + 1 weeks);
         IBooster(CONVEX_BOOSTER).earmarkRewards(CONVEX_ETH_PETH_PID);
@@ -288,6 +344,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         adapters[0] = address(convexEthAlEthAdapter);
         adapters[2] = address(convexEthPEthAdapter);
         adapters[1] = address(convexEthMsEthAdapter);
+        vm.prank(monitor);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
 
         /// attack
@@ -321,6 +378,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         adapters[0] = address(convexEthAlEthAdapter);
         adapters[2] = address(convexEthPEthAdapter);
         adapters[1] = address(convexEthMsEthAdapter);
+        vm.prank(monitor);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
 
         /// attack
