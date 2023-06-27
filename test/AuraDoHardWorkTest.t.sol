@@ -219,15 +219,3 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         assertGt(fees, 0);
     }
 }
-
-/*
- Expected BAL Reward:  44001004201440630
-  Expected AURA Reward:  144059287755516622
-  owner:  0xE3c8F86695366f9d564643F89ef397B22fAB0db5
-  monitor:  0xE3c8F86695366f9d564643F89ef397B22fAB0db5
-  wethBalanceBefore:  0
-  wethBalanceAfter:  1565528
-  balBalanceAfter:  0
-  auraBalanceAfter:  0
-  fees collected:  20614
-*/
