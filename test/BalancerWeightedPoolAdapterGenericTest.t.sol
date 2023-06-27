@@ -21,13 +21,14 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     AuraWeightedPoolAdapter auraWeightedPoolAdapter;
 
     address public staker = makeAddr("staker");
+    address public feeRecipient = makeAddr("feeRecipient");
     ///CONSTANTS
-    address constant UNDERLYING_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant UNDERLYING_TOKEN = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
     /// POOL CONSTANTS
     bytes32 public constant BALANCER_WEIGHTED_POOL_ID =
-        0x0578292cb20a443ba1cde459c985ce14ca2bdee5000100000000000000000269;
-    uint256 public constant AURA_PID = 35;
+        0x42fbd9f666aacc0026ca1b88c94259519e03dd67000200000000000000000507;
+    uint256 public constant AURA_PID = 95;
     address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     uint256 forkBlockNumber;
     uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
@@ -163,6 +164,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         tokenDecimals = IERC20Metadata(UNDERLYING_TOKEN).decimals();
         deal(UNDERLYING_TOKEN, address(this), 10_000 * 10 ** tokenDecimals);
         deal(UNDERLYING_TOKEN, staker, 50 * 10 ** tokenDecimals);
+        multiPoolStrategy.changeFeeRecipient(feeRecipient);
     }
 
     function testDeposit() public {
@@ -271,12 +273,12 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalBalRewards, callData: txData });
-        uint256 wethBalanceBefore = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        uint256 wethBalanceBefore = IERC20(UNDERLYING_TOKEN).balanceOf(feeRecipient);
         multiPoolStrategy.doHardWork(adapters, swapDatas);
-        uint256 wethBalanceAfter = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
+        uint256 wethBalanceAfter = IERC20(UNDERLYING_TOKEN).balanceOf(feeRecipient);
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         assertEq(crvBalanceAfter, 0);
-        assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_TOKEN
+        assertGt(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_TOKEN as fee
     }
 
     function testWithdraw() public {
