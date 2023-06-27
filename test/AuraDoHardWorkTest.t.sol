@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
+// Importing dependencies
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -23,7 +24,6 @@ import { ICVX } from "../src/interfaces/ICVX.sol";
  * @dev make sure to set the Balancer and Aura pool information correctly. 
  * @dev set the Aura adopter to the correct type (search for AuraStablePoolAdapter or AuraWeightedPoolAdapter in the
  *      code)
- * @dev TODO: deal with AURA rewards.
  */
 contract AuraDoHardWorkTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -33,36 +33,25 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
 
     address public staker = makeAddr("staker");
 
-    /**
-     * @dev Address of the underlying token used in the integration.
-     * default: WETH
-     */
-    // address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
-
-    /**
-     * @dev AURA and Balancer pool information
-     */
-    address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234; // One contract to rule them all
-        // pools?
-    bytes32 public constant BALANCER_POOL_ID = 0x42fbd9f666aacc0026ca1b88c94259519e03dd67000200000000000000000507;
-    uint256 public constant AURA_PID = 95;
+    /// @dev Address of the AURA token
     address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
 
-    /**
-     * @dev Name of the strategy. Not really used here - but as reference
-     */
+    /// @dev Address of the underlying token used in the integration. By default: WETH
+    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
+    // address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH
+
+    /// @dev AURA and Balancer pool information
+    address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234; // same address for all pools
+    bytes32 public constant BALANCER_POOL_ID = 0x42fbd9f666aacc0026ca1b88c94259519e03dd67000200000000000000000507;
+    uint256 public constant AURA_PID = 95;
+
+    /// @dev Name of the strategy. Not really used here - but as reference
     string public constant STRATEGY_NAME = "50COIL/50USDC Strat";
 
-    /**
-     * /**
-     * @dev MultiPoolStrategy mainnet address
-     */
+    /// @dev MultiPoolStrategy mainnet address
     address constant STRATEGY_ADDRESS = 0x0d25652Bd064bAfa47142e853f004bB11DdA5408;
 
-    /**
-     * @dev MultiPoolStrategy adopter address
-     */
+    /// @dev MultiPoolStrategy adopter address
     address constant ADAPTER_ADDRESS = 0xe3fC693004D0ab723578D6B00432b139F5ebA329;
 
     uint256 forkBlockNumber;
@@ -70,6 +59,15 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
 
     uint8 tokenDecimals;
 
+    /**
+     * @dev Fetches quote data from LiFi for a given source and destination token for swap source->destination
+     * @param srcToken The source token address
+     * @param dstToken The destination token address
+     * @param amount The amount of source tokens to quote
+     * @param fromAddress The address initiating the quote request
+     * @return _quote The quoted amount of destination tokens that will be received
+     * @return data Additional data returned from the quote operation
+     */
     function getQuoteLiFi(
         address srcToken,
         address dstToken,
@@ -90,6 +88,11 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         return abi.decode(vm.ffi(inputs), (uint256, bytes));
     }
 
+    /**
+     * @dev Calculates the amount of AURA rewards for a given amount of BAL token rewards.
+     * @param _balRewards The amount of BAL token rewards
+     * @return The calculated amount of AURA rewards
+     */
     function _calculateAuraRewards(uint256 _balRewards) internal view returns (uint256) {
         (,,, address _auraRewardPool,,) = IBooster(AURA_BOOSTER).poolInfo(AURA_PID);
         uint256 rewardMultiplier = IBooster(AURA_BOOSTER).getRewardMultipliers(_auraRewardPool);
@@ -114,21 +117,9 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         return auraRewardAmount;
     }
 
-    function getBlockNumber() internal returns (uint256) {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        string[] memory inputs = new string[](3);
-        inputs[0] = "python3";
-        inputs[1] = "test/get_latest_block_number.py";
-        inputs[2] = string(abi.encodePacked("https://eth-mainnet.g.alchemy.com/v2/", alchemyApiKey));
-        bytes memory result = vm.ffi(inputs);
-        uint256 blockNumber;
-        assembly {
-            blockNumber := mload(add(result, 0x20))
-        }
-        forkBlockNumber = blockNumber - 10; //set it to 10 blocks before latest block so we can use the
-        return blockNumber;
-    }
-
+    /**
+     * @dev Initializes the test environment, setting up the mainnet fork and contract instances.
+     */
     function setUp() public virtual {
         // solhint-disable-previous-line no-empty-blocks
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -150,6 +141,21 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
     }
 
+    /**
+     * @dev Executes the entire reward claiming process for BAL and AURA tokens and
+     * swaps them for the underlying asset
+     *
+     * It performs the following steps:
+     * 1. Fetches the BAL and AURA rewards that can be claimed.
+     * 2. Swaps the rewards by first getting a quote from LiFi and then using that data to perform the swap.
+     * 3. (bug) Checks the owner and sets the monitor of the multiPoolStrategy to the same address to allow the
+     * following
+     * actions.
+     * 4. Changes the fee recipient to the contract owner.
+     * 5. Calls the doHardWork function in the multiPoolStrategy contract which does the actual work of claiming rewards
+     * and swapping.
+     * 6. Checks the balances after the operation and ensures the expected state change has occurred.
+     */
     function testClaimRewards() public {
         address[] memory adapters = new address[](1);
         adapters[0] = address(ADAPTER_ADDRESS);
@@ -213,10 +219,15 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         assertGt(fees, 0);
     }
 }
-/*
-BAL: 0.0440010042 * 4.77 = 0.20988479
-AURA: 0.1440592878 * 1.69 = 0.2434601964
-0.027375
 
-0.20988479+0.2434601964 = 0.4533449864
+/*
+ Expected BAL Reward:  44001004201440630
+  Expected AURA Reward:  144059287755516622
+  owner:  0xE3c8F86695366f9d564643F89ef397B22fAB0db5
+  monitor:  0xE3c8F86695366f9d564643F89ef397B22fAB0db5
+  wethBalanceBefore:  0
+  wethBalanceAfter:  1565528
+  balBalanceAfter:  0
+  auraBalanceAfter:  0
+  fees collected:  20614
 */
