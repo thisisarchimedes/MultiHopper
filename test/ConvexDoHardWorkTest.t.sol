@@ -69,7 +69,7 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
     address constant ADAPTER_ADDRESS = 0x05Ab0440577Cc5E468B133B62F5eDDE2944A6F19;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_566_587;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_571_698;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -156,18 +156,20 @@ contract ConvexDoHardWorkTest is PRBTest, StdCheats {
         console2.log("Expected CRV Reward: ", _crvRewardAmount);
         console2.log("Expected CVX Reward: ", _cvxRewardAmount);
         assertGt(_crvRewardAmount, 0); // expect some CRV rewards
-        assertGt(_cvxRewardAmount, 0); // expect some CVX rewards - TODO: FAILS HERE
+        assertGt(_cvxRewardAmount, 0); // expect some CVX rewards
 
+        // build the swap data for LiFi
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](2);
         uint256 quote;
         bytes memory txData;
 
+        // get CRV qoute
         (quote, txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, _crvRewardAmount, address(multiPoolStrategy));
-
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: _crvRewardAmount, callData: txData });
 
+        // get CVX quote
         (quote, txData) = getQuoteLiFi(CVX, UNDERLYING_ASSET, _crvRewardAmount, address(multiPoolStrategy));
         swapDatas[1] = MultiPoolStrategy.SwapData({ token: CVX, amount: _cvxRewardAmount, callData: txData });
 

@@ -63,7 +63,7 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
     address constant ADAPTER_ADDRESS = 0xe3fC693004D0ab723578D6B00432b139F5ebA329;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_571_688;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_571_698;
 
     uint8 tokenDecimals;
 
@@ -135,7 +135,7 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
 
         assertGt(_balRewardAmount, 0); // expect some BAL rewards
 
-        // TODO AUR reward info is currently missing
+        // TODO: AURA reward info is currently missing
 
         // get swap quote from LiFi and building the swap data
         (uint256 quote, bytes memory txData) =
