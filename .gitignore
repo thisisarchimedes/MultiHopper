@@ -3,6 +3,7 @@ cache
 node_modules
 out
 venv
+.vscode
 
 # files
 *.env
