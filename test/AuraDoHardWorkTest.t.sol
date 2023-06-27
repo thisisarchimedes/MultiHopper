@@ -13,6 +13,7 @@ import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ICVX } from "../src/interfaces/ICVX.sol";
 
 /*
  * @title AuraDoHardWorkTest
@@ -42,9 +43,11 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
     /**
      * @dev AURA and Balancer pool information
      */
-    address public constant AURA_BOOSTER = 0x6f6801b49B5D8CA2Ea5FEAD9096F347B9355a330; // Rewards contract address
+    address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234; // One contract to rule them all
+        // pools?
     bytes32 public constant BALANCER_POOL_ID = 0x42fbd9f666aacc0026ca1b88c94259519e03dd67000200000000000000000507;
     uint256 public constant AURA_PID = 95;
+    address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
 
     /**
      * @dev Name of the strategy. Not really used here - but as reference
@@ -63,7 +66,7 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
     address constant ADAPTER_ADDRESS = 0xe3fC693004D0ab723578D6B00432b139F5ebA329;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_571_698;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_573_300;
 
     uint8 tokenDecimals;
 
@@ -85,6 +88,30 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         inputs[5] = vm.toString(fromAddress);
 
         return abi.decode(vm.ffi(inputs), (uint256, bytes));
+    }
+
+    function _calculateAuraRewards(uint256 _balRewards) internal view returns (uint256) {
+        (,,, address _auraRewardPool,,) = IBooster(AURA_BOOSTER).poolInfo(AURA_PID);
+        uint256 rewardMultiplier = IBooster(AURA_BOOSTER).getRewardMultipliers(_auraRewardPool);
+        uint256 auraMaxSupply = 5e25; //50m
+        uint256 auraInitMintAmount = 5e25; //50m
+        uint256 totalCliffs = 500;
+        bytes32 slotVal = vm.load(AURA, bytes32(uint256(7)));
+        uint256 minterMinted = uint256(slotVal);
+        uint256 mintAmount = _balRewards * rewardMultiplier / 10_000;
+        uint256 emissionsMinted = IERC20(AURA).totalSupply() - auraInitMintAmount - minterMinted;
+        uint256 cliff = emissionsMinted / ICVX(AURA).reductionPerCliff();
+        uint256 auraRewardAmount;
+
+        if (cliff < totalCliffs) {
+            uint256 reduction = (totalCliffs - cliff) * 5 / 2 + 700;
+            auraRewardAmount = mintAmount * reduction / totalCliffs;
+            uint256 amtTillMax = auraMaxSupply - emissionsMinted;
+            if (auraRewardAmount > amtTillMax) {
+                auraRewardAmount = amtTillMax;
+            }
+        }
+        return auraRewardAmount;
     }
 
     function getBlockNumber() internal returns (uint256) {
@@ -132,17 +159,25 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         AuraWeightedPoolAdapter.RewardData[] memory rewardData = auraPoolAdapter.totalClaimable();
         uint256 _balRewardAmount = rewardData[0].amount;
         console2.log("Expected BAL Reward: ", _balRewardAmount);
-
         assertGt(_balRewardAmount, 0); // expect some BAL rewards
 
         // TODO: AURA reward info is currently missing
+        uint256 _auraRewardAmount = _calculateAuraRewards(_balRewardAmount);
+        console2.log("Expected AURA Reward: ", _auraRewardAmount);
+        assertGt(_auraRewardAmount, 0); // expect some AURA rewards
 
         // get swap quote from LiFi and building the swap data
+        MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](2);
+
+        // get BAL quote
         (uint256 quote, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, _balRewardAmount, address(multiPoolStrategy));
-        MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: _balRewardAmount, callData: txData });
+
+        // get AURA quote
+        (quote, txData) = getQuoteLiFi(AURA, UNDERLYING_ASSET, _auraRewardAmount, address(multiPoolStrategy));
+        swapDatas[1] = MultiPoolStrategy.SwapData({ token: AURA, amount: _auraRewardAmount, callData: txData });
 
         uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
 
@@ -163,18 +198,25 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
 
         uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
         uint256 balBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
-        // uint256 auraBalanceAfter = IERC20(rewardData[1].token).balanceOf(address(multiPoolStrategy)); TODO
+        uint256 auraBalanceAfter = IERC20(AURA).balanceOf(address(multiPoolStrategy));
         uint256 fees = IERC20(UNDERLYING_ASSET).balanceOf(multiPoolStrategy.feeRecipient());
 
         console2.log("wethBalanceBefore: ", wethBalanceBefore);
         console2.log("wethBalanceAfter: ", wethBalanceAfter);
         console2.log("balBalanceAfter: ", balBalanceAfter);
-        // console2.log("auraBalanceAfter: ", auraBalanceAfter); TODO
+        console2.log("auraBalanceAfter: ", auraBalanceAfter);
         console2.log("fees collected: ", fees);
 
         assertEq(balBalanceAfter, 0);
-        // assertEq(auraBalanceAfter, 0);
+        assertEq(auraBalanceAfter, 0);
         assertGt(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
         assertGt(fees, 0);
     }
 }
+/*
+BAL: 0.0440010042 * 4.77 = 0.20988479
+AURA: 0.1440592878 * 1.69 = 0.2434601964
+0.027375
+
+0.20988479+0.2434601964 = 0.4533449864
+*/
