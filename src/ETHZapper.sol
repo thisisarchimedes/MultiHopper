@@ -3,6 +3,7 @@ pragma solidity ^0.8.10;
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
+import { console2 } from "forge-std/console2.sol";
 
 //// ERRORS
 error StrategyPaused();
@@ -26,12 +27,13 @@ contract ETHZapper {
      * @return shares The amount of shares received.
      */
     function depositETH(address receiver, address strategyAddress) public payable returns (uint256 shares) {
+        if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
         if (msg.value == 0) revert EmptyInput();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
         if (multipoolStrategy.paused()) revert StrategyPaused();
         uint256 assets = msg.value;
         // wrap ether and then call deposit
-        IWETH(payable(multipoolStrategy.asset())).deposit{ value: msg.value }();
+        IWETH(payable(WETH_ADDRESS)).deposit{ value: msg.value }();
         //// we need to approve the strategy to spend our WETH
         IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), 0);
         IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), assets);
@@ -64,7 +66,9 @@ contract ETHZapper {
         /// withdraw from strategy and get WETH
         uint256 shares = multipoolStrategy.withdraw(assets, address(this), msg.sender, minimumReceive);
         /// unwrap WETH to ETH and send to receiver
-        IWETH(payable(multipoolStrategy.asset())).withdraw(assets);
+        console2.log("withdraw amount", assets);
+        console2.log("weth bal before", IWETH(payable(WETH_ADDRESS)).balanceOf(address(this)));
+        IWETH(payable(WETH_ADDRESS)).withdraw(assets);
         payable(address(receiver)).transfer(assets);
         return shares;
     }
@@ -93,7 +97,7 @@ contract ETHZapper {
         // redeem shares and get WETH from strategy
         uint256 received = multipoolStrategy.redeem(shares, address(this), msg.sender, minimumReceive);
         // unwrap WETH to ETH and send to receiver
-        IWETH(payable(multipoolStrategy.asset())).withdraw(received);
+        IWETH(payable(WETH_ADDRESS)).withdraw(received);
         payable(address(receiver)).transfer(received);
         return received;
     }
