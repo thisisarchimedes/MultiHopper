@@ -51,7 +51,6 @@ contract DoHardWorkConvexSinglePool is Script {
      * @param dstToken The token to be bought.
      * @param amount The amount of source tokens to be sold.
      * @param fromAddress The address initiating the trade.
-     * @return The quoted amount and the transaction data.
      */
     function getQuoteLiFi(
         address srcToken,
@@ -77,7 +76,7 @@ contract DoHardWorkConvexSinglePool is Script {
      * @notice Calculate CRV and CVX rewards, fetch quotes from LiFi, and return a a swap data array that is
      *         consumable by the MultiPoolStrategy DoHardWork.
      * @param adopter The address of the ConvexPoolAdapter contract.
-     * @return An array of swap data containing token, amount, and transaction data for each swap.
+     * @return swapDatas An array of swap data containing token, amount, and transaction data for each swap.
      */
     function getSwapsData(address adopter) internal returns (MultiPoolStrategy.SwapData[] memory swapDatas) {
         ConvexPoolAdapter convexGenericAdapter = ConvexPoolAdapter(payable(adopter));
