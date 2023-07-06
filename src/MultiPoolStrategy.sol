@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19;
 
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import { ERC4626Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
