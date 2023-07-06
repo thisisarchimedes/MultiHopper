@@ -148,7 +148,7 @@ abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable,
 
         return shares;
     }
-
+    // solhint-disable no-unused-vars
     /**
      * @dev See {IERC4626-withdraw}.
      */

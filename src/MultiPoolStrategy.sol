@@ -440,7 +440,8 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * @param _healthFactor New health factor for the adapter. 10000 = 100%
      */
     function changeAdapterHealthFactor(address _adapter, uint256 _healthFactor) external onlyOwner {
-        require(_healthFactor <= 10_000, "Health factor can't be more than 100%");
+        // Health factor can't be more than 100%
+        require(_healthFactor <= 10_000, "Health factor>100%");
         IAdapter(_adapter).setHealthFactor(_healthFactor);
     }
 

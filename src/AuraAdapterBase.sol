@@ -24,9 +24,9 @@ contract AuraAdapterBase is Initializable {
     /// @notice The address of the Balancer pool.
     address public pool;
     /// @dev The index of the underlying token in the Balancer pool.
-    uint256 tokenIndex;
+    uint256 public tokenIndex;
     /// @dev PID of the pool in the Aura booster.
-    uint256 auraPid;
+    uint256 public auraPid;
     /// @notice Addresses of the reward tokens
     address[] public rewardTokens;
     /// @notice The address of the MultiPoolStrategy contract.
@@ -116,7 +116,10 @@ contract AuraAdapterBase is Initializable {
         }
     }
 
-    function underlyingBalance() public view virtual returns (uint256) { }
+    function underlyingBalance() public view virtual returns (uint256) { 
+            // solhint-disable-previous-line no-empty-blocks
+
+    }
 
     function claim() external onlyMultiPoolStrategy {
         auraRewardPool.getReward(address(this), true);

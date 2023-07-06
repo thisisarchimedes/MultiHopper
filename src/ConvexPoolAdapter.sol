@@ -297,5 +297,7 @@ contract ConvexPoolAdapter is Initializable {
         healthFactor = _newHealthFactor;
     }
 
-    receive() external payable { }
+    receive() external payable { 
+        // solhint-disable-previous-line no-empty-blocks
+    }
 }

@@ -12,13 +12,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+/* solhint-disable */
+
 pragma solidity ^0.8.10;
 
 import "./LogExpMath.sol";
 import "./BalancerErrors.sol";
-
-
-/* solhint-disable private-vars-leading-underscore */
 
 library FixedPoint {
     uint256 internal constant ONE = 1e18; // 18 decimal places
