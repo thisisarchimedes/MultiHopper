@@ -38,7 +38,7 @@ jobs:
           node-version: "lts/*"
 
       - name: "cleaning pnpm cache"
-        run: "pnpm cache clean"
+        run: "pnpm clean"
         
       - name: "Install the Node.js dependencies"
         run: "pnpm install --no-frozen-lockfile"
