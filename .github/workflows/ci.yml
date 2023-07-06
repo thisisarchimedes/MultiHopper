@@ -37,11 +37,11 @@ jobs:
           cache: "pnpm"
           node-version: "lts/*"
 
-      - name: "Install the Node.js dependencies"
-        run: "pnpm install --frozen-lockfile"
-
       - name: "cleaning pnpm cache"
         run: "pnpm cache clean"
+        
+      - name: "Install the Node.js dependencies"
+        run: "pnpm install --frozen-lockfile"
         
       - name: "Lint the contracts"
         run: "pnpm lint --frozen-lockfile"
