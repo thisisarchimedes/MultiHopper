@@ -38,10 +38,10 @@ jobs:
           node-version: "lts/*"
 
       - name: "Install the Node.js dependencies"
-        run: "pnpm install"
+        run: "pnpm install --no-frozen-lockfile"
 
       - name: "Lint the contracts"
-        run: "pnpm lint"
+        run: "pnpm lint --no-frozen-lockfile"
 
       - name: "Add lint summary"
         run: |
