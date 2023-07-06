@@ -6,8 +6,8 @@
     "func-name-mixedcase": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "max-line-length": ["error", 160],
-    "named-parameters-mapping": "warn",
-    "no-console": "off",
-    "not-rely-on-time": "off"
+    "not-rely-on-time": "off",
+    "avoid-low-level-calls": "off",
+    "max-states-count": "off"
   }
 }

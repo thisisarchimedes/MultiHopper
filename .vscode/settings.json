@@ -7,5 +7,5 @@
   },
   "npm.exclude": "**/lib/**",
   "solidity.formatter": "forge",
-  "solidity.defaultCompiler": "localNodeModule"
+  "solidity.defaultCompiler": "localNodeModule",
 }
