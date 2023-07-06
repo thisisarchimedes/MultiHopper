@@ -7,7 +7,7 @@
     "url": "https://github.com/PaulRBerg"
   },
   "devDependencies": {
-    "prettier": "^2.8.7",
+    "prettier": "^2.8.8",
     "solhint": "^3.4.0"
   },
   "keywords": [
