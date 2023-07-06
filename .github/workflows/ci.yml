@@ -41,7 +41,7 @@ jobs:
         run: "pnpm install --no-frozen-lockfile"
         
       - name: "Lint the contracts"
-        run: "pnpm lint --no-frozen-lockfile"
+        run: "pnpm solhint 'src/*.sol'"
 
       - name: "Add lint summary"
         run: |
