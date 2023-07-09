@@ -1,11 +1,9 @@
-# import requests
 import sys
-# import codecs
 from eth_abi import encode
 from web3 import Web3
 
 
-def get_quote(
+def get_current_block_number(
     api_url,
 ):
     provider = Web3.HTTPProvider(api_url)
@@ -19,7 +17,7 @@ def get_quote(
 
 def main():
     args = sys.argv[1:]
-    return get_quote(*args)
+    return get_current_block_number(*args)
 
 
 __name__ == "__main__" and main()
