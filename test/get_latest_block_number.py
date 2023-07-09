@@ -1,6 +1,6 @@
-import requests
+# import requests
 import sys
-import codecs
+# import codecs
 from eth_abi import encode
 from web3 import Web3
 
