@@ -36,10 +36,10 @@ jobs:
         with:
           cache: "pnpm"
           node-version: "lts/*"
-        
+
       - name: "Install the Node.js dependencies"
         run: "pnpm install --no-frozen-lockfile"
-        
+
       - name: "Lint the contracts"
         run: "pnpm solhint 'src/*.sol'"
 
@@ -89,7 +89,7 @@ jobs:
           )" >> $GITHUB_ENV
 
       - name: "Run the tests"
-        run: "forge test --no-match-test "testWithdrawExceedContractBalance|testClaimRewards"
+        run: "forge test --no-match-test 'testWithdrawExceedContractBalance|testClaimRewards'"
 
       - name: "Add test summary"
         run: |
