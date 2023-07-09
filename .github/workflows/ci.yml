@@ -108,6 +108,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install -r requirements.txt
+          pip install web3
           pip install eth-abi
           export API_KEY_ALCHEMY=$API_KEY_ALCHEMY
 
