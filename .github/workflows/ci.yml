@@ -88,6 +88,12 @@ jobs:
             echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
           )" >> $GITHUB_ENV
 
+      - name: "Prepare Python environment"
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
       - name: "Run the tests"
         run: "forge test --no-match-test 'testWithdrawExceedContractBalance|testClaimRewards'"
 
