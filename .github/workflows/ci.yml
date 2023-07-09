@@ -6,6 +6,7 @@ env:
   API_KEY_INFURA: ${{ secrets.API_KEY_INFURA }}
   FOUNDRY_PROFILE: "ci"
   MNEMONIC: ${{ secrets.MNEMONIC }}
+  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 
 on:
   workflow_dispatch:
@@ -51,6 +52,10 @@ jobs:
   build:
     runs-on: "ubuntu-latest"
     steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
         with:
@@ -58,6 +63,10 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Prepare Python environment"
+        run: |
+          pip3 install --upgrade pip && pip3 install virtualenv && python3 -m venv .venv && source .venv/bin/activate && pip3 install -r requirements.txt && export API_KEY_ALCHEMY=$API_KEY_ALCHEMY
 
       - name: "Build the contracts and print their size"
         run: "forge build --sizes"
@@ -94,11 +103,7 @@ jobs:
 
       - name: "Prepare Python environment"
         run: |
-          pip3 install --upgrade pip
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip3 install -r requirements.txt
-          export API_KEY_ALCHEMY=$API_KEY_ALCHEMY
+          pip3 install --upgrade pip && pip3 install virtualenv && python3 -m venv .venv && source .venv/bin/activate && pip3 install -r requirements.txt && export API_KEY_ALCHEMY=$API_KEY_ALCHEMY
 
       - name: "Run the tests"
         run: |
