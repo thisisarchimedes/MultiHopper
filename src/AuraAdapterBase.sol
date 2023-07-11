@@ -127,7 +127,7 @@ contract AuraAdapterBase is Initializable {
         auraRewardPool.getReward(address(this), true);
         uint256 balBalance = IERC20(BAL).balanceOf(address(this));
         if (balBalance > 0) {
-            IERC20(BAL).transfer(multiPoolStrategy, balBalance);
+            require(IERC20(BAL).transfer(multiPoolStrategy, balBalance), "Transfer failed");
         }
         uint256 auraBal = IERC20(AURA).balanceOf(address(this));
         if (auraBal > 0) {
