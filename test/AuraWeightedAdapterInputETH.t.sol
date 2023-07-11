@@ -25,15 +25,15 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
     ETHZapper ethZapper;
     address public staker = makeAddr("staker");
     ///CONSTANTS
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
+    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant AURA_BOOSTER = 0x1204f5060bE8b716F5A62b4Df4cE32acD01a69f5;
     /// POOL CONSTANTS
     bytes32 public constant BALANCER_WEIGHTED_POOL_ID =
-        0x42fbd9f666aacc0026ca1b88c94259519e03dd67000200000000000000000507;
-    uint256 public constant AURA_PID = 95;
+        0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274;
+    uint256 public constant AURA_PID = 100;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_294;
     uint256 tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests
@@ -59,19 +59,8 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
     //// get current block number using a python script that gets the latest number and substracts 10 blocks  | this
     // method lives on all tests
 
-    function getBlockNumber() internal returns (uint256) {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        string[] memory inputs = new string[](3);
-        inputs[0] = "python3";
-        inputs[1] = "test/get_latest_block_number.py";
-        inputs[2] = string(abi.encodePacked("https://eth-mainnet.g.alchemy.com/v2/", alchemyApiKey));
-        bytes memory result = vm.ffi(inputs);
-        uint256 blockNumber;
-        assembly {
-            blockNumber := mload(add(result, 0x20))
-        }
-        forkBlockNumber = blockNumber - 10; //set it to 10 blocks before latest block so we can use the
-        return blockNumber;
+     function getBlockNumber() internal returns (uint256) {
+        return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
     //// setUp function that creates the adapter and adds it to the strategy

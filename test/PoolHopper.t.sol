@@ -27,7 +27,7 @@ contract PoolHopper is PRBTest, StdCheats {
     AuraStablePoolAdapter auraStablePoolAdapter;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_586_463;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_294;
 
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.

@@ -12,8 +12,10 @@ venv
 .pnp.*
 lcov.info
 yarn.lock
+.vscode/settings.json
 
 # broadcasts
 !broadcast
 broadcast/*
 broadcast/*/31337/
+.vscode/settings.json

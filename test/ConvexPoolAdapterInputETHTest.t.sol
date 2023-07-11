@@ -106,18 +106,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
     // method lives on all tests
 
     function getBlockNumber() internal returns (uint256) {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        string[] memory inputs = new string[](3);
-        inputs[0] = "python3";
-        inputs[1] = "test/get_latest_block_number.py";
-        inputs[2] = string(abi.encodePacked("https://eth-mainnet.g.alchemy.com/v2/", alchemyApiKey));
-        bytes memory result = vm.ffi(inputs);
-        uint256 blockNumber;
-        assembly {
-            blockNumber := mload(add(result, 0x20))
-        }
-        forkBlockNumber = blockNumber - 10; //set it to 10 blocks before latest block so we can use the
-        return blockNumber;
+        return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
     //// setUp function that creates the adapter and adds it to the strategy
