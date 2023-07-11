@@ -1,9 +1,18 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+dependencies:
+  '@balancer-labs/v2-pool-weighted':
+    specifier: ^2.0.1
+    version: 2.0.1
+
 devDependencies:
   prettier:
-    specifier: ^2.8.7
-    version: 2.8.7
+    specifier: ^2.8.8
+    version: 2.8.8
   solhint:
     specifier: ^3.4.0
     version: 3.4.1
@@ -30,6 +39,39 @@ packages:
       chalk: 2.4.2
       js-tokens: 4.0.0
     dev: true
+
+  /@balancer-labs/v2-asset-manager-utils@0.2.0:
+    resolution: {integrity: sha512-6ti1pzbpgB5aT1WzbGwo69ILTNAJdAnaJcw3L9QB2aBsAhQ41H+MF3tjPvuv6P84RgJ9z42EhtwLYZqklRF0rg==}
+    dependencies:
+      '@balancer-labs/v2-solidity-utils': 2.0.0
+      '@balancer-labs/v2-vault': 2.0.0
+    dev: false
+
+  /@balancer-labs/v2-pool-utils@2.0.1:
+    resolution: {integrity: sha512-Xt3d8LqJnqq5JkuSgvf0sZuWqaywg9JxrCT1myVsG6zgbtfvcraJgSCLERUdqxP47aUPHwKvm5/+mdT9xayCXA==}
+    dependencies:
+      '@balancer-labs/v2-asset-manager-utils': 0.2.0
+      '@balancer-labs/v2-solidity-utils': 2.0.0
+      '@balancer-labs/v2-vault': 2.0.0
+    dev: false
+
+  /@balancer-labs/v2-pool-weighted@2.0.1:
+    resolution: {integrity: sha512-0rNdK/7grQ1UlqmEtZV2nldSlNrGaBevfoiIbhYK3K+GHRTBs4cyCtuucDvEgtmDxbKIoO4W4p0xcrfCtMiyBw==}
+    dependencies:
+      '@balancer-labs/v2-pool-utils': 2.0.1
+      '@balancer-labs/v2-solidity-utils': 2.0.0
+      '@balancer-labs/v2-vault': 2.0.0
+    dev: false
+
+  /@balancer-labs/v2-solidity-utils@2.0.0:
+    resolution: {integrity: sha512-OB+05vJqrs35B1d40y7tnSm6oYWnsmfRa/wpI2owJXhwx/8qr2buE+RDmT0x6Upr/c7wBdUh8v4UVk9l0+CNiA==}
+    dev: false
+
+  /@balancer-labs/v2-vault@2.0.0:
+    resolution: {integrity: sha512-GwPY84j6g7OY1z13wRYYGQeupb6DI3U+s22Ebg2v32djS9CnPzM04GJapURRbKZkpraUOYIcqhEF3Cm1AafAKg==}
+    dependencies:
+      '@balancer-labs/v2-solidity-utils': 2.0.0
+    dev: false
 
   /@solidity-parser/parser@0.16.0:
     resolution: {integrity: sha512-ESipEcHyRHg4Np4SqBCfcXwyxxna1DgFVz69bgpLV8vzl/NP1DtcKsJ4dJZXWQhY/Z4J2LeKBiOkOVZn9ct33Q==}
@@ -323,8 +365,8 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /prettier@2.8.7:
-    resolution: {integrity: sha512-yPngTo3aXUUmyuTjeTUT75txrf+aMh9FiD7q9ZE/i6r0bPb22g4FsE6Y338PQX1bmfy08i9QQCB7/rcUAVntfw==}
+  /prettier@2.8.8:
+    resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
     engines: {node: '>=10.13.0'}
     hasBin: true
     dev: true
@@ -344,8 +386,9 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /semver@6.3.0:
-    resolution: {integrity: sha512-b39TBaTSfV6yBrapU89p5fKekE2m/NwnDocOVruQFS1/veMgdzuPcnOM34M6CwxW8jH/lxEa5rBoDeUwu5HHTw==}
+  /semver@6.3.1:
+    resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
+    hasBin: true
     dev: true
 
   /slice-ansi@4.0.0:
@@ -373,12 +416,12 @@ packages:
       js-yaml: 4.1.0
       lodash: 4.17.21
       pluralize: 8.0.0
-      semver: 6.3.0
+      semver: 6.3.1
       strip-ansi: 6.0.1
       table: 6.8.1
       text-table: 0.2.0
     optionalDependencies:
-      prettier: 2.8.7
+      prettier: 2.8.8
     dev: true
 
   /string-width@4.2.3:
