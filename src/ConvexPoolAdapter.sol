@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19;
 
 import {
     ICurveBasePool,
@@ -297,5 +297,7 @@ contract ConvexPoolAdapter is Initializable {
         healthFactor = _newHealthFactor;
     }
 
-    receive() external payable { }
+    receive() external payable { 
+        // solhint-disable-previous-line no-empty-blocks
+    }
 }

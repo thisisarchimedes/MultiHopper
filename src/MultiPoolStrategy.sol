@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19;
 
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import { ERC4626Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -440,7 +440,8 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * @param _healthFactor New health factor for the adapter. 10000 = 100%
      */
     function changeAdapterHealthFactor(address _adapter, uint256 _healthFactor) external onlyOwner {
-        require(_healthFactor <= 10_000, "Health factor can't be more than 100%");
+        // Health factor can't be more than 100%
+        require(_healthFactor <= 10_000, "Health factor>100%");
         IAdapter(_adapter).setHealthFactor(_healthFactor);
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19;
 
 import "./AuraAdapterBase.sol";
 import { FixedPoint } from "./utils/FixedPoint.sol";
@@ -158,9 +158,9 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
 
         uint256 ampTimesTotal = amplificationParameter * balances.length;
         uint256 sum = balances[0];
-        uint256 P_D = balances[0] * balances.length;
+        uint256 pD = balances[0] * balances.length;
         for (uint256 j = 1; j < balances.length; j++) {
-            P_D = Math.divDown(Math.mul(Math.mul(P_D, balances[j]), balances.length), invariant);
+            pD = Math.divDown(Math.mul(Math.mul(pD, balances[j]), balances.length), invariant);
             sum = sum.add(balances[j]);
         }
         // No need to use safe math, based on the loop above `sum` is greater than or equal to `balances[tokenIndex]`
@@ -169,7 +169,7 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         uint256 inv2 = Math.mul(invariant, invariant);
         // We remove the balance from c by multiplying it
         uint256 c =
-            Math.mul(Math.mul(Math.divUp(inv2, Math.mul(ampTimesTotal, P_D)), _AMP_PRECISION), balances[tokenIndex]);
+            Math.mul(Math.mul(Math.divUp(inv2, Math.mul(ampTimesTotal, pD)), _AMP_PRECISION), balances[tokenIndex]);
         uint256 b = sum.add(Math.mul(Math.divDown(invariant, ampTimesTotal), _AMP_PRECISION));
 
         // We iterate to find the balance
@@ -193,7 +193,8 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
             }
         }
 
-        revert("STABLE_GET_BALANCE_DIDNT_CONVERGE");
+        // STABLE_GET_BALANCE_DIDNT_CONVERGE
+        revert("BALANCE_DIDNT_CONVERGE");
     }
 
     function _calculateInvariant(
@@ -231,25 +232,25 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         uint256 ampTimesTotal = amplificationParameter * numTokens; // Ann in the Curve version
 
         for (uint256 i = 0; i < 255; i++) {
-            uint256 D_P = invariant;
+            uint256 dP = invariant;
 
             for (uint256 j = 0; j < numTokens; j++) {
-                // (D_P * invariant) / (balances[j] * numTokens)
-                D_P = Math.divDown(Math.mul(D_P, invariant), Math.mul(balances[j], numTokens));
+                // (dP * invariant) / (balances[j] * numTokens)
+                dP = Math.divDown(Math.mul(dP, invariant), Math.mul(balances[j], numTokens));
             }
 
             prevInvariant = invariant;
 
             invariant = Math.divDown(
                 Math.mul(
-                    // (ampTimesTotal * sum) / AMP_PRECISION + D_P * numTokens
-                    (Math.divDown(Math.mul(ampTimesTotal, sum), _AMP_PRECISION).add(Math.mul(D_P, numTokens))),
+                    // (ampTimesTotal * sum) / AMP_PRECISION + dP * numTokens
+                    (Math.divDown(Math.mul(ampTimesTotal, sum), _AMP_PRECISION).add(Math.mul(dP, numTokens))),
                     invariant
                 ),
-                // ((ampTimesTotal - _AMP_PRECISION) * invariant) / _AMP_PRECISION + (numTokens + 1) * D_P
+                // ((ampTimesTotal - _AMP_PRECISION) * invariant) / _AMP_PRECISION + (numTokens + 1) * dP
                 (
                     Math.divDown(Math.mul((ampTimesTotal - _AMP_PRECISION), invariant), _AMP_PRECISION).add(
-                        Math.mul((numTokens + 1), D_P)
+                        Math.mul((numTokens + 1), dP)
                     )
                 )
             );

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
@@ -17,9 +17,11 @@ error EmptyInput();
  */
 
 contract ETHZapper {
-    address constant WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant public WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    constructor() { }
+    constructor() { 
+         // solhint-disable-previous-line no-empty-blocks
+    }
 
     /**
      * @dev Deposits ETH into the MultiPoolStrategy contract.
@@ -113,5 +115,7 @@ contract ETHZapper {
         return multipoolStrategy.asset() == address(WETH_ADDRESS);
     }
 
-    receive() external payable { }
+    receive() external payable {
+         // solhint-disable-previous-line no-empty-blocks
+     }
 }

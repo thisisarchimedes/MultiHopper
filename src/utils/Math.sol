@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+/* solhint-disable */
+
 pragma solidity ^0.8.10;
 
 import "./BalancerErrors.sol";

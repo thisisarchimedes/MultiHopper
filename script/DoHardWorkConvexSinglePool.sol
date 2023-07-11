@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
+/* solhint-disable */
+
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
