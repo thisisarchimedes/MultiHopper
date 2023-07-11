@@ -15,7 +15,7 @@ on:
     branches:
       - "main"
 
-jobs:
+jobs:  
   lint:
     runs-on: "ubuntu-latest"
     steps:
@@ -78,6 +78,7 @@ jobs:
 
   test:
     needs: ["lint", "build"]
+    environment: secrets
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/setup-python@v4
