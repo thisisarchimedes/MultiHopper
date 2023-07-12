@@ -39,10 +39,10 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         // wrap ether and then call deposit
         IWETH(payable(WETH_ADDRESS)).deposit{ value: msg.value }();
         //// we need to approve the strategy to spend our WETH
-        require(IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), 0), 'Approve failed');
-        require(IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), assets), 'Approve failed');
+        require(IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), 0), "Approve failed");
+        require(IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), assets), "Approve failed");
         shares = multipoolStrategy.deposit(assets, address(this));
-        require(multipoolStrategy.transfer(receiver, shares), 'Transfer failed');
+        require(multipoolStrategy.transfer(receiver, shares), "Transfer failed");
         return shares;
     }
     /**
@@ -66,7 +66,7 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         returns (uint256)
     {
         if (assets == 0) revert EmptyInput();
-        require(receiver != address(0), 'Receiver is zero address');
+        require(receiver != address(0), "Receiver is zero address");
 
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
@@ -110,7 +110,7 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         returns (uint256)
     {
         if (shares == 0) revert EmptyInput();
-        require(receiver != address(0), 'Receiver is zero address');
+        require(receiver != address(0), "Receiver is zero address");
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
         // redeem shares and get WETH from strategy
