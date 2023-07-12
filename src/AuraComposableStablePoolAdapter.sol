@@ -87,10 +87,10 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         funds.fromInternalBalance = false;
         funds.recipient = address(this);
         funds.toInternalBalance = false;
-        IERC20(pool).approve(address(vault), _amount);
+        require(IERC20(pool).approve(address(vault), _amount), "approve failed");
         vault.swap(swap, funds, _minReceiveAmount, block.timestamp + 20);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
-        IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal);
+        require(IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal), "transfer failed");
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         if (_underlyingBalance > healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance - underlyingBal;
