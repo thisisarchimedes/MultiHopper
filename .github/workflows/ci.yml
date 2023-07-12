@@ -134,14 +134,7 @@ jobs:
           node-version: 16
           fail-on: none
           slither-args:
-            --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
-
-      - name: Create/update checklist as PR comment
-        uses: actions/github-script@v6
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            const script = require('.github/scripts/comment')
-            const header = '# Slither report'
-            const body = `${{ steps.slither.outputs.stdout }}`
-            await script({ github, context, header, body })
+            --checklist --detect
+            unchecked-transfer,msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
+            --filter-paths "test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url }}/${{
+            github.repository }}/blob/${{ github.sha }}/
