@@ -8,10 +8,11 @@ import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/access/Ow
 import { IAdapter } from "./interfaces/IAdapter.sol";
 import { IERC20UpgradeableDetailed } from "./interfaces/IERC20UpgradeableDetailed.sol";
 import { ERC4626UpgradeableModified } from "./ERC4626UpgradeableModified.sol";
+import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "solmate/utils/SafeCastLib.sol";
 // TODO - implement donation attack protection
 
-contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
+contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, ReentrancyGuardUpgradeable {
     using SafeCastLib for *;
 
     /// @notice addresses of the adapters
@@ -134,7 +135,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         return storedTotalAssets_ + unlockedRewards + total;
     }
 
-    function deposit(uint256 assets, address receiver) public override returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) public nonReentrant override returns (uint256 shares) {
         if (paused) revert StrategyPaused();
         address[] memory _adapters = adapters; // SSTORE
         for (uint256 i = 0; i < _adapters.length; i++) {
@@ -157,6 +158,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         uint256 minimumReceive
     )
         public
+        nonReentrant
         override
         returns (uint256)
     {
@@ -184,6 +186,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         uint256 minimumReceive
     )
         public
+        nonReentrant
         override
         returns (uint256)
     {
@@ -259,6 +262,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         Adjust[] calldata _adjustOuts,
         address[] calldata _sortedAdapters
     )
+        nonReentrant
         external
     {
         if ((_msgSender() != monitor && !paused) || (_msgSender() != owner() && paused)) revert Unauthorized();
@@ -278,7 +282,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
             uint256 totalOut;
             for (uint256 i = 0; i < adjustInLength; i++) {
                 if (!isAdapter[_adjustIns[i].adapter]) revert Unauthorized();
-                IERC20Upgradeable(asset()).transfer(_adjustIns[i].adapter, _adjustIns[i].amount);
+                require(IERC20Upgradeable(asset()).transfer(_adjustIns[i].adapter, _adjustIns[i].amount), "ERC20: transfer failed");
                 IAdapter(_adjustIns[i].adapter).deposit(_adjustIns[i].amount, _adjustIns[i].minReceive);
                 totalOut += _adjustIns[i].amount;
             }
@@ -300,7 +304,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
      * @param _adaptersToClaim List of adapters to claim from
      * @param _swapDatas List of SwapData structs
      */
-    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external {
+    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external nonReentrant {
         if (_msgSender() != monitor && _msgSender() != owner()) revert Unauthorized();
         for (uint256 i = 0; i < _adaptersToClaim.length; i++) {
             IAdapter(_adaptersToClaim[i]).claim();
@@ -322,7 +326,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         if (totalClaimed > 0) {
             fee = totalClaimed * feePercentage / 10_000;
             if (fee > 0) {
-                IERC20Upgradeable(asset()).transfer(feeRecipient, fee);
+                require(IERC20Upgradeable(asset()).transfer(feeRecipient, fee), "ERC20: transfer failed");
             }
         }
         uint256 rewardAmount = totalClaimed - fee;
