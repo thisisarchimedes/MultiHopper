@@ -8,10 +8,11 @@ import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/access/Ow
 import { IAdapter } from "./interfaces/IAdapter.sol";
 import { IERC20UpgradeableDetailed } from "./interfaces/IERC20UpgradeableDetailed.sol";
 import { ERC4626UpgradeableModified } from "./ERC4626UpgradeableModified.sol";
+import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "solmate/utils/SafeCastLib.sol";
 // TODO - implement donation attack protection
 
-contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
+contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, ReentrancyGuardUpgradeable {
     using SafeCastLib for *;
 
     /// @notice addresses of the adapters
@@ -134,7 +135,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         return storedTotalAssets_ + unlockedRewards + total;
     }
 
-    function deposit(uint256 assets, address receiver) public override returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) public nonReentrant override returns (uint256 shares) {
         if (paused) revert StrategyPaused();
         address[] memory _adapters = adapters; // SSTORE
         for (uint256 i = 0; i < _adapters.length; i++) {
@@ -157,6 +158,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         uint256 minimumReceive
     )
         public
+        nonReentrant
         override
         returns (uint256)
     {
@@ -184,6 +186,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         uint256 minimumReceive
     )
         public
+        nonReentrant
         override
         returns (uint256)
     {
@@ -259,6 +262,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified {
         Adjust[] calldata _adjustOuts,
         address[] calldata _sortedAdapters
     )
+        nonReentrant
         external
     {
         if ((_msgSender() != monitor && !paused) || (_msgSender() != owner() && paused)) revert Unauthorized();

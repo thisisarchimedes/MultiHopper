@@ -104,11 +104,11 @@ contract ConvexPoolAdapter is Initializable {
         indexUint = _indexUint;
         healthFactor = 200; // 2%
         underlyingTokenPoolIndex = _underlyingTokenPoolIndex;
-        IERC20(curveLpToken).approve(CONVEX_BOOSTER, type(uint256).max);
-        IERC20(underlyingToken).approve(address(curvePool), type(uint256).max);
+        require(IERC20(curveLpToken).approve(CONVEX_BOOSTER, type(uint256).max), "Approve failed");
+        require(IERC20(underlyingToken).approve(address(curvePool), type(uint256).max), "Approve failed");
         if (zapper != address(0)) {
-            IERC20(underlyingToken).approve(zapper, type(uint256).max);
-            IERC20(curveLpToken).approve(zapper, type(uint256).max);
+            require(IERC20(underlyingToken).approve(zapper, type(uint256).max), "Approve failed");
+            require(IERC20(curveLpToken).approve(zapper, type(uint256).max), "Approve failed");
         }
         uint256 extraRewardsLength = convexRewardPool.extraRewardsLength();
         if (extraRewardsLength > 0) {
@@ -200,7 +200,7 @@ contract ConvexPoolAdapter is Initializable {
             IWETH(payable(WETH)).deposit{ value: address(this).balance }();
         }
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this)); // what we withdrawn from curve
-        IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal);
+        require(IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal), "Transfer failed");
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000); // acceptable  underlying
             // token amount that this adapter holds
         if (_underlyingBalance >= healthyBalance) {
@@ -214,18 +214,18 @@ contract ConvexPoolAdapter is Initializable {
         convexRewardPool.getReward(address(this), true);
         uint256 crvBal = IERC20(CURVE_TOKEN).balanceOf(address(this));
         if (crvBal > 0) {
-            IERC20(CURVE_TOKEN).transfer(multiPoolStrategy, crvBal);
+            require(IERC20(CURVE_TOKEN).transfer(multiPoolStrategy, crvBal), "Transfer failed");
         }
         uint256 cvxBal = IERC20(CVX).balanceOf(address(this));
         if (cvxBal > 0) {
-            IERC20(CVX).transfer(multiPoolStrategy, cvxBal);
+            require(IERC20(CVX).transfer(multiPoolStrategy, cvxBal), "Transfer failed");
         }
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
             if (rewardTokens[i] == CVX) continue;
             uint256 rewardTokenBal = IERC20(rewardTokens[i]).balanceOf(address(this));
             if (rewardTokenBal > 0) {
-                IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal);
+                require(IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal), "Transfer failed");
             }
         }
     }
@@ -270,7 +270,7 @@ contract ConvexPoolAdapter is Initializable {
         uint256 reductionPerCliff = ICVX(CVX).reductionPerCliff();
         uint256 totalCliffs = ICVX(CVX).totalCliffs();
         uint256 cliff = cvxSupply / reductionPerCliff;
-        uint256 _rewardAmount;
+        uint256 _rewardAmount = 0;
         if (cliff < totalCliffs) {
             uint256 reduction = totalCliffs - cliff;
             _rewardAmount = rewards[0].amount * reduction / totalCliffs;

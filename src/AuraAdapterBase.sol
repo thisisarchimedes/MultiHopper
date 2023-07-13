@@ -58,6 +58,8 @@ contract AuraAdapterBase is Initializable {
      */
 
     function initialize(bytes32 _poolId, address _multiPoolStrategy, uint256 _auraPid) public initializer {
+        require(_multiPoolStrategy != address(0), "MultiPoolStrategy zero address");
+   
         poolId = _poolId;
         multiPoolStrategy = _multiPoolStrategy;
         underlyingToken = IERC20(IMultiPoolStrategy(_multiPoolStrategy).asset());
@@ -75,8 +77,8 @@ contract AuraAdapterBase is Initializable {
             }
         }
         uint256 extraRewardsLength = auraRewardPool.extraRewardsLength();
-        underlyingToken.approve(address(vault), type(uint256).max);
-        IERC20(pool).approve(address(AURA_BOOSTER), type(uint256).max);
+        require(underlyingToken.approve(address(vault), type(uint256).max), "Approval failed");
+        require(IERC20(pool).approve(address(AURA_BOOSTER), type(uint256).max), "Approval failed");
         if (extraRewardsLength > 0) {
             for (uint256 i = 0; i < extraRewardsLength; i++) {
                 rewardTokens.push(IBaseRewardPool(auraRewardPool.extraRewards(i)).rewardToken());
@@ -93,7 +95,7 @@ contract AuraAdapterBase is Initializable {
         );
         vault.joinPool(poolId, address(this), address(this), pr);
         uint256 lpBal = IERC20(pool).balanceOf(address(this));
-        IBooster(AURA_BOOSTER).deposit(auraPid, lpBal, true);
+        require(IBooster(AURA_BOOSTER).deposit(auraPid, lpBal, true), "Deposit failed");
         storedUnderlyingBalance = underlyingBalance();
     }
 
@@ -107,7 +109,7 @@ contract AuraAdapterBase is Initializable {
             IBalancerVault.ExitPoolRequest(tokens, minAmountsOut, abi.encode(0, _amount, tokenIndex), false);
         vault.exitPool(poolId, address(this), address(this), pr);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
-        IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal);
+        require(IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal), "Transfer failed");
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         if (_underlyingBalance > healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance - underlyingBal;
@@ -125,18 +127,18 @@ contract AuraAdapterBase is Initializable {
         auraRewardPool.getReward(address(this), true);
         uint256 balBalance = IERC20(BAL).balanceOf(address(this));
         if (balBalance > 0) {
-            IERC20(BAL).transfer(multiPoolStrategy, balBalance);
+            require(IERC20(BAL).transfer(multiPoolStrategy, balBalance), "Transfer failed");
         }
         uint256 auraBal = IERC20(AURA).balanceOf(address(this));
         if (auraBal > 0) {
-            IERC20(AURA).transfer(multiPoolStrategy, auraBal);
+            require(IERC20(AURA).transfer(multiPoolStrategy, auraBal), "Transfer failed");
         }
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
             if (rewardTokens[i] == AURA) continue;
             uint256 rewardTokenBal = IERC20(rewardTokens[i]).balanceOf(address(this));
             if (rewardTokenBal > 0) {
-                IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal);
+                require(IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal), "Transfer failed");
             }
         }
     }

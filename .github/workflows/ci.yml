@@ -121,3 +121,21 @@ jobs:
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.3.0
+        id: slither
+        with:
+          node-version: 16
+          fail-on: medium
+          slither-args:
+            --checklist --detect
+            msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
+            --filter-paths "test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url }}/${{
+            github.repository }}/blob/${{ github.sha }}/
