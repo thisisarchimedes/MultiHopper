@@ -58,7 +58,7 @@ contract AuraAdapterBase is Initializable {
      */
 
     function initialize(bytes32 _poolId, address _multiPoolStrategy, uint256 _auraPid) public initializer {
-        require(_multiPoolStrategy != address(0), "MultiPoolStrategy cannot be zero address");
+        require(_multiPoolStrategy != address(0), "MultiPoolStrategy zero address");
    
         poolId = _poolId;
         multiPoolStrategy = _multiPoolStrategy;
