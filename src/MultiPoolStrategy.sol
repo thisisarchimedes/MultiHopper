@@ -282,7 +282,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
             uint256 totalOut;
             for (uint256 i = 0; i < adjustInLength; i++) {
                 if (!isAdapter[_adjustIns[i].adapter]) revert Unauthorized();
-                require(IERC20Upgradeable(asset()).transfer(_adjustIns[i].adapter, _adjustIns[i].amount), "ERC20: transfer failed");
+                IERC20Upgradeable(asset()).transfer(_adjustIns[i].adapter, _adjustIns[i].amount);
                 IAdapter(_adjustIns[i].adapter).deposit(_adjustIns[i].amount, _adjustIns[i].minReceive);
                 totalOut += _adjustIns[i].amount;
             }
@@ -304,7 +304,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      * @param _adaptersToClaim List of adapters to claim from
      * @param _swapDatas List of SwapData structs
      */
-    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external nonReentrant {
+    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external {
         if (_msgSender() != monitor && _msgSender() != owner()) revert Unauthorized();
         for (uint256 i = 0; i < _adaptersToClaim.length; i++) {
             IAdapter(_adaptersToClaim[i]).claim();
@@ -326,7 +326,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         if (totalClaimed > 0) {
             fee = totalClaimed * feePercentage / 10_000;
             if (fee > 0) {
-                require(IERC20Upgradeable(asset()).transfer(feeRecipient, fee), "ERC20: transfer failed");
+                IERC20Upgradeable(asset()).transfer(feeRecipient, fee);
             }
         }
         uint256 rewardAmount = totalClaimed - fee;
