@@ -230,4 +230,4 @@ $ forge test
 
 ## License
 
-This project is licensed under MIT.
+This project is licensed under Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License.
