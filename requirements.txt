@@ -4,7 +4,7 @@ async-timeout==4.0.2
 attrs==23.1.0
 bitarray==2.7.5
 cbor2==5.4.6
-certifi==2023.5.7
+certifi==2023.7.22
 charset-normalizer==3.1.0
 crytic-compile==0.3.3
 cytoolz==0.12.1
