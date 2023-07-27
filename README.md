@@ -58,6 +58,10 @@ We currently support Convex (Curve booster) and several Aura (Balancer booster) 
 
 We use factory architecture. Factory is deployed once and generates Adopters and Strategy by demand. 
 
+## High Level Architecture
+
+<img width="6000" alt="MultiPoolDrawing" src="https://github.com/thisisarchimedes/MultiHopper/assets/98904111/030b6daa-e6dd-4b29-9b83-15dc9186772c">
+
 
 # Boilerpate Instructions
 
