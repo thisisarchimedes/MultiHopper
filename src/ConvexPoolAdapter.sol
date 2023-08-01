@@ -16,6 +16,7 @@ import {
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IBooster } from "./interfaces/IBooster.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
@@ -104,11 +105,11 @@ contract ConvexPoolAdapter is Initializable {
         indexUint = _indexUint;
         healthFactor = 200; // 2%
         underlyingTokenPoolIndex = _underlyingTokenPoolIndex;
-        require(IERC20(curveLpToken).approve(CONVEX_BOOSTER, type(uint256).max), "Approve failed");
-        require(IERC20(underlyingToken).approve(address(curvePool), type(uint256).max), "Approve failed");
+        SafeERC20.safeApprove(IERC20(curveLpToken), CONVEX_BOOSTER, type(uint256).max);
+        SafeERC20.safeApprove(IERC20(underlyingToken), address(curvePool), type(uint256).max);
         if (zapper != address(0)) {
-            require(IERC20(underlyingToken).approve(zapper, type(uint256).max), "Approve failed");
-            require(IERC20(curveLpToken).approve(zapper, type(uint256).max), "Approve failed");
+            SafeERC20.safeApprove(IERC20(curveLpToken), zapper, type(uint256).max);
+            SafeERC20.safeApprove(IERC20(underlyingToken), zapper, type(uint256).max);
         }
         uint256 extraRewardsLength = convexRewardPool.extraRewardsLength();
         if (extraRewardsLength > 0) {
@@ -200,7 +201,7 @@ contract ConvexPoolAdapter is Initializable {
             IWETH(payable(WETH)).deposit{ value: address(this).balance }();
         }
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this)); // what we withdrawn from curve
-        require(IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal), "Transfer failed");
+        SafeERC20.safeTransfer(IERC20(underlyingToken), multiPoolStrategy, underlyingBal);
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000); // acceptable  underlying
             // token amount that this adapter holds
         if (_underlyingBalance >= healthyBalance) {
@@ -214,18 +215,18 @@ contract ConvexPoolAdapter is Initializable {
         convexRewardPool.getReward(address(this), true);
         uint256 crvBal = IERC20(CURVE_TOKEN).balanceOf(address(this));
         if (crvBal > 0) {
-            require(IERC20(CURVE_TOKEN).transfer(multiPoolStrategy, crvBal), "Transfer failed");
+            SafeERC20.safeTransfer(IERC20(CURVE_TOKEN), multiPoolStrategy, crvBal);
         }
         uint256 cvxBal = IERC20(CVX).balanceOf(address(this));
         if (cvxBal > 0) {
-            require(IERC20(CVX).transfer(multiPoolStrategy, cvxBal), "Transfer failed");
+            SafeERC20.safeTransfer(IERC20(CVX), multiPoolStrategy, cvxBal);
         }
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
             if (rewardTokens[i] == CVX) continue;
             uint256 rewardTokenBal = IERC20(rewardTokens[i]).balanceOf(address(this));
             if (rewardTokenBal > 0) {
-                require(IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal), "Transfer failed");
+                SafeERC20.safeTransfer(IERC20(rewardTokens[i]), multiPoolStrategy, rewardTokenBal);
             }
         }
     }
