@@ -305,8 +305,12 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      * @param _adaptersToClaim List of adapters to claim from
      * @param _swapDatas List of SwapData structs
      */
-    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external {
+    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) 
+        nonReentrant 
+        external 
+    {
         if (_msgSender() != monitor && _msgSender() != owner()) revert Unauthorized();
+
         for (uint256 i = 0; i < _adaptersToClaim.length; i++) {
             IAdapter(_adaptersToClaim[i]).claim();
         }
