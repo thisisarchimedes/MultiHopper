@@ -23,8 +23,7 @@ import { console2 } from "forge-std/console2.sol";
  */
 contract DeployFactory is Script {
     address MONITOR = address(0); // TODO : set monitor address before deploy
-    //uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
-    uint256 deployerPrivateKey = 0x0; // TODO: set fork deployer private key
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
 
     function run() public returns (MultiPoolStrategyFactory factory) {
         require(MONITOR != address(0), "Deploy: monitor address not set");
