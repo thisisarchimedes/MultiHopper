@@ -88,11 +88,8 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         funds.fromInternalBalance = false;
         funds.recipient = address(this);
         funds.toInternalBalance = false;
-
-
-        IERC20(pool).approve(address(vault), _amount); // <<DO WE NEED THIS? ISN'T IT SELF APPROVE?
         
-        //SafeERC20.safeApprove(IERC20(pool), address(vault), _amount);
+        require(IERC20(pool).approve(address(vault), _amount), "approve failed");
 
         vault.swap(swap, funds, _minReceiveAmount, block.timestamp + 20);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
