@@ -32,7 +32,12 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @return shares The amount of shares received.
      */
-    function depositETH(address receiver, address strategyAddress) public nonReentrant payable returns (uint256 shares) {
+    function depositETH(address receiver, address strategyAddress) 
+        external 
+        nonReentrant 
+        payable 
+        returns (uint256 shares) 
+    {
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
         if (msg.value == 0) revert EmptyInput();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
@@ -64,7 +69,7 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         uint256 minimumReceive,
         address strategyAddress
     )
-        public
+        external
         nonReentrant 
         returns (uint256)
     {
@@ -108,7 +113,7 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         uint256 minimumReceive,
         address strategyAddress
     )
-        public
+        external
         nonReentrant 
         returns (uint256)
     {

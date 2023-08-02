@@ -142,19 +142,19 @@ contract MultiPoolStrategyFactory is Ownable {
     }
 
     //// Setters for adapter factory addresses
-    function setConvexAdapterImplementation(address _newConvexAdapterImplementation) external {
+    function setConvexAdapterImplementation(address _newConvexAdapterImplementation) external onlyOwner {
         convexAdapterImplementation = _newConvexAdapterImplementation;
     }
 
-    function setAuraStableImplementation(address _newAuraStableImplementation) external {
+    function setAuraStableImplementation(address _newAuraStableImplementation) external onlyOwner {
         auraStableAdapterImplementation = _newAuraStableImplementation;
     }
 
-    function setAuraWeightedImplementation(address _newAuraWeightedImplementation) external {
+    function setAuraWeightedImplementation(address _newAuraWeightedImplementation) external onlyOwner {
         auraWeightedAdapterImplementation = _newAuraWeightedImplementation;
     }
 
-    function setAuraComposableStableImplementation(address _newAuraComposableStableImplementation) external {
+    function setAuraComposableStableImplementation(address _newAuraComposableStableImplementation) external onlyOwner {
         auraComposableStablePoolAdapterImplementation = _newAuraComposableStableImplementation;
     }
 }
