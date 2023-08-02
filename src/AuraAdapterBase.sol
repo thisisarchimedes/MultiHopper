@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import { IBalancerVault } from "./interfaces/IBalancerVault.sol";
-
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { FixedPoint } from "./utils/FixedPoint.sol";
 import { IBooster } from "./interfaces/IBooster.sol";
 import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
@@ -77,8 +77,8 @@ contract AuraAdapterBase is Initializable {
             }
         }
         uint256 extraRewardsLength = auraRewardPool.extraRewardsLength();
-        require(underlyingToken.approve(address(vault), type(uint256).max), "Approval failed");
-        require(IERC20(pool).approve(address(AURA_BOOSTER), type(uint256).max), "Approval failed");
+        SafeERC20.safeApprove(underlyingToken, address(vault), type(uint256).max);
+        SafeERC20.safeApprove(IERC20(pool), address(AURA_BOOSTER), type(uint256).max);
         if (extraRewardsLength > 0) {
             for (uint256 i = 0; i < extraRewardsLength; i++) {
                 rewardTokens.push(IBaseRewardPool(auraRewardPool.extraRewards(i)).rewardToken());
@@ -109,7 +109,7 @@ contract AuraAdapterBase is Initializable {
             IBalancerVault.ExitPoolRequest(tokens, minAmountsOut, abi.encode(0, _amount, tokenIndex), false);
         vault.exitPool(poolId, address(this), address(this), pr);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
-        require(IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal), "Transfer failed");
+        SafeERC20.safeTransfer(IERC20(underlyingToken), multiPoolStrategy, underlyingBal);
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         if (_underlyingBalance > healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance - underlyingBal;
@@ -127,18 +127,19 @@ contract AuraAdapterBase is Initializable {
         auraRewardPool.getReward(address(this), true);
         uint256 balBalance = IERC20(BAL).balanceOf(address(this));
         if (balBalance > 0) {
-            require(IERC20(BAL).transfer(multiPoolStrategy, balBalance), "Transfer failed");
+            SafeERC20.safeTransfer(IERC20(BAL), multiPoolStrategy, balBalance);
         }
         uint256 auraBal = IERC20(AURA).balanceOf(address(this));
         if (auraBal > 0) {
-            require(IERC20(AURA).transfer(multiPoolStrategy, auraBal), "Transfer failed");
+            SafeERC20.safeTransfer(IERC20(AURA), multiPoolStrategy, auraBal);
         }
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
             if (rewardTokens[i] == AURA) continue;
             uint256 rewardTokenBal = IERC20(rewardTokens[i]).balanceOf(address(this));
             if (rewardTokenBal > 0) {
-                require(IERC20(rewardTokens[i]).transfer(multiPoolStrategy, rewardTokenBal), "Transfer failed");
+
+                SafeERC20.safeTransfer(IERC20(rewardTokens[i]), multiPoolStrategy, rewardTokenBal);
             }
         }
     }

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
 import { console2 } from "forge-std/console2.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 //// ERRORS
 error StrategyPaused();
@@ -39,10 +41,11 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         // wrap ether and then call deposit
         IWETH(payable(WETH_ADDRESS)).deposit{ value: msg.value }();
         //// we need to approve the strategy to spend our WETH
-        require(IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), 0), "Approve failed");
-        require(IERC20(multipoolStrategy.asset()).approve(address(multipoolStrategy), assets), "Approve failed");
+        SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), 0);
+        SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), assets);
         shares = multipoolStrategy.deposit(assets, address(this));
-        require(multipoolStrategy.transfer(receiver, shares), "Transfer failed");
+        SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(multipoolStrategy), receiver, shares);
+
         return shares;
     }
     /**

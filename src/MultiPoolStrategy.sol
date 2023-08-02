@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import { ERC4626Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IAdapter } from "./interfaces/IAdapter.sol";
 import { IERC20UpgradeableDetailed } from "./interfaces/IERC20UpgradeableDetailed.sol";
@@ -282,7 +283,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
             uint256 totalOut;
             for (uint256 i = 0; i < adjustInLength; i++) {
                 if (!isAdapter[_adjustIns[i].adapter]) revert Unauthorized();
-                IERC20Upgradeable(asset()).transfer(_adjustIns[i].adapter, _adjustIns[i].amount);
+                SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(asset()), _adjustIns[i].adapter, _adjustIns[i].amount);
                 IAdapter(_adjustIns[i].adapter).deposit(_adjustIns[i].amount, _adjustIns[i].minReceive);
                 totalOut += _adjustIns[i].amount;
             }
@@ -311,8 +312,8 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         }
         uint256 underlyingBalanceBefore = IERC20Upgradeable(asset()).balanceOf(address(this));
         for (uint256 i = 0; i < _swapDatas.length; i++) {
-            IERC20Upgradeable(_swapDatas[i].token).approve(LIFI_DIAMOND, 0);
-            IERC20Upgradeable(_swapDatas[i].token).approve(LIFI_DIAMOND, _swapDatas[i].amount);
+            SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(_swapDatas[i].token), LIFI_DIAMOND, 0);
+            SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(_swapDatas[i].token), LIFI_DIAMOND, _swapDatas[i].amount);
             (bool success,) = LIFI_DIAMOND.call(_swapDatas[i].callData);
             if (!success) revert SwapFailed();
             unchecked {
@@ -326,7 +327,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         if (totalClaimed > 0) {
             fee = totalClaimed * feePercentage / 10_000;
             if (fee > 0) {
-                IERC20Upgradeable(asset()).transfer(feeRecipient, fee);
+                SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(asset()), feeRecipient, fee);    
             }
         }
         uint256 rewardAmount = totalClaimed - fee;

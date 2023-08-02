@@ -6,6 +6,7 @@ import { FixedPoint } from "./utils/FixedPoint.sol";
 import { Math } from "./utils/Math.sol";
 import { IStablePool } from "./interfaces/IStablepool.sol";
 import { IBalancerVault } from "./interfaces/IBalancerVault.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract AuraComposableStablePoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;
@@ -87,10 +88,12 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         funds.fromInternalBalance = false;
         funds.recipient = address(this);
         funds.toInternalBalance = false;
+        
         require(IERC20(pool).approve(address(vault), _amount), "approve failed");
+
         vault.swap(swap, funds, _minReceiveAmount, block.timestamp + 20);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
-        require(IERC20(underlyingToken).transfer(multiPoolStrategy, underlyingBal), "transfer failed");
+        SafeERC20.safeTransfer(IERC20(underlyingToken), multiPoolStrategy, underlyingBal);
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         if (_underlyingBalance > healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance - underlyingBal;
