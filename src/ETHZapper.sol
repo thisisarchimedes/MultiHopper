@@ -42,13 +42,15 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         if (msg.value == 0) revert EmptyInput();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
         if (multipoolStrategy.paused()) revert StrategyPaused();
-        uint256 assets = msg.value;
+        
+        uint256 amountETH = msg.value;
+        
         // wrap ether and then call deposit
         IWETH(payable(WETH_ADDRESS)).deposit{ value: msg.value }();
         //// we need to approve the strategy to spend our WETH
         SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), 0);
-        SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), assets);
-        shares = multipoolStrategy.deposit(assets, address(this));
+        SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), amountETH);
+        shares = multipoolStrategy.deposit(amountETH, address(this));
         SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(multipoolStrategy), receiver, shares);
 
         return shares;
