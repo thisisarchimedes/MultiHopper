@@ -63,7 +63,7 @@ contract DeployConvex is Script {
      * @dev The index of the strategies underlying asset in the pool tokens array
      * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
      */
-    int128 constant CURVE_POOL_TOKEN_INDEX = -1;
+    int128 constant CURVE_POOL_TOKEN_INDEX = 0;
 
     /**
      * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
@@ -73,7 +73,7 @@ contract DeployConvex is Script {
     /**
      * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
      */
-    uint256 constant POOL_TOKEN_LENGTH = -1;
+    uint256 constant POOL_TOKEN_LENGTH = 0;
 
     /**
      * @dev address of zapper for pool if needed
