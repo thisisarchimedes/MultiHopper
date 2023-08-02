@@ -4,6 +4,7 @@
 pragma solidity >=0.8.19;
 
 import { BaseScript } from "./Base.s.sol";
+import "forge-std/Script.sol";
 import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
 import { ConvexPoolAdapter } from "src/ConvexPoolAdapter.sol";
 import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
@@ -20,11 +21,15 @@ import { console2 } from "forge-std/console2.sol";
  * @notice we do this in its own script because of the size of the contract and the gas spent
  *
  */
-contract DeployFactory is BaseScript {
+contract DeployFactory is Script {
     address MONITOR = address(0); // TODO : set monitor address before deploy
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
 
-    function run() public broadcaster returns (MultiPoolStrategyFactory factory) {
+    function run() public returns (MultiPoolStrategyFactory factory) {
         require(MONITOR != address(0), "Deploy: monitor address not set");
+
+        vm.startBroadcast(deployerPrivateKey);
+
         //// implementation contract deployments , if there are any issues with script size and deployment you can
         // set the ones you will not use as address(0)
         address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
@@ -43,5 +48,7 @@ contract DeployFactory is BaseScript {
         console2.log(
             "deployed MultiPoolStrategyFactory contract at address %s with monitor %s", address(factory), MONITOR
         );
+
+        vm.stopBroadcast();
     }
 }

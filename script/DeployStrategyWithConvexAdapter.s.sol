@@ -4,6 +4,7 @@
 pragma solidity >=0.8.19;
 
 import { BaseScript } from "./Base.s.sol";
+import "forge-std/Script.sol";
 import { ETHZapper } from "../src/ETHZapper.sol";
 import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
 import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
@@ -19,16 +20,16 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
  *
  */
 
-contract DeployConvex is BaseScript {
+contract DeployConvex is Script {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.
      */
-    address public constant FACTORY_ADDRESS = 0x745D9719de1826773e665E131D4b6B6e66e7A525;
+    address public constant FACTORY_ADDRESS = address(0);
     /**
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant UNDERLYING_ASSET = address(0);
 
     /**
      * @dev Address of the Convex booster contract.
@@ -40,7 +41,7 @@ contract DeployConvex is BaseScript {
      * @dev Address of the Curve pool used in the integration.
      * default: ETH/msETH Curve pool
      */
-    address public constant CURVE_POOL_ADDRESS = address(0); // https://curve.fi/#/ethereum/pools/factory-v2-252/deposit
+    address public constant CURVE_POOL_ADDRESS = address(0); 
 
     /**
      * @dev Convex pool ID used in the integration.
@@ -51,7 +52,7 @@ contract DeployConvex is BaseScript {
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "FRAXBP/UZD Strat";
+    string public constant STRATEGY_NAME = "TBD";
 
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
@@ -62,23 +63,25 @@ contract DeployConvex is BaseScript {
      * @dev The index of the strategies underlying asset in the pool tokens array
      * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
      */
-    int128 constant CURVE_POOL_TOKEN_INDEX = 2;
+    int128 constant CURVE_POOL_TOKEN_INDEX = 0;
 
     /**
      * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
      */
-    bool constant IS_INDEX_UINT = false;
+    bool constant IS_INDEX_UINT = true;
 
     /**
      * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
      */
-    uint256 constant POOL_TOKEN_LENGTH = 3;
+    uint256 constant POOL_TOKEN_LENGTH = 0;
 
     /**
      * @dev address of zapper for pool if needed
      */
-    address constant ZAPPER = 0x08780fb7E580e492c1935bEe4fA5920b94AA95Da;
+    address constant ZAPPER = address(0);
 
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
+    
     /**
      * @dev Executes the deployment and configuration of the Convex Pool Strategy.
      * It performs the following steps:
@@ -90,11 +93,13 @@ contract DeployConvex is BaseScript {
      * 4. Adds the ConvexPoolAdapter to the MultiPoolStrategy contract by calling the addAdapter function.
      * 5. Creates an instance of the ETHZapper contract with the MultiPoolStrategy contract as a parameter.
      */
-    function run() public broadcaster {
+    function run() public {
         require(FACTORY_ADDRESS != address(0), "Deploy: factory address not set");
         require(CURVE_POOL_ADDRESS != address(0), "Deploy: curve pool address not set");
         require(CONVEX_PID != 0, "Deploy: convex pid not set");
         require(CONVEX_BOOSTER != address(0), "Deploy: convex booster address not set");
+
+        vm.startBroadcast(deployerPrivateKey);
 
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
@@ -125,5 +130,8 @@ contract DeployConvex is BaseScript {
             address(multiPoolStrategy),
             address(convexPoolAdapter)
         );
+
+        vm.stopBroadcast();
+
     }
 }
