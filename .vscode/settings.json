@@ -8,4 +8,8 @@
   "npm.exclude": "**/lib/**",
   "solidity.formatter": "forge",
   "solidity.defaultCompiler": "localNodeModule",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8"
+  },
+  "python.formatting.provider": "none",
 }
