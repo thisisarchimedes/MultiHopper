@@ -39,6 +39,8 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         returns (uint256 shares) 
     {
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
+        require(receiver != address(0), "Receiver is zero address");
+
         if (msg.value == 0) revert EmptyInput();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
         if (multipoolStrategy.paused()) revert StrategyPaused();
@@ -46,7 +48,8 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         uint256 amountETH = msg.value;
         
         // wrap ether and then call deposit
-        IWETH(payable(WETH_ADDRESS)).deposit{ value: msg.value }();
+        IWETH(payable(WETH_ADDRESS)).deposit{ value: amountETH }();
+
         //// we need to approve the strategy to spend our WETH
         SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), 0);
         SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), amountETH);
@@ -77,8 +80,8 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
     {
         if (assets == 0) revert EmptyInput();
         require(receiver != address(0), "Receiver is zero address");
-
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
+        
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
 
         /// get WETH balance before withdraw
@@ -86,17 +89,13 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
 
         /// withdraw from strategy and get WETH
         uint256 shares = multipoolStrategy.withdraw(assets, address(this), msg.sender, minimumReceive);
-        
-        /// unwrap WETH to ETH and send to receiver
-        console2.log("withdraw amount (param)", assets);
-        console2.log("weth bal before", IWETH(payable(WETH_ADDRESS)).balanceOf(address(this)));
 
         // calculate actual withdraw amount (sometimes there's a few wei difference)
         assets = IWETH(payable(WETH_ADDRESS)).balanceOf(address(this)) - wethBalancePre;
-        console2.log("withdraw amount (calculate)", assets);
 
         IWETH(payable(WETH_ADDRESS)).withdraw(assets);
         payable(address(receiver)).transfer(assets);
+
         return shares;
     }
     /**
@@ -122,12 +121,16 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         if (shares == 0) revert EmptyInput();
         require(receiver != address(0), "Receiver is zero address");
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
+
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
+
         // redeem shares and get WETH from strategy
         uint256 received = multipoolStrategy.redeem(shares, address(this), msg.sender, minimumReceive);
+        
         // unwrap WETH to ETH and send to receiver
         IWETH(payable(WETH_ADDRESS)).withdraw(received);
         payable(address(receiver)).transfer(received);
+        
         return received;
     }
 
