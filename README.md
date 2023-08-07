@@ -41,7 +41,7 @@ When a user deposits an asset (Like: ETH or USDC), strategy keeps it idle within
 
 Strategy can support one of more pools. We call a strategy that supports only one pool “Single Pool Strategy”.
 
-Strategy only supports one underlying asset (e.g.: WETH or USDC). So in order for users to deposit and withdraw ETH or USDT (as an example) we are building zappers.
+Strategy only supports one ERC-20 as underlying asset (e.g.: WETH or USDC). So in order for users to deposit and withdraw ETH or USDT (as an example) we are building zappers.
 
 ### Adaptors
 
@@ -50,6 +50,10 @@ Strategy only supports one underlying asset (e.g.: WETH or USDC). So in order fo
 Each AMM has its own interface. There is also variation between different types of pool implementation of the same AMM. Therefore, Strategy interacts with adapter layers that abstract and standardize the AMM.
 
 We currently support Convex (Curve booster) and several Aura (Balancer booster) pools.
+* Curve/Convex pools
+* Balancer/Aura Composable Stable Pool
+* Balancer/Aura Stable Pool
+* Balancer/Aura Weighted Pool
 
 ### Factory
 [MultiPoolStrategyFactory.sol]
