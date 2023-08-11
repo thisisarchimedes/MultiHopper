@@ -43,7 +43,7 @@ contract USDCZapperTest is PRBTest, StdCheats {
     address public staker = makeAddr("staker");
     address public feeRecipient = makeAddr("feeRecipient");
 
-    uint256 public tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
+    uint256 public tokenDecimals;
 
     function setUp() public virtual {
         vm.createSelectFork({urlOrAlias: "mainnet", blockNumber: DEFAULT_FORK_BLOCK_NUMBER});
@@ -88,6 +88,8 @@ contract USDCZapperTest is PRBTest, StdCheats {
 
         // (address _curveLpToken,,,,,) = IBooster(CONVEX_BOOSTER).poolInfo(CONVEX_PID);
         // curveLpToken = IERC20(_curveLpToken);
+
+        tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
 
         deal(UNDERLYING_ASSET, address(this), 10_000 ether);
         deal(UNDERLYING_ASSET, staker, 50 ether);
