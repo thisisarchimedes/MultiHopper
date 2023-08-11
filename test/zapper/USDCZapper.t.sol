@@ -18,7 +18,20 @@ import { USDCZapper } from "../../src/zapper/USDCZapper.sol";
 
 contract USDCZapperTest is PRBTest, StdCheats {
     uint256 public constant DEFAULT_FORK_BLOCK_NUMBER = 17_886_763;
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet
+
+    address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet
+    address public constant CONVEX_BOOSTER = 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa;
+    address public constant CURVE_POOL_ADDRESS = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
+    address public constant ZAPPER = address(0);
+
+    uint256 public constant CONVEX_PID = 0;
+    uint256 constant POOL_TOKEN_LENGTH = 0;
+    int128 constant CURVE_POOL_TOKEN_INDEX = 10;
+
+    string public constant STRATEGY_NAME = "STRATEGY_NAME";
+
+    bool constant USE_ETH = false;
+    bool constant IS_INDEX_UINT = false;
 
     IZapper public USDCzapper;
 
