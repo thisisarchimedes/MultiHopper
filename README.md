@@ -95,6 +95,13 @@ Make sure you set up a python virtual environment and install the requirements.t
 
 `pip install -r requirements.txt`
 
+## Test fail for a some pools but not others
+
+Tests generally pass, but fail for a specific Convex/Aura pool. This is usually because the pool is not supported by the
+adaptor.
+
+Some more exotic or complex pools are not supported.
+
 # License
 
 This project is licensed under Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public
