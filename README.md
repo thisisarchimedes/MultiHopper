@@ -71,6 +71,8 @@ We currently support Convex (Curve booster) and several Aura (Balancer booster) 
 - Balancer/Aura Stable Pool
 - Balancer/Aura Weighted Pool
 
+Note: not all Convex/Aura pools are supported. Some wrapped coins and more "exotic" pools might not be supported.
+
 ### Factory
 
 [MultiPoolStrategyFactory.sol]
