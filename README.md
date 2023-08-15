@@ -85,11 +85,6 @@ We use factory architecture. Factory is deployed once and generates Adopters and
 
 <img width="6000" alt="MultiPoolDrawing" src="https://github.com/thisisarchimedes/MultiHopper/assets/98904111/030b6daa-e6dd-4b29-9b83-15dc9186772c">
 
-## License
-
-This project is licensed under Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public
-License.
-
 # Troubleshooting
 
 ## Python virtual enviornment
@@ -97,3 +92,8 @@ License.
 Make sure you set up a python virtual environment and install the requirements.txt file.
 
 `pip install -r requirements.txt`
+
+# License
+
+This project is licensed under Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public
+License.
