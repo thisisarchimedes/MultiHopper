@@ -1,17 +1,30 @@
 pragma solidity ^0.8.10;
 
 interface ICurveBasePool {
+    function lp_token() external view returns (address);
     function balances(uint256 arg0) external view returns (uint256);
     function calc_token_amount(uint256[3] memory amounts, bool deposit) external view returns (uint256);
     function calc_withdraw_one_coin(uint256, int128) external view returns (uint256);
     function calc_withdraw_one_coin(uint256, uint256) external view returns (uint256);
     function coins(uint256 arg0) external view returns (address);
-    function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external;
+    function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external returns (uint256);
     function get_dy(int128 i, int128 j, uint256 dx) external view returns (uint256);
     function get_dy_underlying(int128 i, int128 j, uint256 dx) external view returns (uint256);
     function get_virtual_price() external view returns (uint256);
-    function remove_liquidity_one_coin(uint256 _token_amount, int128 i, uint256 min_amount) external;
-    function remove_liquidity_one_coin(uint256 _token_amount, uint256 i, uint256 min_amount) external;
+    function remove_liquidity_one_coin(
+        uint256 _token_amount,
+        int128 i,
+        uint256 min_amount
+    )
+        external
+        returns (uint256);
+    function remove_liquidity_one_coin(
+        uint256 _token_amount,
+        uint256 i,
+        uint256 min_amount
+    )
+        external
+        returns (uint256);
 }
 
 interface ICurveMetaPool {

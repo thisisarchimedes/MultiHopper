@@ -2,6 +2,14 @@
 pragma solidity ^0.8.10;
 
 interface IZapper {
+    error StrategyPaused();
+    error StrategyAssetDoesNotMatchUnderlyingAsset();
+    error EmptyInput();
+    error WithdrawalAmountZero();
+    error ZeroAddress();
+    error InvalidAsset();
+    error PoolDoesNotExist();
+
     /**
      * @dev Deposits asset into the MultiPoolStrategy contract.
      * @param amount The asset amount user wants to deposit.
@@ -11,6 +19,7 @@ interface IZapper {
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @return shares The amount of shares received.
      */
+
     function deposit(
         uint256 amount,
         address token,
