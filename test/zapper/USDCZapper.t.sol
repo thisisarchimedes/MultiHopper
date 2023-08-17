@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.19 <0.9.0;
 
-import { StdCheats, console2 } from "forge-std/Test.sol";
+import { StdCheats, StdUtils, console2 } from "forge-std/Test.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { IERC20Metadata as IERC20 } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
@@ -12,7 +12,7 @@ import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { USDCZapper } from "../../src/zapper/USDCZapper.sol";
 
-contract USDCZapperTest is PRBTest, StdCheats {
+contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 public constant DEFAULT_FORK_BLOCK_NUMBER = 17_886_763;
     uint256 public constant ETHER_DECIMALS = 18;
 
@@ -133,14 +133,8 @@ contract USDCZapperTest is PRBTest, StdCheats {
         SafeERC20.safeApprove(IERC20(CRVFRAX), address(usdcZapper), type(uint256).max);
     }
 
-    function testDepositUSDT(uint256 usdtAmountWith18Decimals) public {
-        // this one doesn't work because sometimes forge throws an error:
-        // `vm.assume` cheatcode rejected too many inputs (65536 allowed)
-        // that's why here we usdt with 18 decimals
-        vm.assume(usdtAmountWith18Decimals > 1 ether && usdtAmountWith18Decimals < 10_000_000 ether);
-
-        // convert 18 decimals to 6 decimals
-        uint256 usdtAmount = usdtAmountWith18Decimals / (10 ** (ETHER_DECIMALS - IERC20(USDT).decimals()));
+    function testDepositUSDT(uint256 usdtAmount) public {
+        usdtAmount = bound(usdtAmount, 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals());
 
         uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
