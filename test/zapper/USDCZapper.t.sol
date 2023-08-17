@@ -14,6 +14,7 @@ import { USDCZapper } from "../../src/zapper/USDCZapper.sol";
 
 contract USDCZapperTest is PRBTest, StdCheats {
     uint256 public constant DEFAULT_FORK_BLOCK_NUMBER = 17_886_763;
+    uint256 public constant ETHER_DECIMALS = 18;
 
     address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet, underlying asset
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT - mainnet
@@ -132,8 +133,14 @@ contract USDCZapperTest is PRBTest, StdCheats {
         SafeERC20.safeApprove(IERC20(CRVFRAX), address(usdcZapper), type(uint256).max);
     }
 
-    function testDepositUSDT(uint128 usdtAmount) public {
-        vm.assume(usdtAmount > 10 ** IERC20(USDT).decimals() && usdtAmount < 10_000_000 * 10 ** IERC20(USDT).decimals());
+    function testDepositUSDT(uint256 usdtAmountWith18Decimals) public {
+        // this one doesn't work because sometimes forge throws an error:
+        // `vm.assume` cheatcode rejected too many inputs (65536 allowed)
+        // that's why here we usdt with 18 decimals
+        vm.assume(usdtAmountWith18Decimals > 1 ether && usdtAmountWith18Decimals < 10_000_000 ether);
+
+        // convert 18 decimals to 6 decimals
+        uint256 usdtAmount = usdtAmountWith18Decimals / (10 ** (ETHER_DECIMALS - IERC20(USDT).decimals()));
 
         uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
