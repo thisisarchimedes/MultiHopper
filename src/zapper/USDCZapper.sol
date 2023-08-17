@@ -28,7 +28,7 @@ contract USDCZapper is ReentrancyGuard, IZapper {
     address public constant CRVFRAX = 0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC; // CRVFRAX
 
     address public constant CURVE_3POOL = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // DAI+USDC+USDT
-    address public constant CURVE_FRAXUSDC = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // FRAX+USDC
+    address public constant CURVE_FRAXUSDC = 0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2; // FRAX+USDC
 
     int128 public constant UNDERLYING_ASSET_INDEX = 1; // USDC Index - for both 3Pool and FRAXUSDC
     int128 public constant DAI_INDEX = 0; // DAI Index - for 3Pool
