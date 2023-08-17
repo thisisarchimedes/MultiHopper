@@ -118,6 +118,7 @@ contract USDCZapperTest is PRBTest, StdCheats {
         deal(UNDERLYING_ASSET, address(this), 1000 ether);
         deal(USDT, address(this), 1000 ether);
         deal(DAI, address(this), 1000 ether);
+        deal(FRAX, address(this), 1000 ether);
         deal(CRV, address(this), 1000 ether);
         deal(CRVFRAX, address(this), 1000 ether);
 
@@ -126,12 +127,13 @@ contract USDCZapperTest is PRBTest, StdCheats {
         SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), address(usdcZapper), type(uint256).max);
         SafeERC20.safeApprove(IERC20(USDT), address(usdcZapper), type(uint256).max);
         SafeERC20.safeApprove(IERC20(DAI), address(usdcZapper), type(uint256).max);
+        SafeERC20.safeApprove(IERC20(FRAX), address(usdcZapper), type(uint256).max);
         SafeERC20.safeApprove(IERC20(CRV), address(usdcZapper), type(uint256).max);
         SafeERC20.safeApprove(IERC20(CRVFRAX), address(usdcZapper), type(uint256).max);
     }
 
     function testDepositUSDT(uint256 usdtAmount) public {
-        vm.assume(usdtAmount > 10 * 10 ** 6 && usdtAmount < 10_000_000 * 10 ** 6);
+        vm.assume(usdtAmount > 10 ** IERC20(USDT).decimals() && usdtAmount < 10_000_000 * 10 ** IERC20(USDT).decimals());
 
         uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
@@ -154,7 +156,54 @@ contract USDCZapperTest is PRBTest, StdCheats {
         assertAlmostEq(usdcActualBalanceOfMultiPoolStrategy, shares, shares * 1 / 100);
     }
 
-    function testDepositDAI(uint256 amount) public { }
+    // function testDepositDAI(uint256 daiAmount) public {
+    //     daiAmount = 1000 * 10 ** 6;
+    //     vm.assume(daiAmount > 10 * 10 ** 6 && daiAmount < 10_000_000 * 10 ** 6);
+
+    //     uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+    //     uint256 daiBalanceOfThisPre = IERC20(DAI).balanceOf(address(this));
+    //     uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
+
+    //     uint256 shares = usdcZapper.deposit(daiAmount, DAI, 0, address(this), address(multiPoolStrategy));
+
+    //     uint256 usdcActualBalanceOfMultiPoolStrategy =
+    //         IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
+
+    //     // check that swap fees are less than 1%
+    //     assertAlmostEq(daiAmount, usdcActualBalanceOfMultiPoolStrategy, usdcActualBalanceOfMultiPoolStrategy / 100);
+    //     // check dai amount of this contract after deposit
+    //     assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre - daiAmount);
+    //     // check usdc amount of multipool strategy after deposit
+    //     assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcActualBalanceOfMultiPoolStrategy);
+    //     // check shares amount of this contract after deposit
+    //     assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
+    //     // check shares amount matches usdt amount
+    //     assertAlmostEq(usdcActualBalanceOfMultiPoolStrategy, shares, shares * 1 / 100);
+    // }
+
+    // function testDepositFRAX(uint256 fraxAmount) public {
+    //     fraxAmount = 1000 * 10 ** 18;
+    //     vm.assume(fraxAmount > 10 * 10 ** 18 && fraxAmount < 10_000_000 * 10 ** 18);
+
+    //     uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+    //     uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
+    //     uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
+    //     uint256 shares = usdcZapper.deposit(fraxAmount, FRAX, 0, address(this), address(multiPoolStrategy));
+
+    //     uint256 usdcActualBalanceOfMultiPoolStrategy =
+    //         IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
+
+    //     // check that swap fees are less than 1%
+    //     assertAlmostEq(fraxAmount, usdcActualBalanceOfMultiPoolStrategy, usdcActualBalanceOfMultiPoolStrategy / 100);
+    //     // check frax amount of this contract after deposit
+    //     assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre - fraxAmount);
+    //     // check usdc amount of multipool strategy after deposit
+    //     assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcActualBalanceOfMultiPoolStrategy);
+    //     // check shares amount of this contract after deposit
+    //     assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
+    //     // check shares amount matches usdt amount
+    //     assertAlmostEq(usdcActualBalanceOfMultiPoolStrategy, shares, shares * 1 / 100);
+    // }
 
     function testDeposit3CRV() public { }
     function testDepositCRVFRAX() public { }
