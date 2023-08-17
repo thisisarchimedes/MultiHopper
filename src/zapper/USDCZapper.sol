@@ -19,25 +19,40 @@ contract USDCZapper is ReentrancyGuard, IZapper {
         bool isLpToken;
     }
 
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
-    address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT
-    address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI
+    address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
+    address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI
+    address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e; // FRAX
 
-    address constant CRV = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490; // CRV
-    address constant CRVFRAX = 0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC; // CRVFRAX
+    address public constant CRV = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490; // CRV
+    address public constant CRVFRAX = 0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC; // CRVFRAX
 
-    int128 constant UNDERLYING_ASSET_INDEX = 1; // USDC index in the pool
+    address public constant CURVE_3POOL = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // DAI+USDC+USDT
+    address public constant CURVE_FRAXUSDC = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // FRAX+USDC
+
+    int128 public constant UNDERLYING_ASSET_INDEX = 1; // USDC Index - for both 3Pool and FRAXUSDC
+    int128 public constant DAI_INDEX = 0; // DAI Index - for 3Pool
+    int128 public constant USDT_INDEX = 2; // USDT Index - for 3Pool
+    int128 public constant FRAX_INDEX = 0; // FRAX Index - for FRAXUSDC
 
     EnumerableSet.AddressSet private _supportedAssets;
     mapping(address => AssetInfo) private _supportedAssetsInfo;
 
-    constructor(address[] memory assets, address[] memory pools, int128[] memory indexes, bool[] memory isLpTokens) {
-        require(assets.length == pools.length && assets.length == indexes.length, "Arrays length mismatch");
+    constructor() {
+        // add stablecoins
+        _supportedAssets.add(USDT);
+        _supportedAssets.add(DAI);
+        _supportedAssets.add(FRAX);
+        // add lp tokens
+        _supportedAssets.add(CRV);
+        _supportedAssets.add(CRVFRAX);
 
-        for (uint256 i = 0; i < assets.length; i++) {
-            _supportedAssets.add(assets[i]);
-            _supportedAssetsInfo[assets[i]] = AssetInfo(pools[i], indexes[i], isLpTokens[i]);
-        }
+        _supportedAssetsInfo[USDT] = AssetInfo({pool: CURVE_3POOL, index: USDT_INDEX, isLpToken: false});
+        _supportedAssetsInfo[DAI] = AssetInfo({pool: CURVE_3POOL, index: DAI_INDEX, isLpToken: false});
+        _supportedAssetsInfo[FRAX] = AssetInfo({pool: CURVE_FRAXUSDC, index: FRAX_INDEX, isLpToken: false});
+        // for lp tokens indexes are set as int128.max, as we don't need them
+        _supportedAssetsInfo[CRV] = AssetInfo({pool: CURVE_3POOL, index: type(int128).max, isLpToken: true});
+        _supportedAssetsInfo[CRVFRAX] = AssetInfo({pool: CURVE_FRAXUSDC, index: type(int128).max, isLpToken: true});
     }
 
     function deposit(
@@ -79,9 +94,16 @@ contract USDCZapper is ReentrancyGuard, IZapper {
         // make swap, approval must be given before calling this function
         // minAmount is checked inside pool so not necessary to check it here
         ICurveBasePool pool = ICurveBasePool(assetInfo.pool);
-        uint256 underlyingAmount = assetInfo.isLpToken
+
+        // TODO: I'd prefer to use address.call here, as some pool implementations return amount, some not.
+        // If call eventually returns some data, we can use it in a upcoming calls, if not we need to call UNDERLYING_ASSET.balanceOf(address(this))
+        uint256 balancePre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+
+        assetInfo.isLpToken
             ? pool.remove_liquidity_one_coin(amount, assetInfo.index, minAmount)
             : pool.exchange(assetInfo.index, UNDERLYING_ASSET_INDEX, amount, minAmount);
+
+        uint256 underlyingAmount = IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - balancePre;
 
         // we need to approve the strategy to spend underlying asset
         SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), strategyAddress, 0);
@@ -93,7 +115,7 @@ contract USDCZapper is ReentrancyGuard, IZapper {
         // transfer shares to receiver
         SafeERC20.safeTransfer(IERC20(strategyAddress), receiver, shares);
 
-        return 0;
+        return shares;
     }
 
     function withdraw(
