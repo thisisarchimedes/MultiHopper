@@ -132,7 +132,7 @@ contract USDCZapperTest is PRBTest, StdCheats {
         SafeERC20.safeApprove(IERC20(CRVFRAX), address(usdcZapper), type(uint256).max);
     }
 
-    function testDepositUSDT(uint256 usdtAmount) public {
+    function testDepositUSDT(uint128 usdtAmount) public {
         vm.assume(usdtAmount > 10 ** IERC20(USDT).decimals() && usdtAmount < 10_000_000 * 10 ** IERC20(USDT).decimals());
 
         uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
