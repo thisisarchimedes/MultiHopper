@@ -6,6 +6,8 @@ import { PRBTest } from "@prb/test/PRBTest.sol";
 import { IERC20Metadata as IERC20 } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IZapper } from "../../src/interfaces/IZapper.sol";
+
+import { ICurveBasePool, ICurve3Pool } from "../../src/interfaces/ICurvePool.sol";
 import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
 import { ConvexPoolAdapter } from "../../src/ConvexPoolAdapter.sol";
 import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
@@ -27,7 +29,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     address public constant ZAPPER = address(0);
 
     address public constant CURVE_3POOL = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // DAI+USDC+USDT
-    address public constant CURVE_FRAXUSDC = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // FRAX+USDC
+    address public constant CURVE_FRAXUSDC = 0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2; // FRAX+USDC
 
     uint256 public constant CONVEX_3POOL_PID = 9;
     uint256 public constant CONVEX_FRAXUSDC_PID = 100;
@@ -36,13 +38,16 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 constant CURVE_FRAXUSDC_TOKEN_LENGTH = 2;
 
     int128 public constant UNDERLYING_ASSET_INDEX = 1; // USDC Index - for both 3Pool and FRAXUSDC
+    int128 public constant DAI_INDEX = 0; // DAI Index - for 3Pool
+    int128 public constant USDT_INDEX = 2; // USDT Index - for 3Pool
+    int128 public constant FRAX_INDEX = 0; // FRAX Index - for FRAXUSDC
 
     string public constant STRATEGY_NAME = "Cool Strategy";
 
     bool constant USE_ETH = false;
     bool constant IS_INDEX_UINT = true;
 
-    IZapper public usdcZapper;
+    USDCZapper public usdcZapper;
 
     MultiPoolStrategyFactory public multiPoolStrategyFactory;
     MultiPoolStrategy public multiPoolStrategy;
@@ -115,13 +120,13 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         multiPoolStrategy.addAdapter(address(convexFraxUsdcAdapter));
         multiPoolStrategy.changeFeeRecipient(feeRecipient);
 
-        deal(address(this), 1000 ether);
-        deal(UNDERLYING_ASSET, address(this), 1000 ether);
-        deal(USDT, address(this), 1000 ether);
-        deal(DAI, address(this), 1000 ether);
-        deal(FRAX, address(this), 1000 ether);
-        deal(CRV, address(this), 1000 ether);
-        deal(CRVFRAX, address(this), 1000 ether);
+        deal(address(this), 100_000_000 ether);
+        deal(UNDERLYING_ASSET, address(this), 100_000_000 ether);
+        deal(USDT, address(this), 100_000_000 ether);
+        deal(DAI, address(this), 100_000_000 ether);
+        deal(FRAX, address(this), 100_000_000 ether);
+        deal(CRV, address(this), 100_000_000 ether);
+        deal(CRVFRAX, address(this), 100_000_000 ether);
 
         deal(UNDERLYING_ASSET, staker, 50 ether);
 
@@ -133,85 +138,233 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         SafeERC20.safeApprove(IERC20(CRVFRAX), address(usdcZapper), type(uint256).max);
     }
 
-    function testDepositUSDT(uint256 usdtAmount) public {
-        usdtAmount = bound(usdtAmount, 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals());
+    // DEPOSIT - POSITIVE TESTS
+    function testDepositUSDT(uint256 amountToDeposit) public {
+        // get usdt amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals());
 
         uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
         uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
 
-        uint256 shares = usdcZapper.deposit(usdtAmount, USDT, 0, address(this), address(multiPoolStrategy));
+        // get the amount of usdc coin one would receive for swapping amount of usdt coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(USDT_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
 
-        uint256 usdcActualBalanceOfMultiPoolStrategy =
+        uint256 shares = usdcZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy));
+
+        uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
 
         // check that swap fees are less than 1%
-        assertAlmostEq(usdtAmount, usdcActualBalanceOfMultiPoolStrategy, usdcActualBalanceOfMultiPoolStrategy / 100);
+        assertAlmostEq(
+            amountToDeposit, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+        );
+        // check that swap works correctly
+        assertAlmostEq(
+            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+        );
         // check usdt amount of this contract after deposit
-        assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre - usdtAmount);
-        // check usdc amount of multipool strategy after deposit
-        assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcActualBalanceOfMultiPoolStrategy);
+        assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre - amountToDeposit);
+        // check usdc deposited amount of multipool strategy after deposit
+        assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcDepositedAmountToMultiPoolStrategy);
         // check shares amount of this contract after deposit
         assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
         // check shares amount matches usdt amount
-        assertAlmostEq(usdcActualBalanceOfMultiPoolStrategy, shares, shares * 1 / 100);
+        assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
     }
 
-    // function testDepositDAI(uint256 daiAmount) public {
-    //     daiAmount = 1000 * 10 ** 6;
-    //     vm.assume(daiAmount > 10 * 10 ** 6 && daiAmount < 10_000_000 * 10 ** 6);
+    function testDepositDAI(uint256 amountToDeposit) public {
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(DAI).decimals(), 10_000_000 * 10 ** IERC20(DAI).decimals());
 
-    //     uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
-    //     uint256 daiBalanceOfThisPre = IERC20(DAI).balanceOf(address(this));
-    //     uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
+        uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+        uint256 daiBalanceOfThisPre = IERC20(DAI).balanceOf(address(this));
+        uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
 
-    //     uint256 shares = usdcZapper.deposit(daiAmount, DAI, 0, address(this), address(multiPoolStrategy));
+        // get the amount of usdc coin one would receive for swapping amount of dai coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(DAI_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
 
-    //     uint256 usdcActualBalanceOfMultiPoolStrategy =
-    //         IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
+        uint256 shares = usdcZapper.deposit(amountToDeposit, DAI, 0, address(this), address(multiPoolStrategy));
 
-    //     // check that swap fees are less than 1%
-    //     assertAlmostEq(daiAmount, usdcActualBalanceOfMultiPoolStrategy, usdcActualBalanceOfMultiPoolStrategy / 100);
-    //     // check dai amount of this contract after deposit
-    //     assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre - daiAmount);
-    //     // check usdc amount of multipool strategy after deposit
-    //     assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcActualBalanceOfMultiPoolStrategy);
-    //     // check shares amount of this contract after deposit
-    //     assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
-    //     // check shares amount matches usdt amount
-    //     assertAlmostEq(usdcActualBalanceOfMultiPoolStrategy, shares, shares * 1 / 100);
-    // }
+        uint256 usdcDepositedAmountToMultiPoolStrategy =
+            IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
 
-    // function testDepositFRAX(uint256 fraxAmount) public {
-    //     fraxAmount = 1000 * 10 ** 18;
-    //     vm.assume(fraxAmount > 10 * 10 ** 18 && fraxAmount < 10_000_000 * 10 ** 18);
+        // convert dai 18 decimals to 6 decimals
+        uint256 daiAmount6Decimals =
+            amountToDeposit / (10 ** (IERC20(DAI).decimals() - IERC20(UNDERLYING_ASSET).decimals()));
 
-    //     uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
-    //     uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
-    //     uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
-    //     uint256 shares = usdcZapper.deposit(fraxAmount, FRAX, 0, address(this), address(multiPoolStrategy));
+        // check that swap fees are less than 1%
+        assertAlmostEq(
+            daiAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+        );
 
-    //     uint256 usdcActualBalanceOfMultiPoolStrategy =
-    //         IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
+        // check that swap works correctly
+        assertAlmostEq(
+            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+        );
 
-    //     // check that swap fees are less than 1%
-    //     assertAlmostEq(fraxAmount, usdcActualBalanceOfMultiPoolStrategy, usdcActualBalanceOfMultiPoolStrategy / 100);
-    //     // check frax amount of this contract after deposit
-    //     assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre - fraxAmount);
-    //     // check usdc amount of multipool strategy after deposit
-    //     assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcActualBalanceOfMultiPoolStrategy);
-    //     // check shares amount of this contract after deposit
-    //     assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
-    //     // check shares amount matches usdt amount
-    //     assertAlmostEq(usdcActualBalanceOfMultiPoolStrategy, shares, shares * 1 / 100);
-    // }
+        // check dai amount of this contract after deposit
+        assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre - amountToDeposit);
+        // check deposited usdc amount of multipool strategy after deposit
+        assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcDepositedAmountToMultiPoolStrategy);
+        // check shares amount of this contract after deposit
+        assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
+        // check shares amount matches usdt amount
+        assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
+    }
 
-    function testDeposit3CRV() public { }
-    function testDepositCRVFRAX() public { }
+    function testDepositFRAX(uint256 amountToDeposit) public {
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(FRAX).decimals(), 10_000_000 * 10 ** IERC20(FRAX).decimals());
+
+        uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+        uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
+        uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
+        uint256 shares = usdcZapper.deposit(amountToDeposit, FRAX, 0, address(this), address(multiPoolStrategy));
+
+        // get the amount of usdc coin one would receive for swapping amount of frax coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_FRAXUSDC).get_dy(FRAX_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+
+        uint256 usdcDepositedAmountToMultiPoolStrategy =
+            IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
+
+        // convert frax 18 decimals to 6 decimals
+        uint256 fraxAmount6Decimals =
+            amountToDeposit / (10 ** (IERC20(FRAX).decimals() - IERC20(UNDERLYING_ASSET).decimals()));
+
+        // check that swap fees are less than 1%
+        assertAlmostEq(
+            fraxAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+        );
+
+        // check that swap works correctly
+        assertAlmostEq(
+            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+        );
+
+        // check frax amount of this contract after deposit
+        assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre - amountToDeposit);
+        // check deposited usdc amount of multipool strategy after deposit
+        assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcDepositedAmountToMultiPoolStrategy);
+        // check shares amount of this contract after deposit
+        assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
+        // check shares amount matches usdt amount
+        assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
+    }
+
+    function testDeposit3CRV(uint256 amountToDeposit) public {
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(CRV).decimals(), 10_000_000 * 10 ** IERC20(CRV).decimals());
+
+        uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+        uint256 crvBalanceOfThisPre = IERC20(CRV).balanceOf(address(this));
+        uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
+
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+
+        uint256 shares = usdcZapper.deposit(amountToDeposit, CRV, 0, address(this), address(multiPoolStrategy));
+
+        uint256 usdcDepositedAmountToMultiPoolStrategy =
+            IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
+
+        // check that swap works correctly
+        assertEq(calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy);
+        // check crv amount of this contract after deposit
+        assertEq(IERC20(CRV).balanceOf(address(this)), crvBalanceOfThisPre - amountToDeposit);
+        // check deposited usdc amount of multipool strategy after deposit
+        assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcDepositedAmountToMultiPoolStrategy);
+        // check shares amount of this contract after deposit
+        assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
+        // check shares amount matches usdt amount
+        assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
+    }
+
+    function testDepositCRVFRAX(uint256 amountToDeposit) public {
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(CRVFRAX).decimals(), 10_000_000 * 10 ** IERC20(CRVFRAX).decimals());
+
+        uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+        uint256 crvFraxBalanceOfThisPre = IERC20(CRVFRAX).balanceOf(address(this));
+        uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
+
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_FRAXUSDC).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+
+        uint256 shares = usdcZapper.deposit(amountToDeposit, CRVFRAX, 0, address(this), address(multiPoolStrategy));
+
+        uint256 usdcDepositedAmountToMultiPoolStrategy =
+            IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
+
+        // check that swap works correctly
+        assertEq(calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy);
+        // check crvfrax amount of this contract after deposit
+        assertEq(IERC20(CRVFRAX).balanceOf(address(this)), crvFraxBalanceOfThisPre - amountToDeposit);
+        // check deposited usdc amount of multipool strategy after deposit
+        assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, usdcDepositedAmountToMultiPoolStrategy);
+        // check shares amount of this contract after deposit
+        assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
+        // check shares amount matches usdt amount
+        assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
+    }
+
+    // DEPOSIT - NEGATIVE TESTS
+    function testDepositRevertZeroAddress() public {
+        address receiver = address(0);
+
+        vm.expectRevert(IZapper.ZeroAddress.selector);
+        usdcZapper.deposit(1, USDT, 0, receiver, address(multiPoolStrategy));
+    }
+
+    function testDepositRevertStrategyAssetDoesNotMatchUnderlyingAsset() public {
+        address strategyWithEth = 0x3836bCA6e2128367ffDBa4B2f82c510F03030F19;
+
+        vm.expectRevert(IZapper.StrategyAssetDoesNotMatchUnderlyingAsset.selector);
+        usdcZapper.deposit(1, USDT, 0, address(this), strategyWithEth);
+    }
+
+    function testDepositRevertEmptyInput() public {
+        uint256 amount = 0;
+
+        vm.expectRevert(IZapper.EmptyInput.selector);
+        usdcZapper.deposit(amount, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testDepositRevertMultiPoolStrategyIsPaused() public {
+        multiPoolStrategy.togglePause();
+
+        vm.expectRevert(IZapper.StrategyPaused.selector);
+        usdcZapper.deposit(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testDepositRevertInvalidAsset() public {
+        usdcZapper.removeAsset(USDT);
+
+        vm.expectRevert(IZapper.InvalidAsset.selector);
+        usdcZapper.deposit(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testDepositRevertPoolDoesNotExist() public {
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({pool: address(0), index: 0, isLpToken: false}));
+
+        vm.expectRevert(IZapper.PoolDoesNotExist.selector);
+        usdcZapper.deposit(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    // WITHDRAW
     function testWithdrawUSDT() public { }
     function testWithdrawDAI() public { }
     function testWithdraw3CRV() public { }
     function testWithdrawCRVFRAX() public { }
+    function testWithdrawRevert() public { }
+
+    // REDEEM
     function testRedeemUSDT() public { }
     /*
     *   1. Get random amount of USDT
@@ -222,8 +375,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     function testRedeemDAI() public { }
     function testRedeem3CRV() public { }
     function testRedeemCRVFRAX() public { }
-    function testDepositRevert() public { }
-    function testWithdrawRevert() public { }
     function testRedeemRevert() public { }
+
+    // UTILITY
     function testStrategyUsesUnderlyingAsset() public { }
 }
