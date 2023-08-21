@@ -6,11 +6,14 @@ import { ICurveBasePool } from "../interfaces/ICurvePool.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "../MultiPoolStrategy.sol";
 import { console2 } from "forge-std/console2.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/security/ReentrancyGuard.sol";
+import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/utils/structs/EnumerableSet.sol";
 
-contract USDCZapper is ReentrancyGuard, IZapper {
+contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
+    // Library for working with the _supportedAssets AddressSet.
+    // Elements are added, removed, and checked for existence in constant time (O(1)).
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct AssetInfo {
@@ -35,6 +38,7 @@ contract USDCZapper is ReentrancyGuard, IZapper {
     int128 public constant USDT_INDEX = 2; // USDT Index - for 3Pool
     int128 public constant FRAX_INDEX = 0; // FRAX Index - for FRAXUSDC
 
+    // Collection of unique addresses representing supported assets
     EnumerableSet.AddressSet private _supportedAssets;
     mapping(address => AssetInfo) private _supportedAssetsInfo;
 
@@ -55,6 +59,9 @@ contract USDCZapper is ReentrancyGuard, IZapper {
         _supportedAssetsInfo[CRVFRAX] = AssetInfo({pool: CURVE_FRAXUSDC, index: type(int128).max, isLpToken: true});
     }
 
+    /**
+     * @inheritdoc IZapper
+     */
     function deposit(
         uint256 amount,
         address token,
@@ -118,6 +125,9 @@ contract USDCZapper is ReentrancyGuard, IZapper {
         return shares;
     }
 
+    /**
+     * @inheritdoc IZapper
+     */
     function withdraw(
         uint256 amount,
         address withdrawToken,
@@ -131,6 +141,9 @@ contract USDCZapper is ReentrancyGuard, IZapper {
         returns (uint256 sharesBurnt)
     { }
 
+    /**
+     * @inheritdoc IZapper
+     */
     function redeem(
         uint256 sharesAmount,
         uint256 minRedeemAmount,
@@ -144,6 +157,9 @@ contract USDCZapper is ReentrancyGuard, IZapper {
         returns (uint256 amount)
     { }
 
+    /**
+     * @inheritdoc IZapper
+     */
     function strategyUsesUnderlyingAsset(address strategyAddress) public view override returns (bool) {
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
         return multipoolStrategy.asset() == address(UNDERLYING_ASSET);
