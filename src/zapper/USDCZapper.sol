@@ -16,6 +16,7 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
     // Elements are added, removed, and checked for existence in constant time (O(1)).
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    // Struct containing information about a supported asset. In our case we use pools that have an index type of int128
     struct AssetInfo {
         address pool;
         int128 index;
