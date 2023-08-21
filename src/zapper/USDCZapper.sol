@@ -85,8 +85,6 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         if (amount == 0) revert EmptyInput();
         // check if the correct strategy provided and it matches underlying asset
         if (!strategyUsesUnderlyingAsset(strategyAddress)) revert StrategyAssetDoesNotMatchUnderlyingAsset();
-        // check if the amount is not zero
-        if (amount == 0) revert EmptyInput();
 
         // check if the strategy is not paused
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
@@ -164,10 +162,56 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
     { }
 
     /**
+     * @dev Checks if an asset is supported.
+     * @param asset The asset address to check.
+     * @return True if the asset is supported, false otherwise.
+     */
+    function assetIsSupported(address asset) external view returns (bool) {
+        return _supportedAssets.contains(asset);
+    }
+
+    /**
+     * @dev Retrieves information about a supported asset.
+     * @param asset The asset address to retrieve information for.
+     * @return AssetInfo struct containing the asset's pool, index, and LP token status.
+     */
+    function getAssetInfo(address asset) external view returns (AssetInfo memory) {
+        return _supportedAssetsInfo[asset];
+    }
+
+    /**
      * @inheritdoc IZapper
      */
     function strategyUsesUnderlyingAsset(address strategyAddress) public view override returns (bool) {
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
         return multipoolStrategy.asset() == address(UNDERLYING_ASSET);
+    }
+
+    /**
+     * @dev Adds a new asset to the list of supported assets along with its related info.
+     * @param asset The address of the asset to add.
+     * @param assetInfo Struct containing pool, index, and LP token status information for the asset.
+     */
+    function addAsset(address asset, AssetInfo memory assetInfo) public onlyOwner {
+        _supportedAssets.add(asset);
+        _supportedAssetsInfo[asset] = assetInfo;
+    }
+
+    /**
+     * @dev Updates information about a supported asset.
+     * @param asset The address of the asset to update information for.
+     * @param assetInfo New struct containing updated pool, index, and LP token status information for the asset.
+     */
+    function updateAsset(address asset, AssetInfo memory assetInfo) public onlyOwner {
+        _supportedAssetsInfo[asset] = assetInfo;
+    }
+
+    /**
+     * @dev Removes an asset from the list of supported assets along with its related info.
+     * @param asset The address of the asset to remove.
+     */
+    function removeAsset(address asset) public onlyOwner {
+        _supportedAssets.remove(asset);
+        delete _supportedAssetsInfo[asset];
     }
 }
