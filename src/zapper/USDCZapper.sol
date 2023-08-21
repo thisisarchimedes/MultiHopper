@@ -17,6 +17,9 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     // Struct containing information about a supported asset. In our case we use pools that have an index type of int128
+    // pool - The address of the pool where the asset is traded.
+    // index - The index of the asset within the pool.
+    // isLpToken Indicates whether the asset is an LP token.
     struct AssetInfo {
         address pool;
         int128 index;
