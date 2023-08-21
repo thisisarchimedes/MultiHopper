@@ -263,8 +263,8 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         Adjust[] calldata _adjustOuts,
         address[] calldata _sortedAdapters
     )
-        nonReentrant
         external
+        nonReentrant
     {
         if ((_msgSender() != monitor && !paused) || (_msgSender() != owner() && paused)) revert Unauthorized();
         uint256 adjustOutLength = _adjustOuts.length;
@@ -306,8 +306,8 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      * @param _swapDatas List of SwapData structs
      */
     function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) 
+        external
         nonReentrant 
-        external 
     {
         if (_msgSender() != monitor && _msgSender() != owner()) revert Unauthorized();
 
