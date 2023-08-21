@@ -76,8 +76,9 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         returns (uint256 shares)
     {
         // check if the reciever is not zero address
-        require(receiver != address(0), "Receiver is zero address");
-
+        if (receiver == address(0)) revert ZeroAddress();
+        // check if the amount is not zero
+        if (amount == 0) revert EmptyInput();
         // check if the correct strategy provided and it matches underlying asset
         if (!strategyUsesUnderlyingAsset(strategyAddress)) revert StrategyAssetDoesNotMatchUnderlyingAsset();
         // check if the amount is not zero
