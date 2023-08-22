@@ -203,6 +203,7 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
      * @param assetInfo New struct containing updated pool, index, and LP token status information for the asset.
      */
     function updateAsset(address asset, AssetInfo memory assetInfo) public onlyOwner {
+        if (!_supportedAssets.contains(asset)) revert InvalidAsset();
         _supportedAssetsInfo[asset] = assetInfo;
     }
 
