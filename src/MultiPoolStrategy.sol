@@ -10,8 +10,7 @@ import { IAdapter } from "./interfaces/IAdapter.sol";
 import { IERC20UpgradeableDetailed } from "./interfaces/IERC20UpgradeableDetailed.sol";
 import { ERC4626UpgradeableModified } from "./ERC4626UpgradeableModified.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "solmate/utils/SafeCastLib.sol";
-// TODO - implement donation attack protection
+import { SafeCastLib } from "solmate/utils/SafeCastLib.sol";
 
 contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, ReentrancyGuardUpgradeable {
     using SafeCastLib for *;
