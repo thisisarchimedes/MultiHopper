@@ -6,13 +6,13 @@ import { PRBTest } from "@prb/test/PRBTest.sol";
 import { IERC20Metadata as IERC20 } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IZapper } from "../../src/interfaces/IZapper.sol";
-
 import { ICurveBasePool, ICurve3Pool } from "../../src/interfaces/ICurvePool.sol";
 import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
 import { ConvexPoolAdapter } from "../../src/ConvexPoolAdapter.sol";
 import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { USDCZapper } from "../../src/zapper/USDCZapper.sol";
+import { ERC20Hackable } from "../../src/test/ERC20Hackable.sol";
 
 contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 public constant DEFAULT_FORK_BLOCK_NUMBER = 17_886_763;
@@ -315,6 +315,18 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // DEPOSIT - NEGATIVE TESTS
+    function testDepositRevertReentrantCall() public {
+        ERC20Hackable erc20Hackable = new ERC20Hackable(usdcZapper, address(multiPoolStrategy));
+
+        usdcZapper.addAsset(
+            address(erc20Hackable), USDCZapper.AssetInfo({pool: CURVE_3POOL, index: 0, isLpToken: false})
+        );
+
+        vm.expectRevert("ReentrancyGuard: reentrant call");
+
+        usdcZapper.deposit(1, address(erc20Hackable), 0, address(this), address(multiPoolStrategy));
+    }
+
     function testDepositRevertZeroAddress() public {
         address receiver = address(0);
 
@@ -378,5 +390,99 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     function testRedeemRevert() public { }
 
     // UTILITY
-    function testStrategyUsesUnderlyingAsset() public { }
+
+    function testAddAsset() public {
+        usdcZapper.removeAsset(USDT);
+
+        usdcZapper.addAsset(USDT, USDCZapper.AssetInfo(CURVE_3POOL, USDT_INDEX, false));
+        assertEq(usdcZapper.assetIsSupported(USDT), true);
+
+        USDCZapper.AssetInfo memory assetInfo = usdcZapper.getAssetInfo(USDT);
+        assertEq(assetInfo.pool, CURVE_3POOL);
+        assertEq(assetInfo.index, USDT_INDEX);
+        assertEq(assetInfo.isLpToken, false);
+    }
+
+    function testAddAssetRevertOnlyOwner() public {
+        vm.prank(makeAddr("notOwner"));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        usdcZapper.addAsset(USDT, USDCZapper.AssetInfo(CURVE_3POOL, USDT_INDEX, false));
+    }
+
+    function testUpdateAsset() public {
+        USDCZapper.AssetInfo memory assetInfo1 = usdcZapper.getAssetInfo(USDT);
+        assertEq(assetInfo1.pool, CURVE_3POOL);
+        assertEq(assetInfo1.index, USDT_INDEX);
+        assertEq(assetInfo1.isLpToken, false);
+
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo(CURVE_FRAXUSDC, FRAX_INDEX, true));
+
+        USDCZapper.AssetInfo memory assetInfo2 = usdcZapper.getAssetInfo(USDT);
+        assertEq(assetInfo2.pool, CURVE_FRAXUSDC);
+        assertEq(assetInfo2.index, FRAX_INDEX);
+        assertEq(assetInfo2.isLpToken, true);
+    }
+
+    function testUpdateAssetRevertInvalidAsset() public {
+        usdcZapper.removeAsset(USDT);
+
+        vm.expectRevert(IZapper.InvalidAsset.selector);
+
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo(CURVE_3POOL, USDT_INDEX, false));
+    }
+
+    function testUpdateAssetRevertOnlyOwner() public {
+        vm.prank(makeAddr("notOwner"));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo(CURVE_FRAXUSDC, FRAX_INDEX, true));
+    }
+
+    function testRemoveAsset() public {
+        usdcZapper.removeAsset(USDT);
+        assertEq(usdcZapper.assetIsSupported(USDT), false);
+    }
+
+    function testRemoveAssetRevertOnlyOwner() public {
+        vm.prank(makeAddr("notOwner"));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        usdcZapper.removeAsset(USDT);
+    }
+
+    function testStrategyUsesUnderlyingAssetTrue() public {
+        assertEq(usdcZapper.strategyUsesUnderlyingAsset(address(multiPoolStrategy)), true);
+    }
+
+    function testStrategyUsesUnderlyingAssetFalse() public {
+        address strategyWithEth = 0x3836bCA6e2128367ffDBa4B2f82c510F03030F19;
+        assertEq(usdcZapper.strategyUsesUnderlyingAsset(address(strategyWithEth)), false);
+    }
+
+    function testAssetIsSupportedTrue() public {
+        assertEq(usdcZapper.assetIsSupported(USDT), true);
+    }
+
+    function testAssetIsSupportedFalse() public {
+        usdcZapper.removeAsset(USDT);
+        assertEq(usdcZapper.assetIsSupported(USDT), false);
+    }
+
+    function testGetAssetInfo() public {
+        // test stable coin
+        USDCZapper.AssetInfo memory assetInfo1 = usdcZapper.getAssetInfo(USDT);
+        assertEq(assetInfo1.pool, CURVE_3POOL);
+        assertEq(assetInfo1.index, USDT_INDEX);
+        assertEq(assetInfo1.isLpToken, false);
+
+        // test lp token
+        USDCZapper.AssetInfo memory assetInfo2 = usdcZapper.getAssetInfo(CRVFRAX);
+        assertEq(assetInfo2.pool, CURVE_FRAXUSDC);
+        assertEq(assetInfo2.index, UNDERLYING_ASSET_INDEX);
+        assertEq(assetInfo2.isLpToken, true);
+    }
 }
