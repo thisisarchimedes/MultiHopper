@@ -22,9 +22,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     mapping(address => bool) public isAdapter;
     /// @notice Address of the offchain monitor
     address public monitor;
-    /// @notice Interval for adjusting in
+    /// @notice Interval for adjusting in (in seconds) - enforced on chain
     uint256 public adjustInInterval;
-    /// @notice Interval for adjusting out
+    /// @notice Interval for adjusting out (in seconds) - enforced on chain
     uint256 public adjustOutInterval;
     /// @notice timestamp of the last adjust in
     uint256 public lastAdjustIn;
