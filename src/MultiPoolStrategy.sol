@@ -103,7 +103,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         __ERC4626_init(IERC20Upgradeable(_stakingToken));
         monitor = _monitor;
         adjustInInterval = 6 hours;
-        adjustOutInterval = 6 hours;
+        adjustOutInterval = 0;
         minPercentage = 500; // 5%
         rewardsCycleLength = 7 days;
         feePercentage = 1500; // 15%
