@@ -51,7 +51,6 @@ interface IZapper {
      * @param amount The amount to withdraw (in token user's choice - like: USDT).
      * @param withdrawToken The token address to withdraw (like: USDT address).
      * @param minWithdrawAmount Minimum amount of required asset (like: USDT) to recieve after withdraw.
-     * @param minSwapAmount Minimum amount of required asset to receive after the swap of the underlying asset (if the strategy is using USDC as underlying, this min USDC we accept when withdrawing shares)
      * @param receiver The address to receive the withdrawn asset.
      * @param strategyAddress The address of the MultiPoolStrategy contract to withdraw from.
      * @return sharesBurnt The amount of shares burned.
@@ -60,7 +59,6 @@ interface IZapper {
         uint256 amount,
         address withdrawToken,
         uint256 minWithdrawAmount,
-        uint256 minSwapAmount,
         address receiver,
         address strategyAddress
     )

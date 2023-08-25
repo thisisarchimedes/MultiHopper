@@ -37,6 +37,9 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
     address public constant CURVE_3POOL = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7; // DAI+USDC+USDT
     address public constant CURVE_FRAXUSDC = 0xDcEF968d416a41Cdac0ED8702fAC8128A64241A2; // FRAX+USDC
 
+    uint256 public constant CURVE_3POOL_TOKENS_COUNT = 3;
+    uint256 public constant CURVE_FRAXUSDC_TOKENS_COUNT = 2;
+
     int128 public constant UNDERLYING_ASSET_INDEX = 1; // USDC Index - for both 3Pool and FRAXUSDC
     int128 public constant DAI_INDEX = 0; // DAI Index - for 3Pool
     int128 public constant USDT_INDEX = 2; // USDT Index - for 3Pool
@@ -87,8 +90,8 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         if (!strategyUsesUnderlyingAsset(strategyAddress)) revert StrategyAssetDoesNotMatchUnderlyingAsset();
 
         // check if the strategy is not paused
-        IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
-        if (multipoolStrategy.paused()) revert StrategyPaused();
+        IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
+        if (multiPoolStrategy.paused()) revert StrategyPaused();
 
         // check if the provided token is in the assets array, if false - revert
         if (!_supportedAssets.contains(token)) revert InvalidAsset();
@@ -121,7 +124,7 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), strategyAddress, underlyingAmount);
 
         // deposit
-        shares = multipoolStrategy.deposit(underlyingAmount, address(this));
+        shares = multiPoolStrategy.deposit(underlyingAmount, address(this));
 
         // transfer shares to receiver
         SafeERC20.safeTransfer(IERC20(strategyAddress), receiver, shares);
@@ -136,14 +139,69 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         uint256 amount,
         address withdrawToken,
         uint256 minWithdrawAmount,
-        uint256 minSwapAmount,
         address receiver,
         address strategyAddress
     )
         external
         override
+        nonReentrant
         returns (uint256 sharesBurnt)
-    { }
+    {
+        // check if the reciever is not zero address
+        if (receiver == address(0)) revert ZeroAddress();
+        // check if the amount is not zero
+        if (amount == 0) revert EmptyInput();
+        // check if the correct strategy provided and it matches underlying asset
+        if (!strategyUsesUnderlyingAsset(strategyAddress)) revert StrategyAssetDoesNotMatchUnderlyingAsset();
+
+        // check if the strategy is not paused
+        IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
+        if (multiPoolStrategy.paused()) revert StrategyPaused();
+
+        // check if the provided token is in the assets array, if false - revert
+        if (!_supportedAssets.contains(withdrawToken)) revert InvalidAsset();
+
+        // find the pool regarding the provided token, if pool not found - revert
+        AssetInfo storage assetInfo = _supportedAssetsInfo[withdrawToken];
+        if (assetInfo.pool == address(0)) revert PoolDoesNotExist();
+
+        uint256 underlyingAmountToWithdraw = assetInfo.isLpToken
+            ? ICurveBasePool(assetInfo.pool).calc_withdraw_one_coin(amount, UNDERLYING_ASSET_INDEX)
+            : ICurveBasePool(assetInfo.pool).get_dy(assetInfo.index, UNDERLYING_ASSET_INDEX, amount);
+
+        uint256 balancePre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+
+        sharesBurnt = multiPoolStrategy.withdraw(underlyingAmountToWithdraw, address(this), _msgSender(), 0);
+
+        uint256 withdrawnUnderlyingAmount = IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - balancePre;
+
+        ICurveBasePool pool = ICurveBasePool(assetInfo.pool);
+
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, 0);
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, withdrawnUnderlyingAmount);
+
+        // this place should be optimized
+        if (assetInfo.isLpToken) {
+            if (assetInfo.pool == CURVE_3POOL) {
+                uint256[CURVE_3POOL_TOKENS_COUNT] memory amounts;
+                amounts[uint256(int256(assetInfo.index))] = withdrawnUnderlyingAmount;
+
+                pool.add_liquidity(amounts, minWithdrawAmount);
+            }
+            else if (assetInfo.pool == CURVE_FRAXUSDC) {
+                uint256[CURVE_FRAXUSDC_TOKENS_COUNT] memory amounts;
+                amounts[uint256(int256(assetInfo.index))] = withdrawnUnderlyingAmount;
+
+                pool.add_liquidity(amounts, minWithdrawAmount);
+            }
+        } else {
+            pool.exchange(UNDERLYING_ASSET_INDEX, assetInfo.index, withdrawnUnderlyingAmount, minWithdrawAmount);
+        }
+
+        uint256 withdrawAmount = IERC20(withdrawToken).balanceOf(address(this)) - balancePre;
+
+        SafeERC20.safeTransfer(IERC20(withdrawToken), receiver, withdrawAmount);
+    }
 
     /**
      * @inheritdoc IZapper
