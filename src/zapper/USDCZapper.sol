@@ -111,12 +111,17 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
 
         // TODO: I'd prefer to use address.call here, as some pool implementations return amount, some not.
         // If call eventually returns some data, we can use it in a upcoming calls, if not we need to call UNDERLYING_ASSET.balanceOf(address(this))
+        //
+        // balance of underlying asset before deposit
         uint256 balancePre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
 
-        assetInfo.isLpToken
-            ? pool.remove_liquidity_one_coin(amount, assetInfo.index, minAmount)
-            : pool.exchange(assetInfo.index, UNDERLYING_ASSET_INDEX, amount, minAmount);
+        if (assetInfo.isLpToken) {
+            pool.remove_liquidity_one_coin(amount, assetInfo.index, minAmount);
+        } else {
+            pool.exchange(assetInfo.index, UNDERLYING_ASSET_INDEX, amount, minAmount);
+        }
 
+        // actual amount of underlying asset that was deposited
         uint256 underlyingAmount = IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - balancePre;
 
         // we need to approve the strategy to spend underlying asset
@@ -165,30 +170,59 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         AssetInfo storage assetInfo = _supportedAssetsInfo[withdrawToken];
         if (assetInfo.pool == address(0)) revert PoolDoesNotExist();
 
-        uint256 underlyingAmountToWithdraw = assetInfo.isLpToken
-            ? ICurveBasePool(assetInfo.pool).calc_withdraw_one_coin(amount, UNDERLYING_ASSET_INDEX)
-            : ICurveBasePool(assetInfo.pool).get_dy(assetInfo.index, UNDERLYING_ASSET_INDEX, amount);
+        // calculate the amount of underlying asset to withdraw, given the asset the user want to get
+        // i.e. Calculate the amount of USDC (underlying asset) to withdraw, given the amount of CRV (withdraw token)
+        uint256 underlyingAmountToWithdraw;
+        if (assetInfo.isLpToken) {
+            underlyingAmountToWithdraw =
+                ICurveBasePool(assetInfo.pool).calc_withdraw_one_coin(amount, UNDERLYING_ASSET_INDEX);
+        } else {
+            underlyingAmountToWithdraw =
+                ICurveBasePool(assetInfo.pool).get_dy(assetInfo.index, UNDERLYING_ASSET_INDEX, amount);
+        }
 
-        uint256 balancePre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        // balance of underlying asset before withdraw
+        uint256 underlyingBalancePre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
 
+        // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
+        // in "curvePool.addLiquidity" or "curvePool.exchange" calls
         sharesBurnt = multiPoolStrategy.withdraw(underlyingAmountToWithdraw, address(this), _msgSender(), 0);
 
-        uint256 withdrawnUnderlyingAmount = IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - balancePre;
+        // actual amount of underlying asset after withdraw
+        uint256 withdrawnUnderlyingAmount = IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - underlyingBalancePre;
 
         ICurveBasePool pool = ICurveBasePool(assetInfo.pool);
 
         SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, 0);
         SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, withdrawnUnderlyingAmount);
 
+        // balance of user's token before withdraw
+        uint256 balancePre = IERC20(withdrawToken).balanceOf(address(this));
+
+        // get withdraw tokens by given the underlying asset
+        //
+        // in case if withdraw token is LP Token - then we call "curvePool.addLiquidity",
+        // as LP Tokens can be retrivied only by providing liquidity to the pool
+        // i.e. (withdrawToken = CRV) -> curvePool.addLiquidity(tokenToAdd: USDC) => return CRV
+        //
+        // if the withdrawal token is not LP Token - then we call "curvePool.exchange",
+        // as we just need to exchange one token for another
+        // i.e. (withdrawToken = USDT) -> curvePool.exchange(tokenToProvide: USDC, tokenToGet: USDT) => return USDT
+        //
+        // inside we create an array with a length equal to the number of tokens in the pool,
+        // where the index of each element corresponds to the index of the token in the pool
+        // and then set the token amount corresponding to the token index in the pool that we intend
+        // to add as liquidity or exchange
+        //
         // this place should be optimized
         if (assetInfo.isLpToken) {
             if (assetInfo.pool == CURVE_3POOL) {
                 uint256[CURVE_3POOL_TOKENS_COUNT] memory amounts;
+                //
                 amounts[uint256(int256(assetInfo.index))] = withdrawnUnderlyingAmount;
 
                 pool.add_liquidity(amounts, minWithdrawAmount);
-            }
-            else if (assetInfo.pool == CURVE_FRAXUSDC) {
+            } else if (assetInfo.pool == CURVE_FRAXUSDC) {
                 uint256[CURVE_FRAXUSDC_TOKENS_COUNT] memory amounts;
                 amounts[uint256(int256(assetInfo.index))] = withdrawnUnderlyingAmount;
 
@@ -198,6 +232,7 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
             pool.exchange(UNDERLYING_ASSET_INDEX, assetInfo.index, withdrawnUnderlyingAmount, minWithdrawAmount);
         }
 
+        // actual amount of tokens user will get after withdraw
         uint256 withdrawAmount = IERC20(withdrawToken).balanceOf(address(this)) - balancePre;
 
         SafeERC20.safeTransfer(IERC20(withdrawToken), receiver, withdrawAmount);
