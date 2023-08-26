@@ -243,15 +243,81 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
     function redeem(
         uint256 sharesAmount,
         uint256 minRedeemAmount,
-        uint256 minSwapAmount,
         address receiver,
         address strategyAddress,
         address redeemToken
     )
         external
         override
-        returns (uint256 amount)
-    { }
+        returns (uint256 redeemAmount)
+    {
+        // check if the reciever is not zero address
+        if (receiver == address(0)) revert ZeroAddress();
+        // check if the amount is not zero
+        if (sharesAmount == 0) revert EmptyInput();
+        // check if the correct strategy provided and it matches underlying asset
+        if (!strategyUsesUnderlyingAsset(strategyAddress)) revert StrategyAssetDoesNotMatchUnderlyingAsset();
+
+        // check if the strategy is not paused
+        IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
+        if (multiPoolStrategy.paused()) revert StrategyPaused();
+
+        // check if the provided token is in the assets array, if false - revert
+        if (!_supportedAssets.contains(redeemToken)) revert InvalidAsset();
+
+        // find the pool regarding the provided token, if pool not found - revert
+        AssetInfo storage assetInfo = _supportedAssetsInfo[redeemToken];
+        if (assetInfo.pool == address(0)) revert PoolDoesNotExist();
+
+        // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
+        // in "curvePool.addLiquidity" or "curvePool.exchange" calls
+        uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
+
+        ICurveBasePool pool = ICurveBasePool(assetInfo.pool);
+
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, 0);
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, underlyingAmount);
+
+        // balance of user's token before redeem
+        uint256 balancePre = IERC20(redeemToken).balanceOf(address(this));
+
+        // get redeem tokens by given the underlying asset
+        //
+        // in case if redeem token is LP Token - then we call "curvePool.addLiquidity",
+        // as LP Tokens can be retrivied only by providing liquidity to the pool
+        // i.e. redeemToken = CRV) -> curvePool.addLiquidity(tokenToAdd: USDC) => return CRV
+        //
+        // if the redeem token is not LP Token - then we call "curvePool.exchange",
+        // as we just need to exchange one token for another
+        // i.e. (redeemToken = USDT) -> curvePool.exchange(tokenToProvide: USDC, tokenToGet: USDT) => return USDT
+        //
+        // inside we create an array with a length equal to the number of tokens in the pool,
+        // where the index of each element corresponds to the index of the token in the pool
+        // and then set the token amount corresponding to the underlying token index in the pool that we intend
+        // to add as liquidity or exchange
+        //
+        // this place should be optimized
+        if (assetInfo.isLpToken) {
+            if (assetInfo.pool == CURVE_3POOL) {
+                uint256[CURVE_3POOL_TOKENS_COUNT] memory amounts;
+                amounts[uint256(int256(UNDERLYING_ASSET_INDEX))] = underlyingAmount;
+
+                pool.add_liquidity(amounts, minRedeemAmount);
+            } else if (assetInfo.pool == CURVE_FRAXUSDC) {
+                uint256[CURVE_FRAXUSDC_TOKENS_COUNT] memory amounts;
+                amounts[uint256(int256(UNDERLYING_ASSET_INDEX))] = underlyingAmount;
+
+                pool.add_liquidity(amounts, minRedeemAmount);
+            }
+        } else {
+            pool.exchange(UNDERLYING_ASSET_INDEX, assetInfo.index, underlyingAmount, minRedeemAmount);
+        }
+
+        // actual amount of tokens user will get after redeem
+        redeemAmount = IERC20(redeemToken).balanceOf(address(this)) - balancePre;
+
+        SafeERC20.safeTransfer(IERC20(redeemToken), receiver, redeemAmount);
+    }
 
     /**
      * @dev Checks if an asset is supported.
