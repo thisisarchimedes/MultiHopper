@@ -745,6 +745,49 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawUSDC, burntShares, burntShares / 100);
     }
 
+    // WITHDRAW - NEGATIVE TESTS
+    function testWithdrawRevertZeroAddress() public {
+        address receiver = address(0);
+
+        vm.expectRevert(IZapper.ZeroAddress.selector);
+        usdcZapper.withdraw(1, USDT, 0, receiver, address(multiPoolStrategy));
+    }
+
+    function testWithdrawRevertStrategyAssetDoesNotMatchUnderlyingAsset() public {
+        address strategyWithEth = 0x3836bCA6e2128367ffDBa4B2f82c510F03030F19;
+
+        vm.expectRevert(IZapper.StrategyAssetDoesNotMatchUnderlyingAsset.selector);
+        usdcZapper.withdraw(1, USDT, 0, address(this), strategyWithEth);
+    }
+
+    function testWithdrawRevertEmptyInput() public {
+        uint256 amount = 0;
+
+        vm.expectRevert(IZapper.EmptyInput.selector);
+        usdcZapper.withdraw(amount, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testWithdrawRevertMultiPoolStrategyIsPaused() public {
+        multiPoolStrategy.togglePause();
+
+        vm.expectRevert(IZapper.StrategyPaused.selector);
+        usdcZapper.withdraw(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testWithdrawRevertInvalidAsset() public {
+        usdcZapper.removeAsset(USDT);
+
+        vm.expectRevert(IZapper.InvalidAsset.selector);
+        usdcZapper.withdraw(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testWithdrawRevertPoolDoesNotExist() public {
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({pool: address(0), index: 0, isLpToken: false}));
+
+        vm.expectRevert(IZapper.PoolDoesNotExist.selector);
+        usdcZapper.withdraw(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
     // REDEEM
     function testRedeemUSDT() public { }
     /*
