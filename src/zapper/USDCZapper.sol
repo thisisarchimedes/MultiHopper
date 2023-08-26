@@ -218,7 +218,6 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         if (assetInfo.isLpToken) {
             if (assetInfo.pool == CURVE_3POOL) {
                 uint256[CURVE_3POOL_TOKENS_COUNT] memory amounts;
-                //
                 amounts[uint256(int256(assetInfo.index))] = withdrawnUnderlyingAmount;
 
                 pool.add_liquidity(amounts, minWithdrawAmount);
