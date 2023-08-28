@@ -75,18 +75,18 @@ interface IZapper {
     /**
      * @dev Redeems asset from the MultiPoolStrategy contract.
      * @param sharesAmount The amount of shares to redeem.
+     * @param redeemToken The token address redeem.
      * @param minRedeemAmount Minimum amount of required asset to recieve after redeem.
      * @param receiver The address to receive the redeemed asset.
      * @param strategyAddress The address of the MultiPoolStrategy contract to redeem from.
-     * @param redeemToken The token address redeem.
      * @return redeemAmount The redeemed amount.
      */
     function redeem(
         uint256 sharesAmount,
+        address redeemToken,
         uint256 minRedeemAmount,
         address receiver,
-        address strategyAddress,
-        address redeemToken
+        address strategyAddress
     )
         external
         returns (uint256 redeemAmount);

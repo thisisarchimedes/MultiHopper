@@ -242,10 +242,10 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
      */
     function redeem(
         uint256 sharesAmount,
+        address redeemToken,
         uint256 minRedeemAmount,
         address receiver,
-        address strategyAddress,
-        address redeemToken
+        address strategyAddress
     )
         external
         override
