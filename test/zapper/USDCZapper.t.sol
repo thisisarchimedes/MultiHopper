@@ -788,18 +788,184 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         usdcZapper.withdraw(1, USDT, 0, address(this), address(multiPoolStrategy));
     }
 
-    // REDEEM
-    function testRedeemUSDT() public { }
-    /*
-    *   1. Get random amount of USDT
-    *   2. Deposit USDT through zapper
-    *   3. check USDT balanceOf strategy
-    *   4. redeem and check we got the same amount of USDT (almost - minus swap fees - at least 99% of deposited amount)
-    */
-    function testRedeemDAI() public { }
-    function testRedeem3CRV() public { }
-    function testRedeemCRVFRAX() public { }
-    function testRedeemRevert() public { }
+    // REDEEM - POSITIVE TESTS
+    function testRedeemUSDT(uint256 amountToDeposit) public {
+        // get usdt amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals());
+
+        // firstly deposit
+        uint256 shares = usdcZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy));
+
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before redeem
+        uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // redeem all shares
+        uint256 redeemedAmount = usdcZapper.redeem(shares, USDT, 0, address(this), address(multiPoolStrategy));
+
+        // check that redeem works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
+        // check usdt amount of this contract after redeem
+        assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + redeemedAmount);
+        // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+    }
+
+    function testRedeemDAI(uint256 amountToDeposit) public {
+        // get dai amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(DAI).decimals(), 10_000_000 * 10 ** IERC20(DAI).decimals());
+
+        // firstly deposit
+        uint256 shares = usdcZapper.deposit(amountToDeposit, DAI, 0, address(this), address(multiPoolStrategy));
+
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before redeem
+        uint256 daiBalanceOfThisPre = IERC20(DAI).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // redeem all shares
+        uint256 redeemedAmount = usdcZapper.redeem(shares, DAI, 0, address(this), address(multiPoolStrategy));
+
+        // check that redeem works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
+        // check dai amount of this contract after redeem
+        assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre + redeemedAmount);
+        // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+    }
+
+    function testRedeemFRAX(uint256 amountToDeposit) public {
+        // get frax amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(FRAX).decimals(), 10_000_000 * 10 ** IERC20(FRAX).decimals());
+
+        // firstly deposit
+        uint256 shares = usdcZapper.deposit(amountToDeposit, FRAX, 0, address(this), address(multiPoolStrategy));
+
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before redeem
+        uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // redeem all shares
+        uint256 redeemedAmount = usdcZapper.redeem(shares, FRAX, 0, address(this), address(multiPoolStrategy));
+
+        // check that redeem works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
+        // check frax amount of this contract after redeem
+        assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre + redeemedAmount);
+        // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+    }
+
+    function testRedeem3CRV(uint256 amountToDeposit) public {
+        // get crv amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(CRV).decimals(), 10_000_000 * 10 ** IERC20(CRV).decimals());
+
+        // firstly deposit
+        uint256 shares = usdcZapper.deposit(amountToDeposit, CRV, 0, address(this), address(multiPoolStrategy));
+
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before redeem
+        uint256 crvBalanceOfThisPre = IERC20(CRV).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // redeem all shares
+        uint256 redeemedAmount = usdcZapper.redeem(shares, CRV, 0, address(this), address(multiPoolStrategy));
+
+        // check that redeem works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
+        // check crv amount of this contract after redeem
+        assertEq(IERC20(CRV).balanceOf(address(this)), crvBalanceOfThisPre + redeemedAmount);
+        // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+    }
+
+    function testRedeemCRVFRAX(uint256 amountToDeposit) public {
+        // get crvfrax amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(CRVFRAX).decimals(), 10_000_000 * 10 ** IERC20(CRVFRAX).decimals());
+
+        // firstly deposit
+        uint256 shares = usdcZapper.deposit(amountToDeposit, CRVFRAX, 0, address(this), address(multiPoolStrategy));
+
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before redeem
+        uint256 crvFraxBalanceOfThisPre = IERC20(CRVFRAX).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // redeem all shares
+        uint256 redeemedAmount = usdcZapper.redeem(shares, CRVFRAX, 0, address(this), address(multiPoolStrategy));
+
+        // check that redeem works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
+        // check crvfrax amount of this contract after redeem
+        assertEq(IERC20(CRVFRAX).balanceOf(address(this)), crvFraxBalanceOfThisPre + redeemedAmount);
+        // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+    }
+
+    // REDEEM - NEGATIVE TESTS
+    function testRedeemRevertZeroAddress() public {
+        address receiver = address(0);
+
+        vm.expectRevert(IZapper.ZeroAddress.selector);
+        usdcZapper.redeem(1, USDT, 0, receiver, address(multiPoolStrategy));
+    }
+
+    function testRedeemRevertStrategyAssetDoesNotMatchUnderlyingAsset() public {
+        address strategyWithEth = 0x3836bCA6e2128367ffDBa4B2f82c510F03030F19;
+
+        vm.expectRevert(IZapper.StrategyAssetDoesNotMatchUnderlyingAsset.selector);
+        usdcZapper.redeem(1, USDT, 0, address(this), strategyWithEth);
+    }
+
+    function testRedeemRevertEmptyInput() public {
+        uint256 amount = 0;
+
+        vm.expectRevert(IZapper.EmptyInput.selector);
+        usdcZapper.redeem(amount, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testRedeemRevertMultiPoolStrategyIsPaused() public {
+        multiPoolStrategy.togglePause();
+
+        vm.expectRevert(IZapper.StrategyPaused.selector);
+        usdcZapper.redeem(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testRedeemRevertInvalidAsset() public {
+        usdcZapper.removeAsset(USDT);
+
+        vm.expectRevert(IZapper.InvalidAsset.selector);
+        usdcZapper.redeem(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
+
+    function testRedeemRevertPoolDoesNotExist() public {
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({pool: address(0), index: 0, isLpToken: false}));
+
+        vm.expectRevert(IZapper.PoolDoesNotExist.selector);
+        usdcZapper.redeem(1, USDT, 0, address(this), address(multiPoolStrategy));
+    }
 
     // UTILITY
 
