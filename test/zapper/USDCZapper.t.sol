@@ -559,6 +559,100 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawUSDC, burntShares, burntShares / 100);
     }
 
+    function testWithdrawAllFRAX(uint256 amountToDeposit) public {
+        // get frax amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(FRAX).decimals(), 10_000_000 * 10 ** IERC20(FRAX).decimals());
+
+        uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+
+        // firstly deposit
+        usdcZapper.deposit(amountToDeposit, FRAX, 0, address(this), address(multiPoolStrategy));
+
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before withdraw
+        uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // get actual deposited amount and convert it to FRAX
+        uint256 depositedUSDCAmount = storedTotalAssetsAfterDeposit - storedTotalAssetsPre;
+        uint256 depositedFRAXAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, FRAX_INDEX, depositedUSDCAmount);
+
+        // withdraw all deposited FRAX
+        uint256 burntShares =
+            usdcZapper.withdraw(depositedFRAXAmount, FRAX, 0, address(this), address(multiPoolStrategy));
+
+        uint256 withdrawnAmount = IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre;
+
+        // just for naming convention
+        uint256 amountToWithdrawUSDC = depositedUSDCAmount;
+        uint256 amountToWithdrawFRAX = depositedFRAXAmount;
+
+        // check that withdraw works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToWithdrawFRAX, withdrawnAmount, withdrawnAmount / 100);
+        // check frax amount of this contract after withdraw
+        assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre + withdrawnAmount);
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        assertAlmostEq(
+            multiPoolStrategy.storedTotalAssets(),
+            storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
+            amountToWithdrawUSDC / 100
+        );
+        // check shares amount of this contract after withdraw
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - burntShares);
+        // check that burnt shares amount matches usdc withdrawal amount
+        assertAlmostEq(amountToWithdrawUSDC, burntShares, burntShares / 100);
+    }
+
+    function testWithdrawHalfOfFRAX(uint256 amountToDeposit) public {
+        // get frax amount in the range of 10 to 10_000_000
+        amountToDeposit =
+            bound(amountToDeposit, 10 * 10 ** IERC20(FRAX).decimals(), 10_000_000 * 10 ** IERC20(FRAX).decimals());
+
+        uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+
+        // firstly deposit
+        usdcZapper.deposit(amountToDeposit, FRAX, 0, address(this), address(multiPoolStrategy));
+
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before withdraw
+        uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // get half of actual deposited amount and convert it to FRAX
+        uint256 halfOfDepositedUSDCAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsPre) / 2;
+        uint256 halfOfDepositedFRAXAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, FRAX_INDEX, halfOfDepositedUSDCAmount);
+
+        // withdraw all deposited FRAX
+        uint256 burntShares =
+            usdcZapper.withdraw(halfOfDepositedFRAXAmount, FRAX, 0, address(this), address(multiPoolStrategy));
+
+        uint256 withdrawnAmount = IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre;
+
+        // just for naming convention
+        uint256 amountToWithdrawUSDC = halfOfDepositedUSDCAmount;
+        uint256 amountToWithdrawFRAX = halfOfDepositedFRAXAmount;
+
+        // check that withdraw works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToWithdrawFRAX, withdrawnAmount, withdrawnAmount / 100);
+        // check FRAX amount of this contract after withdraw
+        assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre + withdrawnAmount);
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of withdrawal amount
+        assertAlmostEq(
+            multiPoolStrategy.storedTotalAssets(),
+            storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
+            amountToWithdrawUSDC / 100
+        );
+        // check shares amount of this contract after withdraw
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - burntShares);
+        // check that burnt shares amount matches usdc withdrawal amount
+        assertAlmostEq(amountToWithdrawUSDC, burntShares, burntShares / 100);
+    }
+
     function testWithdrawAll3CRV(uint256 amountToDeposit) public {
         // get CRV amount in the range of 10 to 10_000_000
         amountToDeposit =
