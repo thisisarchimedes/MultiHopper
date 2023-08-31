@@ -7,6 +7,22 @@
 [foundry]: https://getfoundry.sh/
 [foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
 
+## Table of Contents
+- [Context](#context)
+  - [“Unhealthy”](#unhealthy)
+- [Main Components](#main-components)
+  - [Strategy](#strategy)
+  - [Adaptors](#adaptors)
+  - [Factory](#factory)
+  - [Zapper](#zapper)
+- [High Level Architecture](#high-level-architecture)
+- [Troubleshooting](#troubleshooting)
+  - [Redeem results in: "ERC4626: redeem more than max #1002"](#redeem-results-in-erc4626-redeem-more-than-max-1002)
+  - [Deposit results in: "Exchange resulted in fewer coins than expected"](#deposit-results-in-exchange-resulted-in-fewer-coins-than-expected)
+  - [Python virtual enviornment](#python-virtual-enviornment)
+  - [Test fail for a some pools but not others](#test-fail-for-a-some-pools-but-not-others)
+- [License](#license)
+
 ## Context
 
 This is the smart contract infrastructure for automated AMM pool swapping.
