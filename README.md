@@ -93,7 +93,7 @@ We use factory architecture. Factory is deployed once and generates Adopters and
 
 Strategy share token is the same decimal as underlying token. E.g.: 6 decimals if underlying is USDC.
 
-## Deposit results in: "Exchange resulted in fewer coins than expectet"
+## Deposit results in: "Exchange resulted in fewer coins than expected"
 
 The minAmount param of the USDCZapper deposit method is 6 decimal (because USDC).
 
