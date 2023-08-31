@@ -89,6 +89,14 @@ We use factory architecture. Factory is deployed once and generates Adopters and
 
 # Troubleshooting
 
+## Redeem results in: "ERC4626: redeem more than max #1002"
+
+Strategy share token is the same decimal as underlying token. E.g.: 6 decimals if underlying is USDC.
+
+## Deposit results in: "Exchange resulted in fewer coins than expectet"
+
+The minAmount param of the USDCZapper deposit method is 6 decimal (because USDC).
+
 ## Python virtual enviornment
 
 Make sure you set up a python virtual environment and install the requirements.txt file.
