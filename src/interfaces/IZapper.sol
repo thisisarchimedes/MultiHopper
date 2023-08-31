@@ -31,7 +31,7 @@ interface IZapper {
      * @dev Deposits asset into the MultiPoolStrategy contract.
      * @param amount The asset amount user wants to deposit.
      * @param token The deposited asset address (like: USDT address).
-     * @param minAmount Minimum amount of underlying asset to receive after the swap of the provided asset.
+     * @param minAmount Minimum amount of underlying asset to receive after the swap of the provided asset (please pay attention to decimals).
      * @param receiver The address to receive the shares.
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @return shares The amount of shares received.
