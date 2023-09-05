@@ -8,6 +8,7 @@
 [foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
 
 ## Table of Contents
+- [Quick start](#quick-start)
 - [Context](#context)
   - [“Unhealthy”](#unhealthy)
 - [Main Components](#main-components)
@@ -22,6 +23,20 @@
   - [Python virtual enviornment](#python-virtual-enviornment)
   - [Test fail for a some pools but not others](#test-fail-for-a-some-pools-but-not-others)
 - [License](#license)
+
+## Quick start
+
+1. **Clone the repo**
+2. **Install Foundry**: https://book.getfoundry.sh/getting-started/installation.
+3. **Python**: Install Python (3.11+), create a Python virtual environment and turn it on. Then, install requirements: `pip install -r requirements.txt`.
+4. **Set enviornment variables**: See below. create `.env` file and `source .env`. 
+5. **Run tests**: `forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards"`. We excluding two tests that depends on Li.Fi quote. It is hard to simulate LiFi without hitting expiration time and/or slippage.
+
+_**Environment variable**_
+```bash
+API_KEY_ALCHEMY=
+API_KEY_ETHERSCAN=
+```
 
 ## Context
 
