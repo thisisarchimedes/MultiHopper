@@ -28,8 +28,8 @@
 
 1. **Clone the repo**
 2. **Install Foundry**: https://book.getfoundry.sh/getting-started/installation.
-3. **Python**: Install Python (3.11+), create a Python virtual environment and turn it on. Then, install requirements: `pip install -r requirements.txt`.
-4. **Set enviornment variables**: See below. create `.env` file and `source .env`. 
+3. **Python**: Install Python (3.11+), create a Python virtual environment `python3 -m venv venv` and turn it on `source venv/bin/activate`. Then, install requirements: `pip install -r requirements.txt`.
+4. **Set enviornment variables**: See below. create `.env` file and export it with: `source .env`. 
 5. **Run tests**: `forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards"`. We excluding two tests that depends on Li.Fi quote. It is hard to simulate LiFi without hitting expiration time and/or slippage.
 
 _**Environment variable**_
