@@ -163,6 +163,9 @@ contract BalancerWeightedPoolAdapterETHAURA is PRBTest, StdCheats {
         deal(UNDERLYING_TOKEN, address(this), 10_000 * 10 ** tokenDecimals);
         deal(UNDERLYING_TOKEN, staker, 50 * 10 ** tokenDecimals);
         multiPoolStrategy.changeFeeRecipient(feeRecipient);
+
+        vm.stopPrank();
+
     }
 
     function testDeposit() public {
