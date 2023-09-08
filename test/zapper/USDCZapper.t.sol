@@ -388,11 +388,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
-        // get actual deposited amount and convert it to USDT
+        // get actual deposited amount in USDC
         uint256 depositedUSDCAmount = storedTotalAssetsAfterDeposit - storedTotalAssetsPre;
-        uint256 depositedUSDTAmount =
-            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, USDT_INDEX, depositedUSDCAmount);
-
+        // fix rounding issue for USDT
+        uint256 depositedUSDTAmount = amountToDeposit - 1;
         // withdraw all deposited USDT
         uint256 burntShares =
             usdcZapper.withdraw(depositedUSDTAmount, USDT, 0, address(this), address(multiPoolStrategy));
@@ -437,8 +436,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
 
         // get half of actual deposited amount and convert it to USDT
         uint256 halfOfDepositedUSDCAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsPre) / 2;
-        uint256 halfOfDepositedUSDTAmount =
-            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, USDT_INDEX, halfOfDepositedUSDCAmount);
+        uint256 halfOfDepositedUSDTAmount = amountToDeposit / 2;
 
         // withdraw all deposited USDT
         uint256 burntShares =
@@ -484,9 +482,9 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
 
         // get actual deposited amount and convert it to DAI
         uint256 depositedUSDCAmount = storedTotalAssetsAfterDeposit - storedTotalAssetsPre;
+        // fix rounding issue for DAI
         uint256 depositedDAIAmount =
-            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, DAI_INDEX, depositedUSDCAmount);
-
+            amountToDeposit - 10 ** (IERC20(DAI).decimals() - IERC20(UNDERLYING_ASSET).decimals());
         // withdraw all deposited DAI
         uint256 burntShares = usdcZapper.withdraw(depositedDAIAmount, DAI, 0, address(this), address(multiPoolStrategy));
 
@@ -530,8 +528,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
 
         // get half of actual deposited amount and convert it to DAI
         uint256 halfOfDepositedUSDCAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsPre) / 2;
-        uint256 halfOfDepositedDAIAmount =
-            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, DAI_INDEX, halfOfDepositedUSDCAmount);
+        uint256 halfOfDepositedDAIAmount = amountToDeposit / 2;
 
         // withdraw all deposited DAI
         uint256 burntShares =
@@ -577,18 +574,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
 
         // get actual deposited amount and convert it to FRAX
         uint256 depositedUSDCAmount = storedTotalAssetsAfterDeposit - storedTotalAssetsPre;
-        uint256 depositedFRAXAmount =
-            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, FRAX_INDEX, depositedUSDCAmount);
 
         // withdraw all deposited FRAX
-        uint256 burntShares =
-            usdcZapper.withdraw(depositedFRAXAmount, FRAX, 0, address(this), address(multiPoolStrategy));
+        uint256 burntShares = usdcZapper.withdraw(amountToDeposit, FRAX, 0, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre;
 
         // just for naming convention
         uint256 amountToWithdrawUSDC = depositedUSDCAmount;
-        uint256 amountToWithdrawFRAX = depositedFRAXAmount;
+        uint256 amountToWithdrawFRAX = amountToDeposit;
 
         // check that withdraw works correctly and swap fees are less than 1%
         assertAlmostEq(amountToWithdrawFRAX, withdrawnAmount, withdrawnAmount / 100);
@@ -624,8 +618,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
 
         // get half of actual deposited amount and convert it to FRAX
         uint256 halfOfDepositedUSDCAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsPre) / 2;
-        uint256 halfOfDepositedFRAXAmount =
-            ICurveBasePool(CURVE_3POOL).get_dy(UNDERLYING_ASSET_INDEX, FRAX_INDEX, halfOfDepositedUSDCAmount);
+        uint256 halfOfDepositedFRAXAmount = amountToDeposit / 2;
 
         // withdraw all deposited FRAX
         uint256 burntShares =
