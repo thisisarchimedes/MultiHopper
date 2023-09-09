@@ -153,8 +153,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         // get the amount of usdc coin one would receive for swapping amount of usdt coin
         uint256 calculatedUSDCAmount =
             ICurveBasePool(CURVE_3POOL).get_dy(USDT_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
-        uint256 shares = usdcZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy));
+        uint256 shares = usdcZapper.deposit(amountToDeposit, USDT, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
@@ -188,8 +190,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         // get the amount of usdc coin one would receive for swapping amount of dai coin
         uint256 calculatedUSDCAmount =
             ICurveBasePool(CURVE_3POOL).get_dy(DAI_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
-        uint256 shares = usdcZapper.deposit(amountToDeposit, DAI, 0, address(this), address(multiPoolStrategy));
+        uint256 shares = usdcZapper.deposit(amountToDeposit, DAI, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
@@ -225,11 +229,14 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
         uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
         uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
-        uint256 shares = usdcZapper.deposit(amountToDeposit, FRAX, 0, address(this), address(multiPoolStrategy));
 
         // get the amount of usdc coin one would receive for swapping amount of frax coin
         uint256 calculatedUSDCAmount =
             ICurveBasePool(CURVE_FRAXUSDC).get_dy(FRAX_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
+        uint256 shares = usdcZapper.deposit(amountToDeposit, FRAX, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
@@ -269,8 +276,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         // calculate the amount of USDC received when withdrawing a LP token.
         uint256 calculatedUSDCAmount =
             ICurveBasePool(CURVE_3POOL).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
-        uint256 shares = usdcZapper.deposit(amountToDeposit, CRV, 0, address(this), address(multiPoolStrategy));
+        uint256 shares = usdcZapper.deposit(amountToDeposit, CRV, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
@@ -298,8 +307,11 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         // calculate the amount of USDC received when withdrawing a LP token.
         uint256 calculatedUSDCAmount =
             ICurveBasePool(CURVE_FRAXUSDC).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
-        uint256 shares = usdcZapper.deposit(amountToDeposit, CRVFRAX, 0, address(this), address(multiPoolStrategy));
+        uint256 shares =
+            usdcZapper.deposit(amountToDeposit, CRVFRAX, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
@@ -392,9 +404,16 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 depositedUSDCAmount = storedTotalAssetsAfterDeposit - storedTotalAssetsPre;
         // fix rounding issue for USDT
         uint256 depositedUSDTAmount = amountToDeposit - 1;
+
+        // get the amount of usdc coin one would receive for swapping amount of usdt coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(USDT_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited USDT
         uint256 burntShares =
-            usdcZapper.withdraw(depositedUSDTAmount, USDT, 0, address(this), address(multiPoolStrategy));
+            usdcZapper.withdraw(depositedUSDTAmount, USDT, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre;
 
@@ -438,9 +457,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 halfOfDepositedUSDCAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsPre) / 2;
         uint256 halfOfDepositedUSDTAmount = amountToDeposit / 2;
 
+        // get the amount of usdc coin one would receive for swapping amount of usdt coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(USDT_INDEX, UNDERLYING_ASSET_INDEX, halfOfDepositedUSDTAmount);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited USDT
         uint256 burntShares =
-            usdcZapper.withdraw(halfOfDepositedUSDTAmount, USDT, 0, address(this), address(multiPoolStrategy));
+            usdcZapper.withdraw(halfOfDepositedUSDTAmount, USDT, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre;
 
@@ -485,8 +510,16 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         // fix rounding issue for DAI
         uint256 depositedDAIAmount =
             amountToDeposit - 10 ** (IERC20(DAI).decimals() - IERC20(UNDERLYING_ASSET).decimals());
+
+        // get the amount of usdc coin one would receive for swapping amount of dai coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(DAI_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited DAI
-        uint256 burntShares = usdcZapper.withdraw(depositedDAIAmount, DAI, 0, address(this), address(multiPoolStrategy));
+        uint256 burntShares =
+            usdcZapper.withdraw(depositedDAIAmount, DAI, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(DAI).balanceOf(address(this)) - daiBalanceOfThisPre;
 
@@ -530,9 +563,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 halfOfDepositedUSDCAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsPre) / 2;
         uint256 halfOfDepositedDAIAmount = amountToDeposit / 2;
 
+        // get the amount of usdc coin one would receive for swapping amount of dai coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(DAI_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited DAI
         uint256 burntShares =
-            usdcZapper.withdraw(halfOfDepositedDAIAmount, DAI, 0, address(this), address(multiPoolStrategy));
+            usdcZapper.withdraw(halfOfDepositedDAIAmount, DAI, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(DAI).balanceOf(address(this)) - daiBalanceOfThisPre;
 
@@ -575,8 +614,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         // get actual deposited amount and convert it to FRAX
         uint256 depositedUSDCAmount = storedTotalAssetsAfterDeposit - storedTotalAssetsPre;
 
+        // get the amount of usdc coin one would receive for swapping amount of frax coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(FRAX_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited FRAX
-        uint256 burntShares = usdcZapper.withdraw(amountToDeposit, FRAX, 0, address(this), address(multiPoolStrategy));
+        uint256 burntShares =
+            usdcZapper.withdraw(amountToDeposit, FRAX, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre;
 
@@ -620,9 +666,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 halfOfDepositedUSDCAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsPre) / 2;
         uint256 halfOfDepositedFRAXAmount = amountToDeposit / 2;
 
+        // get the amount of usdc coin one would receive for swapping amount of frax coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(FRAX_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited FRAX
         uint256 burntShares =
-            usdcZapper.withdraw(halfOfDepositedFRAXAmount, FRAX, 0, address(this), address(multiPoolStrategy));
+            usdcZapper.withdraw(halfOfDepositedFRAXAmount, FRAX, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre;
 
@@ -666,8 +718,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 depositedUSDCAmount = storedTotalAssetsAfterDeposit - storedTotalAssetsPre;
         uint256 depositedCRVAmount = ICurveBasePool(CURVE_3POOL).calc_token_amount([0, depositedUSDCAmount, 0], false);
 
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited CRV
-        uint256 burntShares = usdcZapper.withdraw(depositedCRVAmount, CRV, 0, address(this), address(multiPoolStrategy));
+        uint256 burntShares =
+            usdcZapper.withdraw(depositedCRVAmount, CRV, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(CRV).balanceOf(address(this)) - crvBalanceOfThisPre;
 
@@ -712,9 +771,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 halfOfDepositedCRVAmount =
             ICurveBasePool(CURVE_3POOL).calc_token_amount([0, halfOfDepositedUSDCAmount, 0], false);
 
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited CRV
         uint256 burntShares =
-            usdcZapper.withdraw(halfOfDepositedCRVAmount, CRV, 0, address(this), address(multiPoolStrategy));
+            usdcZapper.withdraw(halfOfDepositedCRVAmount, CRV, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(CRV).balanceOf(address(this)) - crvBalanceOfThisPre;
 
@@ -759,9 +824,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 depositedCRVFRAXAmount =
             ICurveBasePool(CURVE_FRAXUSDC).calc_token_amount([0, depositedUSDCAmount], false);
 
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_FRAXUSDC).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited CRVFRAX
         uint256 burntShares =
-            usdcZapper.withdraw(depositedCRVFRAXAmount, CRVFRAX, 0, address(this), address(multiPoolStrategy));
+            usdcZapper.withdraw(depositedCRVFRAXAmount, CRVFRAX, minAmount, address(this), address(multiPoolStrategy));
 
         uint256 withdrawnAmount = IERC20(CRVFRAX).balanceOf(address(this)) - crvfraxBalanceOfThisPre;
 
@@ -806,9 +877,16 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 halfOfDepositedCRVFRAXAmount =
             ICurveBasePool(CURVE_FRAXUSDC).calc_token_amount([0, halfOfDepositedUSDCAmount], false);
 
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_FRAXUSDC).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // withdraw all deposited CRVFRAX
-        uint256 burntShares =
-            usdcZapper.withdraw(halfOfDepositedCRVFRAXAmount, CRVFRAX, 0, address(this), address(multiPoolStrategy));
+        uint256 burntShares = usdcZapper.withdraw(
+            halfOfDepositedCRVFRAXAmount, CRVFRAX, minAmount, address(this), address(multiPoolStrategy)
+        );
 
         uint256 withdrawnAmount = IERC20(CRVFRAX).balanceOf(address(this)) - crvfraxBalanceOfThisPre;
 
@@ -890,8 +968,14 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
+        // get the amount of usdc coin one would receive for swapping amount of usdt coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(USDT_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // redeem all shares
-        uint256 redeemedAmount = usdcZapper.redeem(shares, USDT, 0, address(this), address(multiPoolStrategy));
+        uint256 redeemedAmount = usdcZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy));
 
         // check that redeem works correctly and swap fees are less than 1%
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
@@ -917,8 +1001,14 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 daiBalanceOfThisPre = IERC20(DAI).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
+        // get the amount of usdc coin one would receive for swapping amount of dai coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(DAI_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // redeem all shares
-        uint256 redeemedAmount = usdcZapper.redeem(shares, DAI, 0, address(this), address(multiPoolStrategy));
+        uint256 redeemedAmount = usdcZapper.redeem(shares, DAI, minAmount, address(this), address(multiPoolStrategy));
 
         // check that redeem works correctly and swap fees are less than 1%
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
@@ -944,8 +1034,14 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
+        // get the amount of usdc coin one would receive for swapping amount of frax coin
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).get_dy(FRAX_INDEX, UNDERLYING_ASSET_INDEX, amountToDeposit);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // redeem all shares
-        uint256 redeemedAmount = usdcZapper.redeem(shares, FRAX, 0, address(this), address(multiPoolStrategy));
+        uint256 redeemedAmount = usdcZapper.redeem(shares, FRAX, minAmount, address(this), address(multiPoolStrategy));
 
         // check that redeem works correctly and swap fees are less than 1%
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
@@ -971,8 +1067,14 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 crvBalanceOfThisPre = IERC20(CRV).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_3POOL).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // redeem all shares
-        uint256 redeemedAmount = usdcZapper.redeem(shares, CRV, 0, address(this), address(multiPoolStrategy));
+        uint256 redeemedAmount = usdcZapper.redeem(shares, CRV, minAmount, address(this), address(multiPoolStrategy));
 
         // check that redeem works correctly and swap fees are less than 1%
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
@@ -998,8 +1100,15 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 crvFraxBalanceOfThisPre = IERC20(CRVFRAX).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
+        // calculate the amount of USDC received when withdrawing a LP token.
+        uint256 calculatedUSDCAmount =
+            ICurveBasePool(CURVE_FRAXUSDC).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // redeem all shares
-        uint256 redeemedAmount = usdcZapper.redeem(shares, CRVFRAX, 0, address(this), address(multiPoolStrategy));
+        uint256 redeemedAmount =
+            usdcZapper.redeem(shares, CRVFRAX, minAmount, address(this), address(multiPoolStrategy));
 
         // check that redeem works correctly and swap fees are less than 1%
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
