@@ -981,6 +981,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
         // check usdt amount of this contract after redeem
         assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
+        assertAlmostEq(
+            amountToDeposit, IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre, amountToDeposit / 1000
+        );
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -1014,6 +1018,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
         // check dai amount of this contract after redeem
         assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
+        assertAlmostEq(
+            amountToDeposit, IERC20(DAI).balanceOf(address(this)) - daiBalanceOfThisPre, amountToDeposit / 1000
+        );
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -1047,6 +1055,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
         // check frax amount of this contract after redeem
         assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
+        assertAlmostEq(
+            amountToDeposit, IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre, amountToDeposit / 1000
+        );
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -1080,6 +1092,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
         // check crv amount of this contract after redeem
         assertEq(IERC20(CRV).balanceOf(address(this)), crvBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
+        assertAlmostEq(
+            amountToDeposit, IERC20(CRV).balanceOf(address(this)) - crvBalanceOfThisPre, amountToDeposit / 1000
+        );
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -1114,6 +1130,10 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
         // check crvfrax amount of this contract after redeem
         assertEq(IERC20(CRVFRAX).balanceOf(address(this)), crvFraxBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
+        assertAlmostEq(
+            amountToDeposit, IERC20(CRVFRAX).balanceOf(address(this)) - crvFraxBalanceOfThisPre, amountToDeposit / 1000
+        );
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
