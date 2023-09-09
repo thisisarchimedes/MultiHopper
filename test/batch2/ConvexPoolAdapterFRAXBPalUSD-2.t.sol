@@ -29,7 +29,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant UNDERLYING_ASSET = 0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC; // FRAXBP
 
     /**
      * @dev Address of the Convex booster contract.
@@ -63,7 +63,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
      * @dev The index of the strategies underlying asset in the pool tokens array
      * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
      */
-    int128 constant CURVE_POOL_TOKEN_INDEX = 2;
+    int128 constant CURVE_POOL_TOKEN_INDEX = 1;
 
     /**
      * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
@@ -73,12 +73,12 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
     /**
      * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
      */
-    uint256 constant POOL_TOKEN_LENGTH = 3;
+    uint256 constant POOL_TOKEN_LENGTH = 2;
 
     /**
      * @dev address of zapper for pool if needed
      */
-    address constant ZAPPER = 0x08780fb7E580e492c1935bEe4fA5920b94AA95Da;
+    address constant ZAPPER = address(0);
 
     uint256 forkBlockNumber;
     uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_485;
