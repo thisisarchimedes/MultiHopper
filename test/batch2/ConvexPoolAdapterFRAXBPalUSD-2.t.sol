@@ -52,7 +52,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "FRAXBP/alUSD Strategy";
+    string public constant STRATEGY_NAME = "FRAXBP/alUSD Stra";
 
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
