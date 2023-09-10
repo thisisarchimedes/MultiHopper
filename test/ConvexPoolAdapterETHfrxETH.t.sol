@@ -9,6 +9,7 @@ import { MultiPoolStrategyFactory } from "../src/MultiPoolStrategyFactory.sol";
 import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
 import { IBaseRewardPool } from "../src/interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
@@ -18,6 +19,8 @@ import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IE
 import { IBooster } from "../src/interfaces/IBooster.sol";
 
 contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
+    using SafeERC20 for IERC20;
+
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
     ConvexPoolAdapter convexGenericAdapter;
@@ -30,7 +33,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     /**
      * @dev Address of the Convex booster contract.
@@ -64,7 +67,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
      * @dev The index of the strategies underlying asset in the pool tokens array
      * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
      */
-    int128 constant CURVE_POOL_TOKEN_INDEX = 2;
+    int128 constant CURVE_POOL_TOKEN_INDEX = 0;
 
     /**
      * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
@@ -102,6 +105,9 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
         inputs[4] = vm.toString(amount);
         inputs[5] = vm.toString(fromAddress);
 
+        // bytes memory funcResult = vm.ffi(inputs);
+        // console.logBytes(funcResult);
+
         return abi.decode(vm.ffi(inputs), (uint256, bytes));
     }
 
@@ -110,7 +116,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
     }
 
     function harvest(uint256 _depositAmount) internal {
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), _depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), _depositAmount);
         multiPoolStrategy.deposit(_depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 wethBalanceOfMultiPool = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
@@ -198,7 +204,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
 
     function testDeposit() public {
         getBlockNumber();
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), 500 * 10 ** tokenDecimals);
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), address(multiPoolStrategy), type(uint256).max);
         multiPoolStrategy.deposit(500 * 10 ** tokenDecimals, address(this));
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
         assertEq(storedAssets, 500 * 10 ** tokenDecimals);
@@ -207,7 +213,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
     function testAdjustIn() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
         console2.log("dep amount", depositAmount);
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         uint256 curveLPBalance = curveLpToken.balanceOf(address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
@@ -228,7 +234,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
 
     function testAdjustOut() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustInAmount = depositAmount * 94 / 100;
@@ -261,7 +267,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
 
     function testWithdraw() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adapterAdjustAmount = depositAmount * 94 / 100; // %94
@@ -292,7 +298,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
 
     function testClaimRewards() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustInAmount = depositAmount * 94 / 100;
@@ -338,7 +344,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
     function testWithdrawExceedContractBalance() public {
         uint256 depositAmount = 100 * 10 ** tokenDecimals;
         vm.startPrank(staker);
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount / 2);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount / 2);
         multiPoolStrategy.deposit(depositAmount / 2, address(staker));
         vm.stopPrank();
         harvest(depositAmount);
