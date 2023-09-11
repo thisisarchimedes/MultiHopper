@@ -22,7 +22,7 @@ import { console2 } from "forge-std/console2.sol";
  *
  */
 contract DeployFactory is Script {
-    address MONITOR = address(0); // TODO : set monitor address before deploy
+    address MONITOR = 0xA2cD32638D261095aED72a60BB244953173da61b; // TODO : set monitor address before deploy
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
 
     function run() public returns (MultiPoolStrategyFactory factory) {

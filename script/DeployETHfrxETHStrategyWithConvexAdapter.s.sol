@@ -24,12 +24,12 @@ contract DeployConvex is Script {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.
      */
-    address public constant FACTORY_ADDRESS = address(0);
+    address public constant FACTORY_ADDRESS = 0x344a4c2a0C285EA926c3D34B28D53aC3E14B0A35;
     /**
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     /**
      * @dev Address of the Convex booster contract.
@@ -63,7 +63,7 @@ contract DeployConvex is Script {
      * @dev The index of the strategies underlying asset in the pool tokens array
      * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
      */
-    int128 constant CURVE_POOL_TOKEN_INDEX = 2;
+    int128 constant CURVE_POOL_TOKEN_INDEX = 0;
 
     /**
      * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
