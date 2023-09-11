@@ -33,7 +33,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant UNDERLYING_ASSET = 0x344a4c2a0C285EA926c3D34B28D53aC3E14B0A35;
 
     /**
      * @dev Address of the Convex booster contract.

@@ -20,16 +20,17 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
  *
  */
 
-contract DeployConvex is Script {
+contract DeployETHfrxETHStrategyWithConvexAdapter is Script {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.
      */
-    address public constant FACTORY_ADDRESS = 0x344a4c2a0C285EA926c3D34B28D53aC3E14B0A35;
+    //0x4f19e6A97778417C33AA6034089378b093619fe5
+    address public constant FACTORY_ADDRESS = 0x4f19e6A97778417C33AA6034089378b093619fe5;
     /**
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant UNDERLYING_ASSET = 0x344a4c2a0C285EA926c3D34B28D53aC3E14B0A35;
 
     /**
      * @dev Address of the Convex booster contract.
@@ -99,9 +100,14 @@ contract DeployConvex is Script {
         require(CONVEX_PID != 0, "Deploy: convex pid not set");
         require(CONVEX_BOOSTER != address(0), "Deploy: convex booster address not set");
 
-        vm.startBroadcast(deployerPrivateKey);
-
+        // vm.startBroadcast(deployerPrivateKey);
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
+
+        address owner = multiPoolStrategyFactory.owner();
+        console2.log("owner: %s", owner);
+
+        vm.startPrank(owner);
+
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
             multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME)
@@ -121,6 +127,7 @@ contract DeployConvex is Script {
                 )
             )
         );
+
         console2.log("ConvexPoolAdapter: %s", address(convexPoolAdapter));
         //// add created adapter to strategy
         multiPoolStrategy.addAdapter(address(convexPoolAdapter));
@@ -131,6 +138,8 @@ contract DeployConvex is Script {
             address(convexPoolAdapter)
         );
 
-        vm.stopBroadcast();
+        vm.stopPrank();
+
+        // vm.stopBroadcast();
     }
 }
