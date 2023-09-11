@@ -103,9 +103,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         monitor = _monitor;
         adjustInInterval = 6 hours;
         adjustOutInterval = 0;
-        minPercentage = 500; // 5%
+        minPercentage = 100; // 1%
         rewardsCycleLength = 7 days;
-        feePercentage = 1500; // 15%
+        feePercentage = 1000; // 10%
     }
     /// OVERRIDEN FUNCTIONS
 

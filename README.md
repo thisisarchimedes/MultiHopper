@@ -7,6 +7,37 @@
 [foundry]: https://getfoundry.sh/
 [foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
 
+## Table of Contents
+- [Quick start](#quick-start)
+- [Context](#context)
+  - [“Unhealthy”](#unhealthy)
+- [Main Components](#main-components)
+  - [Strategy](#strategy)
+  - [Adaptors](#adaptors)
+  - [Factory](#factory)
+  - [Zapper](#zapper)
+- [High Level Architecture](#high-level-architecture)
+- [Troubleshooting](#troubleshooting)
+  - [Redeem results in: "ERC4626: redeem more than max #1002"](#redeem-results-in-erc4626-redeem-more-than-max-1002)
+  - [Deposit results in: "Exchange resulted in fewer coins than expected"](#deposit-results-in-exchange-resulted-in-fewer-coins-than-expected)
+  - [Python virtual enviornment](#python-virtual-enviornment)
+  - [Test fail for a some pools but not others](#test-fail-for-a-some-pools-but-not-others)
+- [License](#license)
+
+## Quick start
+
+1. **Clone the repo**
+2. **Install Foundry**: https://book.getfoundry.sh/getting-started/installation.
+3. **Python**: Install Python (3.11+), create a Python virtual environment `python3 -m venv venv` and turn it on `source venv/bin/activate`. Then, install requirements: `pip install -r requirements.txt`.
+4. **Set enviornment variables**: See below. create `.env` file and export it with: `source .env`. 
+5. **Run tests**: `forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards"`. We excluding two tests that depends on Li.Fi quote. It is hard to simulate LiFi without hitting expiration time and/or slippage.
+
+_**Environment variable**_
+```bash
+API_KEY_ALCHEMY=
+API_KEY_ETHERSCAN=
+```
+
 ## Context
 
 This is the smart contract infrastructure for automated AMM pool swapping.
@@ -88,6 +119,14 @@ We use factory architecture. Factory is deployed once and generates Adopters and
 <img width="6000" alt="MultiPoolDrawing" src="https://github.com/thisisarchimedes/MultiHopper/assets/98904111/030b6daa-e6dd-4b29-9b83-15dc9186772c">
 
 # Troubleshooting
+
+## Redeem results in: "ERC4626: redeem more than max #1002"
+
+Strategy share token is the same decimal as underlying token. E.g.: 6 decimals if underlying is USDC.
+
+## Deposit results in: "Exchange resulted in fewer coins than expected"
+
+The minAmount param of the USDCZapper deposit method is 6 decimal (because USDC).
 
 ## Python virtual enviornment
 
