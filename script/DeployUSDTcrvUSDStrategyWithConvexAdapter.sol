@@ -24,7 +24,7 @@ contract DeployConvex is Script {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.
      */
-    address public constant FACTORY_ADDRESS = 0x0f152c86FdaDD9B58F7DCE26D819D76a70AD348F;
+    address public constant FACTORY_ADDRESS = 0x4f19e6A97778417C33AA6034089378b093619fe5;
     /**
      * @dev Address of the underlying token used in the integration.
      * default: WETH
@@ -99,9 +99,13 @@ contract DeployConvex is Script {
         require(CONVEX_PID != 0, "Deploy: convex pid not set");
         require(CONVEX_BOOSTER != address(0), "Deploy: convex booster address not set");
 
-        vm.startBroadcast(deployerPrivateKey);
+        // vm.startBroadcast(deployerPrivateKey);
 
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
+        address owner = multiPoolStrategyFactory.owner();
+
+        vm.startPrank(owner);
+
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
             multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME)
@@ -131,6 +135,6 @@ contract DeployConvex is Script {
             address(convexPoolAdapter)
         );
 
-        vm.stopBroadcast();
+        vm.stopPrank();
     }
 }
