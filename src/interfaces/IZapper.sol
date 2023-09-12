@@ -31,7 +31,7 @@ interface IZapper {
      * @dev Deposits asset into the MultiPoolStrategy contract.
      * @param amount The asset amount user wants to deposit.
      * @param token The deposited asset address (like: USDT address).
-     * @param minAmount Minimum amount of underlying asset to receive after the swap of the provided asset.
+     * @param minAmount Minimum amount of underlying asset to receive after the swap of the provided asset (please pay attention to decimals).
      * @param receiver The address to receive the shares.
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @return shares The amount of shares received.
@@ -75,23 +75,21 @@ interface IZapper {
     /**
      * @dev Redeems asset from the MultiPoolStrategy contract.
      * @param sharesAmount The amount of shares to redeem.
+     * @param redeemToken The token address redeem.
      * @param minRedeemAmount Minimum amount of required asset to recieve after redeem.
-     * @param minSwapAmount Minimum amount of required asset to receive after the swap of the underlying asset.
      * @param receiver The address to receive the redeemed asset.
      * @param strategyAddress The address of the MultiPoolStrategy contract to redeem from.
-     * @param redeemToken The token address redeem.
-     * @return amount The amount of shares burned.
+     * @return redeemAmount The redeemed amount.
      */
     function redeem(
         uint256 sharesAmount,
+        address redeemToken,
         uint256 minRedeemAmount,
-        uint256 minSwapAmount,
         address receiver,
-        address strategyAddress,
-        address redeemToken
+        address strategyAddress
     )
         external
-        returns (uint256 amount);
+        returns (uint256 redeemAmount);
     /**
      * 1. User sepcifies how many shares they want to redeem (param: sharesAmount)
      *     2. Call redeem on the strategy, swaping shares with USDC
