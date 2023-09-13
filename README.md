@@ -22,6 +22,7 @@
   - [Deposit results in: "Exchange resulted in fewer coins than expected"](#deposit-results-in-exchange-resulted-in-fewer-coins-than-expected)
   - [Python virtual enviornment](#python-virtual-enviornment)
   - [Test fail for a some pools but not others](#test-fail-for-a-some-pools-but-not-others)
+  - [Strategy creation mysteriously fails](#strategy-creation-mysteriously-fails)
 - [License](#license)
 
 ## Quick start
@@ -140,6 +141,11 @@ Tests generally pass, but fail for a specific Convex/Aura pool. This is usually 
 adaptor.
 
 Some more exotic or complex pools are not supported.
+
+## Strategy creation mysteriously fails
+
+`MultiPoolStrategy.initialize()` calls `__ERC20_init_unchained` which is using an on stack storage. This storage space is limited to 32 bytes (32 characters). Originally, we had some hardcoded characters, which left us with 16 charcters for name. If we overflow, contract will deploy but will fail to create new strategies.
+
 
 # License
 
