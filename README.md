@@ -146,6 +146,7 @@ Some more exotic or complex pools are not supported.
 
 `MultiPoolStrategy.initialize()` calls `__ERC20_init_unchained` which is using an on stack storage. This storage space is limited to 32 bytes (32 characters). Originally, we had some hardcoded characters, which left us with 16 charcters for name. If we overflow, contract will deploy but will fail to create new strategies.
 
+Interestingly enough, local forks not always fail. `Forge test` works locally regardless of this memory leak.
 
 # License
 
