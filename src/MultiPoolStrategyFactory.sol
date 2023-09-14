@@ -122,6 +122,15 @@ contract MultiPoolStrategyFactory is Ownable {
         AuraComposableStablePoolAdapter(payable(auraAdapter)).initialize(_poolId, _multiPoolStrategy, _auraPid);
     }
 
+    /**
+    * @dev Creates and initializes a new MultiPoolStrategy with the given parameters.
+    * @param _underlyingToken The token that will be the underlying value asset in the strategy.
+    * @param _salt A unique salt to produce a deterministic address when cloning the strategy.
+    * @return multiPoolStrategy The address of the newly created MultiPoolStrategy.
+    * 
+    * @notice Only the owner can call this function. The newly created strategy's ownership will
+    * be transferred to the caller.
+    */
     function createMultiPoolStrategy(
         address _underlyingToken,
         string calldata _salt
@@ -137,6 +146,17 @@ contract MultiPoolStrategyFactory is Ownable {
         MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);    
     }
 
+    /**
+    * @dev Creates and initializes a new MultiPoolStrategy with the given parameters.
+    * @param _underlyingToken The token that will be the underlying value asset in the strategy.
+    * @param _salt A unique salt to produce a deterministic address when cloning the strategy.
+    * @param _name Name of the strategy.
+    * @param _symbol Symbol of the share token for the strategy.
+    * @return multiPoolStrategy The address of the newly created MultiPoolStrategy.
+    * 
+    * @notice Only the owner can call this function. The newly created strategy's ownership will
+    * be transferred to the caller.
+    */
     function createMultiPoolStrategy(
         address _underlyingToken,
         string calldata _salt,
