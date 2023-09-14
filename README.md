@@ -163,6 +163,10 @@ _Gas overestimation_
 You want to have aa lot of gas in the deployer account. Gas estimation is usually overestimating and cancel the
 transaction.
 
+_Issue with nonce_
+
+Use the `--slow` flag when running `forge script`, it waits for a transaction to be mined before sending the next one.
+
 # License
 
 This project is licensed under Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public
