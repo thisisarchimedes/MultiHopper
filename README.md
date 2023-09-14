@@ -160,7 +160,7 @@ Interestingly enough, local forks not always fail. `Forge test` works locally re
 
 _Gas overestimation_
 
-You want to have aa lot of gas in the deployer account. Gas estimation is usually overestimating and cancel the
+You want to have a lot of gas in the deployer account. Gas estimation is usually overestimating and cancel the
 transaction.
 
 _Issue with nonce_

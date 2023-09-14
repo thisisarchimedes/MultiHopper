@@ -142,7 +142,7 @@ contract MultiPoolStrategyFactory is Ownable {
         multiPoolStrategy = multiPoolStrategyImplementation.cloneDeterministic(
             keccak256(abi.encodePacked(_underlyingToken, monitor, _salt))
         );
-        MultiPoolStrategy(multiPoolStrategy).initalize(_underlyingToken, monitor);
+        MultiPoolStrategy(multiPoolStrategy).initialize(_underlyingToken, monitor);
         MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);    
     }
 
@@ -170,7 +170,7 @@ contract MultiPoolStrategyFactory is Ownable {
         multiPoolStrategy = multiPoolStrategyImplementation.cloneDeterministic(
             keccak256(abi.encodePacked(_underlyingToken, monitor, _salt))
         );
-        MultiPoolStrategy(multiPoolStrategy).initalize(_underlyingToken, monitor, _name,  _symbol);
+        MultiPoolStrategy(multiPoolStrategy).initialize(_underlyingToken, monitor, _name,  _symbol);
         MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);
     }
 
