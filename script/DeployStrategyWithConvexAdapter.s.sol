@@ -134,7 +134,7 @@ contract DeployConvex is Script {
             address(convexPoolAdapter)
         );
 
-        console2.log("Deploy: success - name: %s ; symbol %s", multiPoolStrategy.name(), multiPoolStrategy.symbol());
+        console2.log("Deploy: success - Name: %s ; Symbol: %s", multiPoolStrategy.name(), multiPoolStrategy.symbol());
 
         vm.stopBroadcast();
 
