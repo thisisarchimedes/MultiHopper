@@ -124,16 +124,33 @@ contract MultiPoolStrategyFactory is Ownable {
 
     function createMultiPoolStrategy(
         address _underlyingToken,
-        string calldata _strategyName
+        string calldata _salt
     )
         external
         onlyOwner
         returns (address multiPoolStrategy)
     {
         multiPoolStrategy = multiPoolStrategyImplementation.cloneDeterministic(
-            keccak256(abi.encodePacked(_underlyingToken, monitor, _strategyName))
+            keccak256(abi.encodePacked(_underlyingToken, monitor, _salt))
         );
         MultiPoolStrategy(multiPoolStrategy).initalize(_underlyingToken, monitor);
+        MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);    
+    }
+
+    function createMultiPoolStrategy(
+        address _underlyingToken,
+        string calldata _salt,
+        string calldata _name,
+        string calldata _symbol
+    )
+        public
+        onlyOwner
+        returns (address multiPoolStrategy)
+    {
+        multiPoolStrategy = multiPoolStrategyImplementation.cloneDeterministic(
+            keccak256(abi.encodePacked(_underlyingToken, monitor, _salt))
+        );
+        MultiPoolStrategy(multiPoolStrategy).initalize(_underlyingToken, monitor, _name,  _symbol);
         MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);
     }
 

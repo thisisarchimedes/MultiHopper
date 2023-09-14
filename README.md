@@ -8,6 +8,7 @@
 [foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
 
 ## Table of Contents
+
 - [Quick start](#quick-start)
 - [Context](#context)
   - [“Unhealthy”](#unhealthy)
@@ -29,11 +30,16 @@
 
 1. **Clone the repo**
 2. **Install Foundry**: https://book.getfoundry.sh/getting-started/installation.
-3. **Python**: Install Python (3.11+), create a Python virtual environment `python3 -m venv venv` and turn it on `source venv/bin/activate`. Then, install requirements: `pip install -r requirements.txt`.
-4. **Set enviornment variables**: See below. create `.env` file and export it with: `source .env`. 
-5. **Run tests**: `forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards"`. We excluding two tests that depends on Li.Fi quote. It is hard to simulate LiFi without hitting expiration time and/or slippage.
+3. **Python**: Install Python (3.11+), create a Python virtual environment `python3 -m venv venv` and turn it on
+   `source venv/bin/activate`. Then, install requirements: `pip install -r requirements.txt`.
+4. **Set enviornment variables**: See below. create `.env` file and export it with: `source .env`.
+5. **Run tests**:
+   `forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards"`.
+   We excluding two tests that depends on Li.Fi quote. It is hard to simulate LiFi without hitting expiration time
+   and/or slippage.
 
 _**Environment variable**_
+
 ```bash
 API_KEY_ALCHEMY=
 API_KEY_ETHERSCAN=
@@ -144,9 +150,18 @@ Some more exotic or complex pools are not supported.
 
 ## Strategy creation mysteriously fails
 
-`MultiPoolStrategy.initialize()` calls `__ERC20_init_unchained` which is using an on stack storage. This storage space is limited to 32 bytes (32 characters). Originally, we had some hardcoded characters, which left us with 16 charcters for name. If we overflow, contract will deploy but will fail to create new strategies.
+_Buffer overflow_
+
+`MultiPoolStrategy.initialize()` calls `__ERC20_init_unchained` which is using an on stack storage. This storage space
+is limited to 32 bytes (32 characters). Originally, we had some hardcoded characters, which left us with 16 charcters
+for name. If we overflow, contract will deploy but will fail to create new strategies.
 
 Interestingly enough, local forks not always fail. `Forge test` works locally regardless of this memory leak.
+
+_Gas overestimation_
+
+You want to have aa lot of gas in the deployer account. Gas estimation is usually overestimating and cancel the
+transaction.
 
 # License
 

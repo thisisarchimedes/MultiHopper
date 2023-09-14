@@ -96,9 +96,41 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     function initalize(address _stakingToken, address _monitor) public initializer {
         __Ownable_init_unchained();
         __ERC20_init_unchained(
-            string(abi.encodePacked(IERC20UpgradeableDetailed(_stakingToken).name(), " MultiPoolStrategy")),
-            string(abi.encodePacked("mp", IERC20UpgradeableDetailed(_stakingToken).symbol()))
+            string(abi.encodePacked("multipool")),
+            string(abi.encodePacked("share"))
         );
+
+        _initalize(_stakingToken, _monitor);
+    }
+    /**
+    * @dev Initializes the contract with the provided parameters.
+    * @param _stakingToken Address of the staking token.
+    * @param _monitor Address of the monitor.
+    * @param _name Name for the strategy.
+    * @param _symbol Symbol for the strategy share token.
+    *
+    * @notice _name + _symbol must be less than 32 characters.
+    */
+    function initalize(address _stakingToken, address _monitor, string calldata _name, string calldata _symbol) public initializer {
+        __Ownable_init_unchained();
+        __ERC20_init_unchained(
+            string(abi.encodePacked(_name)),
+            string(abi.encodePacked(_symbol))
+        );
+
+        _initalize(_stakingToken, _monitor);
+    }
+
+    /**
+    * @dev Internal function to set the necessary variables for the contract.
+    * @param _stakingToken Address of the staking token.
+    * @param _monitor Sddress of the monitor.
+    * 
+    * @notice This function sets various parameters such as monitor address, 
+    * intervals for adjustment, reward cycle lengths, and fee percentages.
+    */
+    function _initalize(address _stakingToken,  address _monitor) internal {
+
         __ERC4626_init(IERC20Upgradeable(_stakingToken));
         monitor = _monitor;
         adjustInInterval = 6 hours;
