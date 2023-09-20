@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { IGenericZapper } from "../interfaces/IGenericZapper.sol";
-import { MultiPoolStrategy as IMultiPoolStrategy } from "../MultiPoolStrategy.sol";
+import { MultiPoolStrategy } from "../MultiPoolStrategy.sol";
 import { console2 } from "forge-std/console2.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/security/ReentrancyGuard.sol";
 import { Context } from "openzeppelin-contracts/utils/Context.sol";
@@ -29,13 +29,13 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         address token,
         address receiver,
         address strategyAddress,
-        IMultiPoolStrategy.SwapData[] calldata swapData
+        bytes calldata swapTx
     )
         external
         nonReentrant
         returns (uint256 shares)
     {
-        IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
+        MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(strategyAddress);
 
         // check if the reciever is not zero address
         if (receiver == address(0)) revert ZeroAddress();
@@ -48,17 +48,19 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         // transfer tokens to this contract
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
 
+        // TODO! it would be a good idea to add the same check to the strategy
+
+        // TODO! verify call data amount and amount given 
+        // TODO! the swapTx does not have correspond amount / token to match the params / underlying asset
+
         // swap for the underlying asset
         uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
-        for (uint256 i = 0; i < swapData.length;) {
-            SafeERC20.safeApprove(IERC20(swapData[i].token), LIFI_DIAMOND, 0);
-            SafeERC20.safeApprove(IERC20(swapData[i].token), LIFI_DIAMOND, swapData[i].amount);
-            (bool success,) = LIFI_DIAMOND.call(swapData[i].callData);
-            if (!success) revert SwapFailed();
-            unchecked {
-                ++i;
-            }
-        }
+
+        SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, 0);
+        SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, amount);
+        (bool success,) = LIFI_DIAMOND.call(swapTx); // TODO! Dangerous?
+        if (!success) revert SwapFailed();
+
         uint256 underlyingBalanceAfter = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
         uint256 underlyingAmount = underlyingBalanceAfter - underlyingBalanceBefore;
 
@@ -83,12 +85,12 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         address redeemToken,
         address receiver,
         address strategyAddress,
-        IMultiPoolStrategy.SwapData[] calldata swapData
+        bytes calldata swapTx
     )
         external
         returns (uint256 redeemTokenAmount)
     {
-        IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
+        MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(strategyAddress);
         
         // check if the reciever is not zero address
         if (receiver == address(0)) revert ZeroAddress();
@@ -99,20 +101,18 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         if (multiPoolStrategy.paused()) revert StrategyPaused();
 
         // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
-        multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
-        // uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
+        uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
+
+        // TODO! verify call data amount and amount given
 
         // swap for the underlying asset
         uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
-        for (uint256 i = 0; i < swapData.length;) {
-            SafeERC20.safeApprove(IERC20(swapData[i].token), LIFI_DIAMOND, 0);
-            SafeERC20.safeApprove(IERC20(swapData[i].token), LIFI_DIAMOND, swapData[i].amount);
-            (bool success,) = LIFI_DIAMOND.call(swapData[i].callData);
-            if (!success) revert SwapFailed();
-            unchecked {
-                ++i;
-            }
-        }
+
+        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, 0);
+        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, underlyingAmount);
+        (bool success,) = LIFI_DIAMOND.call(swapTx); // TODO! Dangerous?
+        if (!success) revert SwapFailed();
+
         uint256 tokenBalanceAfter = IERC20(redeemToken).balanceOf(address(this));
         redeemTokenAmount = tokenBalanceAfter - tokenBalanceBefore;
 

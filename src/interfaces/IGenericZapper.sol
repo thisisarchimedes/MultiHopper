@@ -9,10 +9,6 @@ interface IGenericZapper {
      */
     error StrategyPaused();
     /**
-     * @custom:error  Thrown when the asset provided does not match the underlying asset.
-     */
-    error StrategyAssetDoesNotMatchUnderlyingAsset();
-    /**
      * @custom:error Thrown when an empty input is encountered.
      */
     error EmptyInput();
@@ -27,6 +23,7 @@ interface IGenericZapper {
      * @param token The deposited asset address (like: USDT address).
      * @param receiver The address to receive the shares.
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
+     * @param swapTx containing the transaction data for the swap.
      * @return shares The amount of shares received.
      */
     function deposit(
@@ -34,7 +31,7 @@ interface IGenericZapper {
         address token,
         address receiver,
         address strategyAddress,
-        IMultiPoolStrategy.SwapData[] calldata swapData
+        bytes calldata swapTx
     )
         external
         returns (uint256 shares);
@@ -45,6 +42,7 @@ interface IGenericZapper {
      * @param redeemToken The token address redeem.
      * @param receiver The address to receive the redeemed asset.
      * @param strategyAddress The address of the MultiPoolStrategy contract to redeem from.
+     * @param swapTx containing the transaction data for the swap.
      * @return redeemAmount The redeemed amount.
      */
     function redeem(
@@ -52,7 +50,7 @@ interface IGenericZapper {
         address redeemToken,
         address receiver,
         address strategyAddress,
-        IMultiPoolStrategy.SwapData[] calldata swapData
+        bytes calldata swapTx
     )
         external
         returns (uint256 redeemAmount);
