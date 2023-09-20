@@ -5,7 +5,7 @@ import { IGenericZapper } from "../interfaces/IGenericZapper.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "../MultiPoolStrategy.sol";
 import { console2 } from "forge-std/console2.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/security/ReentrancyGuard.sol";
-import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
+import { Context } from "openzeppelin-contracts/utils/Context.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
@@ -17,7 +17,7 @@ error SwapFailed();
  * It swaps the given token using Li.Fi (given data) to the underliying asset
  * and interacts with the MultiPoolStrategy contract to perform the operations.
  */
-contract GenericZapper is ReentrancyGuard, Ownable, IGenericZapper {
+contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
