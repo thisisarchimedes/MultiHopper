@@ -18,12 +18,13 @@ def get_quote(
         "fromToken": srcToken,
         "toToken": dstToken,
         "fromAmount": amount,
-        "fromAddress": fromAddress
+        "fromAddress": fromAddress,
     }
 
     resp = requests.get(API_URL, params=queryParams)
     if resp.status_code != 200:
         raise Exception(format(f"{resp.text}, code: {resp.status_code}"))
+    # else: print(resp.text) # Debug
     
     resp = resp.json()
 
