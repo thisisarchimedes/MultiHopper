@@ -48,10 +48,11 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         // transfer tokens to this contract
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
 
-        // TODO! it would be a good idea to add the same check to the strategy
+        // TODO! it would be a good idea to add the same check to the multi-pool strategy
 
         // TODO! verify call data amount and amount given 
         // TODO! the swapTx does not have correspond amount / token to match the params / underlying asset
+        // TODO! verify minAmount
 
         // swap for the underlying asset
         uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
