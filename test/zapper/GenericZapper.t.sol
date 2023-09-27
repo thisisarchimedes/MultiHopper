@@ -181,6 +181,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 underlyingAssetBalanceOfThisPre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         uint256 underlyingAssetBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
 
+        // 95% min amount
+        uint256 minAmount = amountToDeposit * 95 / 100;
+
         uint256 shares = genericZapper.deposit(amountToDeposit, UNDERLYING_ASSET, address(this), address(multiPoolStrategy), "");
 
         uint256 underlyingAssetDepositedAmountToMultiPoolStrategy =
@@ -212,6 +215,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
 
         (uint256 calculatedUSDCAmount, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
         uint256 shares = genericZapper.deposit(amountToDeposit, USDT, address(this), address(multiPoolStrategy), txData);
 
@@ -248,6 +254,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         (uint256 calculatedUSDCAmount, bytes memory txData) = getQuoteLiFi(DAI, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
         
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         uint256 shares = genericZapper.deposit(amountToDeposit, DAI, address(this), address(multiPoolStrategy), txData);
 
         uint256 usdcDepositedAmountToMultiPoolStrategy =
@@ -288,6 +297,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 usdcBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
 
         (uint256 calculatedUSDCAmount, bytes memory txData) = getQuoteLiFi(FRAX, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
         uint256 shares = genericZapper.deposit(amountToDeposit, FRAX, address(this), address(multiPoolStrategy), txData);
 
@@ -331,6 +343,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
     //     (uint256 calculatedUSDCAmount, bytes memory txData) = getQuoteLiFi(CRV, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
 
+    //     // 95% min amount
+    //     uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
     //     uint256 shares = genericZapper.deposit(amountToDeposit, CRV, address(this), address(multiPoolStrategy), txData);
 
     //     uint256 usdcDepositedAmountToMultiPoolStrategy =
@@ -360,6 +375,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     // calculate the amount of USDC received when withdrawing a LP token.
     //     uint256 calculatedUSDCAmount =
     //         ICurveBasePool(CURVE_FRAXUSDC).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+    //     // 95% min amount
+    //     uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
     //     (, bytes memory txData) = getQuoteLiFi(CRVFRAX, multiPoolStrategy.asset(), amountToDeposit, address(this));
 
@@ -521,6 +538,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // get values before redeem
         uint256 underlyingAssetBalanceOfThisPre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+        
+        // 95% min amount
+        uint256 minAmount = amountToDeposit * 95 / 100;
 
         // redeem all shares
         uint256 redeemedAmount = genericZapper.redeem(shares, UNDERLYING_ASSET, address(this), address(multiPoolStrategy), "");
@@ -555,6 +575,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // get values before redeem
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+        
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
         // redeem all shares
         (, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
@@ -591,6 +614,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 daiBalanceOfThisPre = IERC20(DAI).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
+
         // redeem all shares
         (, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), DAI, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
         uint256 redeemedAmount = genericZapper.redeem(shares, DAI, address(this), address(multiPoolStrategy), redeemTxData);
@@ -625,6 +651,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // get values before redeem
         uint256 fraxBalanceOfThisPre = IERC20(FRAX).balanceOf(address(this));
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // 95% min amount
+        uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
         // redeem all shares
         (, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), FRAX, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
@@ -662,6 +691,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     // calculate the amount of USDC received when withdrawing a LP token.
     //     uint256 calculatedUSDCAmount =
     //         ICurveBasePool(CURVE_3POOL).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+    //     // 95% min amount
+    //     uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
     //     // redeem all shares
     //     uint256 redeemedAmount = genericZapper.redeem(shares, CRV, address(this), address(multiPoolStrategy));
@@ -698,6 +729,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     // calculate the amount of USDC received when withdrawing a LP token.
     //     uint256 calculatedUSDCAmount =
     //         ICurveBasePool(CURVE_FRAXUSDC).calc_withdraw_one_coin(amountToDeposit, UNDERLYING_ASSET_INDEX);
+    //     // 95% min amount
+    //     uint256 minAmount = calculatedUSDCAmount * 95 / 100;
 
     //     // redeem all shares
     //     uint256 redeemedAmount =
