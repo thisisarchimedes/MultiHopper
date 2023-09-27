@@ -23,8 +23,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT - mainnet
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI - mainnet
     address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e; // FRAX - mainnet
-    address public constant CRV = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490; // 3CRV - mainnet - LP token
-    // address public constant CRVFRAX = 0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC; // CRVFRAX  - mainnet - LP token ! LiFi does not support CRVFRAX !
+    // address public constant CRV = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490; // 3CRV - mainnet - LP token
+    // address public constant CRVFRAX = 0x3175Df0976dFA876431C2E9eE6Bc45b65d3473CC; // CRVFRAX  - mainnet - LP token 
 
     address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
     address public constant ZAPPER = address(0);
@@ -154,8 +154,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         deal(USDT, address(this), 100_000_000 ether);
         deal(DAI, address(this), 100_000_000 ether);
         deal(FRAX, address(this), 100_000_000 ether);
-        deal(CRV, address(this), 100_000_000 ether);
-        // deal(CRVFRAX, address(this), 100_000_000 ether); // LiFi does not support CRVFRAX
+        // deal(CRV, address(this), 100_000_000 ether);
+        // deal(CRVFRAX, address(this), 100_000_000 ether);
 
         deal(UNDERLYING_ASSET, staker, 50 ether);
 
@@ -163,13 +163,50 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), type(uint256).max);
         SafeERC20.safeApprove(IERC20(DAI), address(genericZapper), type(uint256).max);
         SafeERC20.safeApprove(IERC20(FRAX), address(genericZapper), type(uint256).max);
-        SafeERC20.safeApprove(IERC20(CRV), address(genericZapper), type(uint256).max);
-        // SafeERC20.safeApprove(IERC20(CRVFRAX), address(genericZapper), type(uint256).max); // LiFi does not support CRVFRAX
+        // SafeERC20.safeApprove(IERC20(CRV), address(genericZapper), type(uint256).max);
+        // SafeERC20.safeApprove(IERC20(CRVFRAX), address(genericZapper), type(uint256).max);
         // shares
         SafeERC20.safeApprove(IERC20(address(multiPoolStrategy)), address(genericZapper), type(uint256).max);
     }
 
     // DEPOSIT - POSITIVE TESTS
+    // function testDepositUnderlyingAsset(uint256 amountToDeposit) public {
+    function testDepositUnderlyingAsset() public {  // TODO! once we have the API-KEY setup runs
+        // get underlyingAsset amount in the range of 10 to 10_000_000
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals(), 10_000_000 * 10 ** IERC20(UNDERLYING_ASSET).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals();
+
+        uint256 storedTotalAssetsPre = multiPoolStrategy.storedTotalAssets();
+        uint256 underlyingAssetBalanceOfThisPre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 underlyingAssetBalanceOfMultiPoolStrategyPre = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
+
+        // 95% min amount
+        uint256 minAmount = amountToDeposit * 95 / 100;
+
+        uint256 shares = genericZapper.deposit(amountToDeposit, UNDERLYING_ASSET, address(this), address(multiPoolStrategy), "");
+
+        uint256 underlyingAssetDepositedAmountToMultiPoolStrategy =
+            IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - underlyingAssetBalanceOfMultiPoolStrategyPre;
+
+        // check that swap fees are less than 1%
+        assertAlmostEq(
+            amountToDeposit, underlyingAssetDepositedAmountToMultiPoolStrategy, underlyingAssetDepositedAmountToMultiPoolStrategy / 100
+        );
+        // check that swap works correctly
+        assertAlmostEq(
+            amountToDeposit, underlyingAssetDepositedAmountToMultiPoolStrategy, underlyingAssetDepositedAmountToMultiPoolStrategy / 100
+        );
+        // check underlyingAsset amount of this contract after deposit
+        assertEq(IERC20(UNDERLYING_ASSET).balanceOf(address(this)), underlyingAssetBalanceOfThisPre - amountToDeposit);
+        // check underlyingAsset deposited amount of multipool strategy after deposit
+        assertEq(multiPoolStrategy.storedTotalAssets() - storedTotalAssetsPre, underlyingAssetDepositedAmountToMultiPoolStrategy);
+        // check shares amount of this contract after deposit
+        assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
+        // check shares amount matches underlyingAsset amount
+        assertAlmostEq(underlyingAssetDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
+    }
+    
     // function testDepositUSDT(uint256 amountToDeposit) public {
     function testDepositUSDT() public {  // TODO! once we have the API-KEY setup runs
         // get usdt amount in the range of 10 to 10_000_000
@@ -403,6 +440,42 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // REDEEM - POSITIVE TESTS
+    // function testRedeemUnderlyingAsset(uint256 amountToDeposit) public {
+    function testRedeemUnderlyingAsset() public { // TODO! once we have the API-KEY setup runs
+        // get underlying asset amount in the range of 10 to 10_000_000
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals(), 10_000_000 * 10 ** IERC20(UNDERLYING_ASSET).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals();
+
+        // firstly deposit
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, UNDERLYING_ASSET, address(this), address(multiPoolStrategy), "");
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before redeem
+        uint256 underlyingAssetBalanceOfThisPre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+        
+        // 95% min amount
+        uint256 minAmount = amountToDeposit * 95 / 100;
+
+        // redeem all shares
+        uint256 redeemedAmount = genericZapper.redeem(shares, UNDERLYING_ASSET, address(this), address(multiPoolStrategy), "");
+
+        // check that redeem works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+        // check underlyingAsset amount of this contract after redeem
+        assertEq(IERC20(UNDERLYING_ASSET).balanceOf(address(this)), underlyingAssetBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
+        assertAlmostEq(
+            amountToDeposit, IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - underlyingAssetBalanceOfThisPre, amountToDeposit / 100
+        );
+        // check underlying asset amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+    }
+
     // function testRedeemUSDT(uint256 amountToDeposit) public {
     function testRedeemUSDT() public { // TODO! once we have the API-KEY setup runs
         // get usdt amount in the range of 10 to 10_000_000

@@ -46,6 +46,7 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         if (multiPoolStrategy.paused()) revert StrategyPaused();
 
         // transfer tokens to this contract
+        uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
 
         // TODO! it would be a good idea to add the same check to the multi-pool strategy
@@ -55,12 +56,12 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         // TODO! verify minAmount
 
         // swap for the underlying asset
-        uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
-
-        SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, 0);
-        SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, amount);
-        (bool success,) = LIFI_DIAMOND.call(swapTx); // TODO! Dangerous?
-        if (!success) revert SwapFailed();
+        if(token != multiPoolStrategy.asset()) {
+            SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, 0);
+            SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, amount);
+            (bool success,) = LIFI_DIAMOND.call(swapTx); // TODO! Dangerous?
+            if (!success) revert SwapFailed();
+        }
 
         uint256 underlyingBalanceAfter = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
         uint256 underlyingAmount = underlyingBalanceAfter - underlyingBalanceBefore;
@@ -102,17 +103,18 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         if (multiPoolStrategy.paused()) revert StrategyPaused();
 
         // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
+        uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
         uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
 
         // TODO! verify call data amount and amount given
 
         // swap for the underlying asset
-        uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
-
-        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, 0);
-        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, underlyingAmount);
-        (bool success,) = LIFI_DIAMOND.call(swapTx); // TODO! Dangerous?
-        if (!success) revert SwapFailed();
+        if(redeemToken != multiPoolStrategy.asset()) {
+            SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, 0);
+            SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, underlyingAmount);
+            (bool success,) = LIFI_DIAMOND.call(swapTx); // TODO! Dangerous?
+            if (!success) revert SwapFailed();
+        }
 
         uint256 tokenBalanceAfter = IERC20(redeemToken).balanceOf(address(this));
         redeemTokenAmount = tokenBalanceAfter - tokenBalanceBefore;
