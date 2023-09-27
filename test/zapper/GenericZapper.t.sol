@@ -191,11 +191,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         // check that swap fees are less than 1%
         assertAlmostEq(
-            amountToDeposit, underlyingAssetDepositedAmountToMultiPoolStrategy, underlyingAssetDepositedAmountToMultiPoolStrategy / 100
-        );
-        // check that swap works correctly
-        assertAlmostEq(
-            amountToDeposit, underlyingAssetDepositedAmountToMultiPoolStrategy, underlyingAssetDepositedAmountToMultiPoolStrategy / 100
+            amountToDeposit, underlyingAssetDepositedAmountToMultiPoolStrategy, amountToDeposit / 100
         );
         // check underlyingAsset amount of this contract after deposit
         assertEq(IERC20(UNDERLYING_ASSET).balanceOf(address(this)), underlyingAssetBalanceOfThisPre - amountToDeposit);
@@ -230,11 +226,11 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         // check that swap fees are less than 1%
         assertAlmostEq(
-            amountToDeposit, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+            amountToDeposit, usdcDepositedAmountToMultiPoolStrategy, amountToDeposit / 100
         );
         // check that swap works correctly
         assertAlmostEq(
-            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, calculatedUSDCAmount / 100
         );
         // check usdt amount of this contract after deposit
         assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre - amountToDeposit);
@@ -272,12 +268,12 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         // check that swap fees are less than 1%
         assertAlmostEq(
-            daiAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+            daiAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, daiAmount6Decimals / 100
         );
 
         // check that swap works correctly
         assertAlmostEq(
-            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, calculatedUSDCAmount / 100
         );
 
         // check dai amount of this contract after deposit
@@ -316,12 +312,12 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         // check that swap fees are less than 1%
         assertAlmostEq(
-            fraxAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+            fraxAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, fraxAmount6Decimals / 100
         );
 
         // check that swap works correctly
         assertAlmostEq(
-            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, usdcDepositedAmountToMultiPoolStrategy / 100
+            calculatedUSDCAmount, usdcDepositedAmountToMultiPoolStrategy, calculatedUSDCAmount / 100
         );
 
         // check frax amount of this contract after deposit
@@ -615,7 +611,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     uint256 redeemedAmount = genericZapper.redeem(shares, CRV, address(this), address(multiPoolStrategy));
 
     //     // check that redeem works correctly and swap fees are less than 1%
-    //     assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
+    //     assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
     //     // check crv amount of this contract after redeem
     //     assertEq(IERC20(CRV).balanceOf(address(this)), crvBalanceOfThisPre + redeemedAmount);
     //     // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
@@ -654,7 +650,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //         genericZapper.redeem(shares, CRVFRAX, address(this), address(multiPoolStrategy));
 
     //     // check that redeem works correctly and swap fees are less than 1%
-    //     assertAlmostEq(amountToDeposit, redeemedAmount, redeemedAmount / 100);
+    //     assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
     //     // check crvfrax amount of this contract after redeem
     //     assertEq(IERC20(CRVFRAX).balanceOf(address(this)), crvFraxBalanceOfThisPre + redeemedAmount);
     //     // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
