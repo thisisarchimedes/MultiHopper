@@ -394,6 +394,26 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit, UNDERLYING_ASSET, amountToDeposit, address(this), address(multiPoolStrategy), "");
     }
 
+    // function testDepositWithCombinedSwapData(uint256 amountToDeposit) public {
+    function testDepositWithCombinedSwapData() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        (uint256 quote, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), concat(concat(txData, txData), txData));
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        assertEq(quote, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
+        assertTrue(toAmountMin < storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
+    }
+
     // DEPOSIT - NEGATIVE TESTS
     function testDepositRevertReentrantCall() public {
         ERC20Hackable erc20Hackable = new ERC20Hackable(genericZapper, address(multiPoolStrategy));
@@ -491,21 +511,66 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy), "");
     }
 
-    // function testDepositWithEmptySwapData(uint256 amountToDeposit) public {
-    // function testDepositWithDoubleSwapData() public {  // TODO! once we have the API-KEY setup runs
-    //     // amountToDeposit =
-    //     //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
-    //     uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+    // function testDepositDecreasedSwapAmount(uint256 amountToDeposit) public {
+    function testDepositDecreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        // fakeAmount =
+        //     bound(fakeAmount, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+        uint256 fakeAmount = amountToDeposit * 90 / 100;
 
-    //     // reset approved amount
-    //     SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
-    //     SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
 
-    //     (, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit + 1 * 10 ** IERC20(USDT).decimals(), address(genericZapper));
+        uint256 minAmount = amountToDeposit * 95 / 100;
 
-    //     // vm.expectRevert(IGenericZapper.EmptyInput.selector);
-    //     uint256 shares = genericZapper.deposit(amountToDeposit, USDT, address(this), address(multiPoolStrategy), txData);
-    // }
+        (, , bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), fakeAmount, address(genericZapper));
+
+        vm.expectRevert(GenericZapper.AmountBelowMinimum.selector);
+        genericZapper.deposit(amountToDeposit, USDT, minAmount, address(this), address(multiPoolStrategy), txData);
+    }
+
+        // function testDepositIncreasedSwapAmount(uint256 amountToDeposit) public {
+    function testDepositIncreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        // fakeAmount =
+        //     bound(fakeAmount, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+        uint256 fakeAmount = amountToDeposit * 110 / 100;
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        uint256 minAmount = amountToDeposit * 95 / 100;
+
+        (, , bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), fakeAmount, address(genericZapper));
+
+        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        genericZapper.deposit(amountToDeposit, USDT, minAmount, address(this), address(multiPoolStrategy), txData);
+    }
+
+    // function testDepositWithInvalidSwapData(uint256 amountToDeposit) public {
+    function testDepositWithInvalidSwapData() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        vm.expectRevert(IGenericZapper.EmptyInput.selector);
+        genericZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy), "");
+
+        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        genericZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy), "0000000000");
+    }
 
     // REDEEM - POSITIVE TESTS
     // function testRedeemUnderlyingAsset(uint256 amountToDeposit) public {
@@ -718,6 +783,41 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     // }
 
+    // function testRedeemWithCombinedSwapData(uint256 amountToDeposit) public {
+    function testRedeemWithCombinedSwapData() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        (uint256 quote, uint256 toAmountMin, bytes memory depositTxData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), depositTxData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        assertEq(quote, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
+        assertTrue(toAmountMin < storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
+
+        // redeem all shares
+        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
+        
+        assertEq(IERC20(address(multiPoolStrategy)).balanceOf(address(this)), shares);
+
+        uint256 balanceBeforeDeposit = IERC20(USDT).balanceOf(address(this));
+        genericZapper.redeem(shares, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), concat(concat(redeemTxData, redeemTxData), redeemTxData));
+        uint256 balanceAfterDeposit = IERC20(USDT).balanceOf(address(this));
+
+        console2.log(shares, toAmountMinRedeemed, balanceBeforeDeposit, balanceAfterDeposit);
+
+        assertEq(multiPoolStrategy.storedTotalAssets(), 0);
+        assertEq(IERC20(address(multiPoolStrategy)).balanceOf(address(this)), 0);
+        assertTrue(toAmountMinRedeemed < balanceAfterDeposit - balanceBeforeDeposit);
+    }
+
     // REDEEM - NEGATIVE TESTS
     function testRedeemRevertZeroAddress() public {
         address receiver = address(0);
@@ -744,6 +844,179 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         vm.expectRevert(IGenericZapper.StrategyPaused.selector);
         genericZapper.redeem(1, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+    }
+
+    // function testRedeemIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
+    function testRedeemIncreasedAmount() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        // fakeAmount =
+        //     bound(fakeAmount, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+        uint256 fakeAmount = 1;
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
+        
+        vm.expectRevert();
+        genericZapper.redeem(shares + fakeAmount, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
+    }
+
+    // function testRedeemDecreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
+    function testRedeemDecreasedAmount() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        // fakeAmount =
+        //     bound(fakeAmount, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+        uint256 fakeAmount = 1;
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
+        
+        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        genericZapper.redeem(shares - fakeAmount, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
+    }
+
+    // function testRedeemDifferentAsset(uint256 amountToDeposit) public {
+    function testRedeemDifferentAsset() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+        
+        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
+        
+        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        genericZapper.redeem(shares, DAI, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
+    }
+
+    // function testRedeemWithEmptySwapData(uint256 amountToDeposit) public {
+    function testRedeemWithEmptySwapData() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
+        
+        vm.expectRevert(IGenericZapper.EmptyInput.selector);
+        genericZapper.redeem(shares, USDT, 0, address(this), address(multiPoolStrategy), "");
+    }
+
+    // function testRedeemDecreasedSwapAmount(uint256 amountToDeposit) public {
+    function testRedeemDecreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        // fakeAmount =
+        //     bound(fakeAmount, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        (, uint256 toAmountMin, bytes memory depositTxData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), depositTxData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        uint256 fakeAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit) * 90 / 100;
+        (, , bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, fakeAmount, address(genericZapper));
+        
+        uint256 minAmount = amountToDeposit * 95 / 100;
+        
+        vm.expectRevert(GenericZapper.AmountBelowMinimum.selector);
+        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), redeemTxData);
+    }
+
+    // function testRedeemIncreasedSwapAmount(uint256 amountToDeposit) public {
+    function testRedeemIncreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        // fakeAmount =
+        //     bound(fakeAmount, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        (, uint256 toAmountMin, bytes memory depositTxData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), depositTxData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        uint256 fakeAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit) * 110 / 100;
+        (, , bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, fakeAmount, address(genericZapper));
+        
+        uint256 minAmount = amountToDeposit * 95 / 100;
+        
+        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), redeemTxData);
+    }
+
+    // function testRedeemWithInvalidSwapData(uint256 amountToDeposit) public {
+    function testRedeemWithInvalidSwapData() public {  // TODO! once we have the API-KEY setup runs
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        // reset approved amount
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
+        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
+
+        (, uint256 toAmountMin, bytes memory depositTxData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), depositTxData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
+        
+        uint256 minAmount = amountToDeposit * 95 / 100;
+        
+        vm.expectRevert(IGenericZapper.EmptyInput.selector);
+        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), "");
+
+        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), "000000000000");
     }
 
     // UTILS
