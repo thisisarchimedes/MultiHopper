@@ -21,6 +21,7 @@ interface IGenericZapper {
      * @dev Deposits asset into the MultiPoolStrategy contract.
      * @param amount The asset amount user wants to deposit.
      * @param token The deposited asset address (like: USDT address).
+     * @param toAmountMin Minimum amount of underlying asset to receive after the swap of the provided asset (please pay attention to decimals).
      * @param receiver The address to receive the shares.
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @param swapTx containing the transaction data for the swap.
@@ -29,6 +30,7 @@ interface IGenericZapper {
     function deposit(
         uint256 amount,
         address token,
+        uint256 toAmountMin,
         address receiver,
         address strategyAddress,
         bytes calldata swapTx
@@ -40,6 +42,7 @@ interface IGenericZapper {
      * @dev Redeems asset from the MultiPoolStrategy contract.
      * @param sharesAmount The amount of shares to redeem.
      * @param redeemToken The token address redeem.
+     * @param toAmountMin Minimum amount of required asset (like: USDT) to recieve after withdraw.
      * @param receiver The address to receive the redeemed asset.
      * @param strategyAddress The address of the MultiPoolStrategy contract to redeem from.
      * @param swapTx containing the transaction data for the swap.
@@ -48,6 +51,7 @@ interface IGenericZapper {
     function redeem(
         uint256 sharesAmount,
         address redeemToken,
+        uint256 toAmountMin,
         address receiver,
         address strategyAddress,
         bytes calldata swapTx

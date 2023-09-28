@@ -10,7 +10,8 @@ def get_quote(
     srcToken,
     dstToken,
     amount,
-    fromAddress
+    fromAddress,
+    returnToAmountMin=False,
 ):
     queryParams = {
         "fromChain": 1,
@@ -28,9 +29,19 @@ def get_quote(
     
     resp = resp.json()
 
+    encodeTypes = ["uint256"]
+    encodeData = [int(resp["estimate"]["toAmount"])]
+
+    if returnToAmountMin!=False:
+        encodeTypes.append("uint256")
+        encodeData.append(int(resp["estimate"]["toAmountMin"]))
+    
+    encodeTypes.append("bytes")
+    encodeData.append(codecs.decode(resp['transactionRequest']['data'][2:], 'hex_codec'))
+
     data = encode(
-        ["uint256", "bytes"], [int(resp["estimate"]["toAmount"]), codecs.decode(
-            resp['transactionRequest']['data'][2:], 'hex_codec')]
+        encodeTypes,
+        encodeData,
     ).hex()
     
     print("0x" + str(data))
