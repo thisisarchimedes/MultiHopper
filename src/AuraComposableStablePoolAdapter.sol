@@ -55,6 +55,10 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
     }
 
     function deposit(uint256 _amount, uint256 _minReceiveAmount) external override onlyMultiPoolStrategy {
+        if (_amount == 0) {
+            storedUnderlyingBalance = underlyingBalance();
+            return;
+        }
         IBalancerVault.SingleSwap memory swap;
         swap.poolId = poolId;
         swap.kind = 0;

@@ -87,6 +87,10 @@ contract AuraAdapterBase is Initializable {
     }
 
     function deposit(uint256 _amount, uint256 _minBalancerLpAmount) external virtual onlyMultiPoolStrategy {
+        if (_amount == 0) {
+            storedUnderlyingBalance = underlyingBalance();
+            return;
+        }
         (address[] memory tokens,,) = vault.getPoolTokens(poolId);
         uint256[] memory maxAmountsIn = new uint256[](tokens.length);
         maxAmountsIn[tokenIndex] = _amount;

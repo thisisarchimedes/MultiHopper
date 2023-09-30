@@ -184,6 +184,10 @@ contract ConvexPoolAdapter is Initializable {
     }
 
     function deposit(uint256 _amount, uint256 _minCurveLpAmount) external onlyMultiPoolStrategy {
+        if (_amount == 0) {
+            storedUnderlyingBalance = underlyingBalance();
+            return;
+        }
         if (useEth) {
             IWETH(payable(WETH)).withdraw(_amount);
         }
