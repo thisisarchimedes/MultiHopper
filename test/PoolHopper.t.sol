@@ -43,7 +43,7 @@ contract PoolHopper is PRBTest, StdCheats {
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "ETH/xETH Hopper";
+    string public constant STRATEGY_NAME = "ETH/xETH";
 
     function setUp() public virtual {
         // solhint-disable-previous-line no-empty-blocks
