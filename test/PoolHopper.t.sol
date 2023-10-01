@@ -43,7 +43,7 @@ contract PoolHopper is PRBTest, StdCheats {
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "ETH/xETH Hopper";
+    string public constant STRATEGY_NAME = "ETH/xETH";
 
     function setUp() public virtual {
         // solhint-disable-previous-line no-empty-blocks
@@ -59,8 +59,6 @@ contract PoolHopper is PRBTest, StdCheats {
         });
 
         // get the private key used for signing transactions
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        //vm.startBroadcast(deployerPrivateKey);
 
         require(FACTORY_ADDRESS != address(0), "Deploy: factory address not set");
 
