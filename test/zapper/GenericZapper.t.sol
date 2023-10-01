@@ -63,35 +63,6 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
     uint256 public tokenDecimals;
 
-    /**
-     * @notice Calculates the quote for a trade via LiFi protocol.
-     * @notice make sure Python environment is active and has the required dependencies installed.
-     * @param srcToken The token to be sold.
-     * @param dstToken The token to be bought.
-     * @param amount The amount of source tokens to be sold.
-     * @param fromAddress The address initiating the trade.
-     */
-    function getQuoteLiFi(
-        address srcToken,
-        address dstToken,
-        uint256 amount,
-        address fromAddress
-    )
-        internal
-        returns (uint256 _quote, uint256 _toAmountMin, bytes memory data)
-    {
-        string[] memory inputs = new string[](7);
-        inputs[0] = "python3";
-        inputs[1] = "test/get_quote_lifi.py";
-        inputs[2] = vm.toString(srcToken);
-        inputs[3] = vm.toString(dstToken);
-        inputs[4] = vm.toString(amount);
-        inputs[5] = vm.toString(fromAddress);
-        inputs[6] = vm.toString(true);
-
-        return abi.decode(vm.ffi(inputs), (uint256, uint256, bytes));
-    }
-
     function setUp() public virtual {
         vm.createSelectFork({urlOrAlias: "mainnet"});
 
@@ -171,8 +142,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // DEPOSIT - POSITIVE TESTS
-    // function testDepositUnderlyingAsset(uint256 amountToDeposit) public {
-    function testDepositUnderlyingAsset() public {  // TODO! once we have the API-KEY setup runs
+    // function depositUnderlyingAsset(uint256 amountToDeposit) public {
+    function depositUnderlyingAsset() public {  // TODO! once we have the API-KEY setup runs
         // get underlyingAsset amount in the range of 10 to 10_000_000
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals(), 10_000_000 * 10 ** IERC20(UNDERLYING_ASSET).decimals()); // TODO! once we have the API-KEY setup runs
@@ -201,8 +172,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(underlyingAssetDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
     }
     
-    // function testDepositUSDT(uint256 amountToDeposit) public {
-    function testDepositUSDT() public {  // TODO! once we have the API-KEY setup runs
+    // function depositUSDT(uint256 amountToDeposit) public {
+    function depositUSDT() public {  // TODO! once we have the API-KEY setup runs
         // get usdt amount in the range of 10 to 10_000_000
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
@@ -237,8 +208,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
     }
 
-    // function testDepositDAI(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
-    function testDepositDAI() public {
+    // function depositDAI(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
+    function depositDAI() public {
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(DAI).decimals(), 10_000_000 * 10 ** IERC20(DAI).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(DAI).decimals();
@@ -278,8 +249,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
     }
 
-    // function testDepositFRAX(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
-    function testDepositFRAX() public {
+    // function depositFRAX(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
+    function depositFRAX() public {
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(FRAX).decimals(), 10_000_000 * 10 ** IERC20(FRAX).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(FRAX).decimals();
@@ -320,8 +291,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // TODO! Add further funcctionality for LP-tokens
-    // function testDeposit3CRV(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
-    // function testDeposit3CRV() public {
+    // function deposit3CRV(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
+    // function deposit3CRV() public {
     //     // uint256 amountToDeposit =
     //     //     bound(amountToDeposit, 10 * 10 ** IERC20(CRV).decimals(), 1_000_000 * 10 ** IERC20(CRV).decimals()); // TODO! once we have the API-KEY setup runs
     //     uint256 amountToDeposit = 10 * 10 ** IERC20(CRV).decimals();
@@ -350,7 +321,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     // }
 
     // TODO! Add further funcctionality for LP-tokens
-    // function testDepositCRVFRAX(uint256 amountToDeposit) public {
+    // function depositCRVFRAX(uint256 amountToDeposit) public {
     //     amountToDeposit =
     //         bound(amountToDeposit, 10 * 10 ** IERC20(CRVFRAX).decimals(), 10_000_000 * 10 ** IERC20(CRVFRAX).decimals());
 
@@ -382,8 +353,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
     // }
 
-    // function testDepositDifferentAsset(uint256 amountToDeposit) public {
-    function testDepositUnderlyingAssetWithDummySwapData() public {  // TODO! once we have the API-KEY setup runs
+    // function depositDifferentAsset(uint256 amountToDeposit) public {
+    function depositUnderlyingAssetWithDummySwapData() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals(), 10_000_000 * 10 ** IERC20(UNDERLYING_ASSET).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals();
@@ -394,8 +365,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit, UNDERLYING_ASSET, amountToDeposit, address(this), address(multiPoolStrategy), "");
     }
 
-    // function testDepositWithCombinedSwapData(uint256 amountToDeposit) public {
-    function testDepositWithCombinedSwapData() public {  // TODO! once we have the API-KEY setup runs
+    // function depositWithCombinedSwapData(uint256 amountToDeposit) public {
+    function depositWithCombinedSwapData() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -415,7 +386,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // DEPOSIT - NEGATIVE TESTS
-    function testDepositRevertReentrantCall() public {
+    function depositRevertReentrantCall() public {
         ERC20Hackable erc20Hackable = new ERC20Hackable(genericZapper, address(multiPoolStrategy));
         
         (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this));
@@ -424,7 +395,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(1, address(erc20Hackable), toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    function testDepositRevertZeroAddress() public {
+    function depositRevertZeroAddress() public {
         address receiver = address(0);
 
         (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this)); // Using address(this) for the query to pass
@@ -433,7 +404,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(1, USDT, toAmountMin, receiver, address(multiPoolStrategy), txData);
     }
 
-    function testDepositRevertEmptyInput() public {
+    function depositRevertEmptyInput() public {
         uint256 amount = 0;
 
         (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this));
@@ -442,7 +413,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    function testDepositRevertMultiPoolStrategyIsPaused() public {
+    function depositRevertMultiPoolStrategyIsPaused() public {
         multiPoolStrategy.togglePause();
 
         (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this));
@@ -451,8 +422,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(1, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    // function testDepositIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
-    function testDepositIncreasedAmount() public {  // TODO! once we have the API-KEY setup runs
+    // function depositIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
+    function depositIncreasedAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -470,8 +441,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit + fakeAmount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    // function testDepositDecreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
-    function testDepositDecreasedAmount() public {  // TODO! once we have the API-KEY setup runs
+    // function depositDecreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
+    function depositDecreasedAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -489,8 +460,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit - fakeAmount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    // function testDepositDifferentAsset(uint256 amountToDeposit) public {
-    function testDepositDifferentAsset() public {  // TODO! once we have the API-KEY setup runs
+    // function depositDifferentAsset(uint256 amountToDeposit) public {
+    function depositDifferentAsset() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -501,8 +472,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit, DAI, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    // function testDepositWithEmptySwapData(uint256 amountToDeposit) public {
-    function testDepositWithEmptySwapData() public {  // TODO! once we have the API-KEY setup runs
+    // function depositWithEmptySwapData(uint256 amountToDeposit) public {
+    function depositWithEmptySwapData() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -511,8 +482,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy), "");
     }
 
-    // function testDepositDecreasedSwapAmount(uint256 amountToDeposit) public {
-    function testDepositDecreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+    // function depositDecreasedSwapAmount(uint256 amountToDeposit) public {
+    function depositDecreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -532,8 +503,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit, USDT, minAmount, address(this), address(multiPoolStrategy), txData);
     }
 
-        // function testDepositIncreasedSwapAmount(uint256 amountToDeposit) public {
-    function testDepositIncreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+        // function depositIncreasedSwapAmount(uint256 amountToDeposit) public {
+    function depositIncreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -553,8 +524,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.deposit(amountToDeposit, USDT, minAmount, address(this), address(multiPoolStrategy), txData);
     }
 
-    // function testDepositWithInvalidSwapData(uint256 amountToDeposit) public {
-    function testDepositWithInvalidSwapData() public {  // TODO! once we have the API-KEY setup runs
+    // function depositWithInvalidSwapData(uint256 amountToDeposit) public {
+    function depositWithInvalidSwapData() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -573,8 +544,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // REDEEM - POSITIVE TESTS
-    // function testRedeemUnderlyingAsset(uint256 amountToDeposit) public {
-    function testRedeemUnderlyingAsset() public { // TODO! once we have the API-KEY setup runs
+    // function redeemUnderlyingAsset(uint256 amountToDeposit) public {
+    function redeemUnderlyingAsset() public { // TODO! once we have the API-KEY setup runs
         // get underlying asset amount in the range of 10 to 10_000_000
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(UNDERLYING_ASSET).decimals(), 10_000_000 * 10 ** IERC20(UNDERLYING_ASSET).decimals()); // TODO! once we have the API-KEY setup runs
@@ -605,8 +576,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     }
 
-    // function testRedeemUSDT(uint256 amountToDeposit) public {
-    function testRedeemUSDT() public { // TODO! once we have the API-KEY setup runs
+    // function redeemUSDT(uint256 amountToDeposit) public {
+    function redeemUSDT() public { // TODO! once we have the API-KEY setup runs
         // get usdt amount in the range of 10 to 10_000_000
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
@@ -640,8 +611,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     }
 
-    // function testRedeemDAI(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
-    function testRedeemDAI() public {
+    // function redeemDAI(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
+    function redeemDAI() public {
         // get dai amount in the range of 10 to 10_000_000
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(DAI).decimals(), 10_000_000 * 10 ** IERC20(DAI).decimals()); // TODO! once we have the API-KEY setup runs
@@ -675,8 +646,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     }
 
-    // function testRedeemFRAX(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
-    function testRedeemFRAX() public {
+    // function redeemFRAX(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
+    function redeemFRAX() public {
         // get frax amount in the range of 10 to 10_000_000
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(FRAX).decimals(), 10_000_000 * 10 ** IERC20(FRAX).decimals()); // TODO! once we have the API-KEY setup runs
@@ -711,7 +682,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // TODO! Add further funcctionality for LP-tokens
-    // function testRedeem3CRV(uint256 amountToDeposit) public {
+    // function redeem3CRV(uint256 amountToDeposit) public {
     //     // get crv amount in the range of 10 to 10_000_000
     //     amountToDeposit =
     //         bound(amountToDeposit, 10 * 10 ** IERC20(CRV).decimals(), 10_000_000 * 10 ** IERC20(CRV).decimals());
@@ -747,7 +718,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     // }
 
     // TODO! Add further funcctionality for LP-tokens
-    // function testRedeemCRVFRAX(uint256 amountToDeposit) public {
+    // function redeemCRVFRAX(uint256 amountToDeposit) public {
     //     // get crvfrax amount in the range of 10 to 10_000_000
     //     amountToDeposit =
     //         bound(amountToDeposit, 10 * 10 ** IERC20(CRVFRAX).decimals(), 10_000_000 * 10 ** IERC20(CRVFRAX).decimals());
@@ -783,8 +754,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     // }
 
-    // function testRedeemWithCombinedSwapData(uint256 amountToDeposit) public {
-    function testRedeemWithCombinedSwapData() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemWithCombinedSwapData(uint256 amountToDeposit) public {
+    function redeemWithCombinedSwapData() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -819,7 +790,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // REDEEM - NEGATIVE TESTS
-    function testRedeemRevertZeroAddress() public {
+    function redeemRevertZeroAddress() public {
         address receiver = address(0);
 
         (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this)); // Using address(this) for the query to pass
@@ -828,7 +799,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(1, USDT, toAmountMin, receiver, address(multiPoolStrategy), txData);
     }
 
-    function testRedeemRevertEmptyInput() public {
+    function redeemRevertEmptyInput() public {
         uint256 amount = 0;
 
         (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this));
@@ -837,7 +808,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(amount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    function testRedeemRevertMultiPoolStrategyIsPaused() public {
+    function redeemRevertMultiPoolStrategyIsPaused() public {
         multiPoolStrategy.togglePause();
 
         (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this));
@@ -846,8 +817,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(1, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
-    // function testRedeemIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
-    function testRedeemIncreasedAmount() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
+    function redeemIncreasedAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -871,8 +842,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(shares + fakeAmount, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
     }
 
-    // function testRedeemDecreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
-    function testRedeemDecreasedAmount() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemDecreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
+    function redeemDecreasedAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -897,8 +868,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(shares - fakeAmount, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
     }
 
-    // function testRedeemDifferentAsset(uint256 amountToDeposit) public {
-    function testRedeemDifferentAsset() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemDifferentAsset(uint256 amountToDeposit) public {
+    function redeemDifferentAsset() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -912,12 +883,12 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // redeem all shares
         (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit, address(genericZapper));
         
-        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        vm.expectRevert(IGenericZapper.EmptyInput.selector);
         genericZapper.redeem(shares, DAI, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
     }
 
-    // function testRedeemWithEmptySwapData(uint256 amountToDeposit) public {
-    function testRedeemWithEmptySwapData() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemWithEmptySwapData(uint256 amountToDeposit) public {
+    function redeemWithEmptySwapData() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -935,8 +906,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(shares, USDT, 0, address(this), address(multiPoolStrategy), "");
     }
 
-    // function testRedeemDecreasedSwapAmount(uint256 amountToDeposit) public {
-    function testRedeemDecreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemDecreasedSwapAmount(uint256 amountToDeposit) public {
+    function redeemDecreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -963,8 +934,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), redeemTxData);
     }
 
-    // function testRedeemIncreasedSwapAmount(uint256 amountToDeposit) public {
-    function testRedeemIncreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemIncreasedSwapAmount(uint256 amountToDeposit) public {
+    function redeemIncreasedSwapAmount() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         // fakeAmount =
@@ -991,8 +962,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), redeemTxData);
     }
 
-    // function testRedeemWithInvalidSwapData(uint256 amountToDeposit) public {
-    function testRedeemWithInvalidSwapData() public {  // TODO! once we have the API-KEY setup runs
+    // function redeemWithInvalidSwapData(uint256 amountToDeposit) public {
+    function redeemWithInvalidSwapData() public {  // TODO! once we have the API-KEY setup runs
         // amountToDeposit =
         //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); // TODO! once we have the API-KEY setup runs
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
@@ -1019,7 +990,79 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), "000000000000");
     }
 
+    // TEST SEQUENTIALLY
+
+    function testSequentially() public {
+        // DEPOSIT - POSITIVE TESTS
+        depositUnderlyingAsset(); setUp();
+        depositUSDT(); setUp();
+        depositDAI(); setUp();
+        depositFRAX(); setUp();
+        depositUnderlyingAssetWithDummySwapData(); setUp();
+        depositWithCombinedSwapData(); setUp();
+        // DEPOSIT - NEGATIVE TESTS
+        depositRevertReentrantCall(); setUp();
+        depositRevertZeroAddress(); setUp();
+        depositRevertEmptyInput(); setUp();
+        depositRevertMultiPoolStrategyIsPaused(); setUp();
+        depositIncreasedAmount(); setUp();
+        depositDecreasedAmount(); setUp();
+        depositDifferentAsset(); setUp();
+        depositWithEmptySwapData(); setUp();
+        depositDecreasedSwapAmount(); setUp();
+        depositIncreasedSwapAmount(); setUp();
+        depositWithInvalidSwapData(); setUp();
+        // REDEEM - POSITIVE TESTS
+        redeemUnderlyingAsset(); setUp();
+        redeemUSDT(); setUp();
+        redeemDAI(); setUp();
+        redeemFRAX(); setUp();
+        redeemWithCombinedSwapData(); setUp();
+        // REDEEM - NEGATIVE TESTS
+        redeemRevertZeroAddress(); setUp();
+        redeemRevertEmptyInput(); setUp();
+        redeemRevertMultiPoolStrategyIsPaused(); setUp();
+        redeemIncreasedAmount(); setUp();
+        redeemDecreasedAmount(); setUp();
+        redeemDifferentAsset(); setUp();
+        redeemWithEmptySwapData(); setUp();
+        redeemDecreasedSwapAmount(); setUp();
+        redeemIncreasedSwapAmount(); setUp();
+        redeemWithInvalidSwapData(); setUp();
+    }
+
     // UTILS
+
+    /**
+     * @notice Calculates the quote for a trade via LiFi protocol.
+     * @notice make sure Python environment is active and has the required dependencies installed.
+     * @param srcToken The token to be sold.
+     * @param dstToken The token to be bought.
+     * @param amount The amount of source tokens to be sold.
+     * @param fromAddress The address initiating the trade.
+     */
+    function getQuoteLiFi(
+        address srcToken,
+        address dstToken,
+        uint256 amount,
+        address fromAddress
+    )
+        internal
+        returns (uint256 _quote, uint256 _toAmountMin, bytes memory data)
+    {
+        sleep(60); // Li.Fi Quote Rate Limit is 2rpm
+
+        string[] memory inputs = new string[](7);
+        inputs[0] = "python3";
+        inputs[1] = "test/get_quote_lifi.py";
+        inputs[2] = vm.toString(srcToken);
+        inputs[3] = vm.toString(dstToken);
+        inputs[4] = vm.toString(amount);
+        inputs[5] = vm.toString(fromAddress);
+        inputs[6] = vm.toString(true);
+
+        return abi.decode(vm.ffi(inputs), (uint256, uint256, bytes));
+    }
 
     function concat(bytes memory a, bytes memory b) public pure returns (bytes memory) {
         bytes memory result = new bytes(a.length + b.length);
@@ -1027,6 +1070,13 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         for (uint i = 0; i < a.length; i++) result[k++] = a[i];
         for (uint i = 0; i < b.length; i++) result[k++] = b[i];
         return result;
+    }
+
+    function sleep(uint256 secs) public {
+        string[] memory inputs = new string[](2);
+        inputs[0] = "sleep";
+        inputs[1] = vm.toString(secs);
+        vm.ffi(inputs);
     }
 }
 
