@@ -59,8 +59,6 @@ contract PoolHopper is PRBTest, StdCheats {
         });
 
         // get the private key used for signing transactions
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        //vm.startBroadcast(deployerPrivateKey);
 
         require(FACTORY_ADDRESS != address(0), "Deploy: factory address not set");
 
