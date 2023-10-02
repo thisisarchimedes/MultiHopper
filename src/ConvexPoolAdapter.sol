@@ -184,6 +184,10 @@ contract ConvexPoolAdapter is Initializable {
     }
 
     function deposit(uint256 _amount, uint256 _minCurveLpAmount) external onlyMultiPoolStrategy {
+        if (_amount == 0) {
+            storedUnderlyingBalance = underlyingBalance();
+            return;
+        }
         if (useEth) {
             IWETH(payable(WETH)).withdraw(_amount);
         }
@@ -204,6 +208,10 @@ contract ConvexPoolAdapter is Initializable {
         SafeERC20.safeTransfer(IERC20(underlyingToken), multiPoolStrategy, underlyingBal);
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000); // acceptable  underlying
             // token amount that this adapter holds
+        uint256 lpBal = convexRewardPool.balanceOf(address(this));
+        if (lpBal == 0) {
+            storedUnderlyingBalance = 0;
+        }
         if (_underlyingBalance >= healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance - underlyingBal;
         } else {
@@ -298,7 +306,7 @@ contract ConvexPoolAdapter is Initializable {
         healthFactor = _newHealthFactor;
     }
 
-    receive() external payable { 
+    receive() external payable {
         // solhint-disable-previous-line no-empty-blocks
     }
 }

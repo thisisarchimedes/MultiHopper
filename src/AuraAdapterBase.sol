@@ -59,7 +59,7 @@ contract AuraAdapterBase is Initializable {
 
     function initialize(bytes32 _poolId, address _multiPoolStrategy, uint256 _auraPid) public initializer {
         require(_multiPoolStrategy != address(0), "MultiPoolStrategy zero address");
-   
+
         poolId = _poolId;
         multiPoolStrategy = _multiPoolStrategy;
         underlyingToken = IERC20(IMultiPoolStrategy(_multiPoolStrategy).asset());
@@ -87,6 +87,10 @@ contract AuraAdapterBase is Initializable {
     }
 
     function deposit(uint256 _amount, uint256 _minBalancerLpAmount) external virtual onlyMultiPoolStrategy {
+        if (_amount == 0) {
+            storedUnderlyingBalance = underlyingBalance();
+            return;
+        }
         (address[] memory tokens,,) = vault.getPoolTokens(poolId);
         uint256[] memory maxAmountsIn = new uint256[](tokens.length);
         maxAmountsIn[tokenIndex] = _amount;
@@ -110,6 +114,10 @@ contract AuraAdapterBase is Initializable {
         vault.exitPool(poolId, address(this), address(this), pr);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
         SafeERC20.safeTransfer(IERC20(underlyingToken), multiPoolStrategy, underlyingBal);
+        uint256 lpBal = auraRewardPool.balanceOf(address(this));
+        if (lpBal == 0) {
+            storedUnderlyingBalance = 0;
+        }
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         if (_underlyingBalance > healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance - underlyingBal;
@@ -118,9 +126,8 @@ contract AuraAdapterBase is Initializable {
         }
     }
 
-    function underlyingBalance() public view virtual returns (uint256) { 
-            // solhint-disable-previous-line no-empty-blocks
-
+    function underlyingBalance() public view virtual returns (uint256) {
+        // solhint-disable-previous-line no-empty-blocks
     }
 
     function claim() external onlyMultiPoolStrategy {
@@ -138,7 +145,6 @@ contract AuraAdapterBase is Initializable {
             if (rewardTokens[i] == AURA) continue;
             uint256 rewardTokenBal = IERC20(rewardTokens[i]).balanceOf(address(this));
             if (rewardTokenBal > 0) {
-
                 SafeERC20.safeTransfer(IERC20(rewardTokens[i]), multiPoolStrategy, rewardTokenBal);
             }
         }
