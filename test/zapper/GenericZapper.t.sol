@@ -612,8 +612,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 redeemedAmount =
             genericZapper.redeem(shares, UNDERLYING_ASSET, 0, address(this), address(multiPoolStrategy), "");
 
-        // check that redeem works correctly and swap fees are less than 1%
-        assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+        // check that redeem works correctly and we get back the same amount of the underlying asset we deposited
+        assertEq(amountToDeposit, redeemedAmount);
         // check underlyingAsset amount of this contract after redeem
         assertEq(IERC20(UNDERLYING_ASSET).balanceOf(address(this)), underlyingAssetBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
