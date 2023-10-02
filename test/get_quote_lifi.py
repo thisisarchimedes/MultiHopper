@@ -14,6 +14,7 @@ def get_quote(
     returnToAmountMin=False,
 ):
     queryParams = {
+        "integrator": "archimedes",
         "fromChain": 1,
         "toChain": 1,
         "fromToken": srcToken,
