@@ -24,6 +24,7 @@ def get_quote(
 
     resp = requests.get(API_URL, params=queryParams)
     if resp.status_code != 200:
+        print(resp.text)
         raise Exception(format(f"{resp.text}, code: {resp.status_code}"))
     # else: print(resp.text) # Debug
     
