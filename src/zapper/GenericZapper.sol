@@ -21,6 +21,9 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
+    event Deposited(uint256 underlyingAmount, uint256 shares);
+    event Redeemed(uint256 underlyingAmount, uint256 shares);
+
     /**
      * @inheritdoc IGenericZapper
      */
@@ -72,6 +75,7 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
 
         // deposit
         shares = multiPoolStrategy.deposit(underlyingAmount, address(this));
+        emit Deposited(underlyingAmount, shares);
 
         // transfer shares to receiver
         SafeERC20.safeTransfer(IERC20(strategyAddress), receiver, shares);
@@ -106,6 +110,7 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
         uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
         uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
+        emit Redeemed(underlyingAmount, sharesAmount);
 
         // TODO! verify call data amount and amount given
 
