@@ -46,8 +46,6 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         // check if the amount is not zero
         if (amount == 0) revert EmptyInput();
 
-        // check if the strategy is not paused
-        if (multiPoolStrategy.paused()) revert StrategyPaused();
 
         // transfer tokens to this contract
         uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
@@ -103,9 +101,6 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         if (receiver == address(0)) revert ZeroAddress();
         // check if the amount is not zero
         if (sharesAmount == 0) revert EmptyInput();
-
-        // check if the strategy is not paused
-        if (multiPoolStrategy.paused()) revert StrategyPaused();
 
         // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
         uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
