@@ -158,9 +158,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 underlyingAssetDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - underlyingAssetBalanceOfMultiPoolStrategyPre;
 
-        // check that swap fees are less than 1%
-        assertAlmostEq(
-            amountToDeposit, underlyingAssetDepositedAmountToMultiPoolStrategy, amountToDeposit / 100
+        // check exact underlying amount deposit
+        assertEq(
+            amountToDeposit, underlyingAssetDepositedAmountToMultiPoolStrategy
         );
         // check underlyingAsset amount of this contract after deposit
         assertEq(IERC20(UNDERLYING_ASSET).balanceOf(address(this)), underlyingAssetBalanceOfThisPre - amountToDeposit);
@@ -190,9 +190,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
 
-        // check that swap fees are less than 1%
-        assertAlmostEq(
-            amountToDeposit, usdcDepositedAmountToMultiPoolStrategy, amountToDeposit / 100
+        // check that deposited amount is greater than toAmountMin
+        assertTrue(
+            usdcDepositedAmountToMultiPoolStrategy >= toAmountMin
         );
         // check that swap works correctly
         assertAlmostEq(
@@ -225,13 +225,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
 
-        // convert dai 18 decimals to 6 decimals
-        uint256 daiAmount6Decimals =
-            amountToDeposit / (10 ** (IERC20(DAI).decimals() - IERC20(UNDERLYING_ASSET).decimals()));
-
-        // check that swap fees are less than 1%
-        assertAlmostEq(
-            daiAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, daiAmount6Decimals / 100
+        // check that deposited amount is greater than toAmountMin
+        assertTrue(
+            usdcDepositedAmountToMultiPoolStrategy >= toAmountMin
         );
 
         // check that swap works correctly
@@ -266,13 +262,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 usdcDepositedAmountToMultiPoolStrategy =
             IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy)) - usdcBalanceOfMultiPoolStrategyPre;
 
-        // convert frax 18 decimals to 6 decimals
-        uint256 fraxAmount6Decimals =
-            amountToDeposit / (10 ** (IERC20(FRAX).decimals() - IERC20(UNDERLYING_ASSET).decimals()));
-
-        // check that swap fees are less than 1%
-        assertAlmostEq(
-            fraxAmount6Decimals, usdcDepositedAmountToMultiPoolStrategy, fraxAmount6Decimals / 100
+        // check that deposited amount is greater than toAmountMin
+        assertTrue(
+            usdcDepositedAmountToMultiPoolStrategy >= toAmountMin
         );
 
         // check that swap works correctly
