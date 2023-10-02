@@ -55,6 +55,10 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
     }
 
     function deposit(uint256 _amount, uint256 _minReceiveAmount) external override onlyMultiPoolStrategy {
+        if (_amount == 0) {
+            storedUnderlyingBalance = underlyingBalance();
+            return;
+        }
         IBalancerVault.SingleSwap memory swap;
         swap.poolId = poolId;
         swap.kind = 0;
@@ -88,12 +92,16 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         funds.fromInternalBalance = false;
         funds.recipient = address(this);
         funds.toInternalBalance = false;
-        
+
         require(IERC20(pool).approve(address(vault), _amount), "approve failed");
 
         vault.swap(swap, funds, _minReceiveAmount, block.timestamp + 20);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
         SafeERC20.safeTransfer(IERC20(underlyingToken), multiPoolStrategy, underlyingBal);
+        uint256 lpBal = auraRewardPool.balanceOf(address(this));
+        if (lpBal == 0) {
+            storedUnderlyingBalance = 0;
+        }
         uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
         if (_underlyingBalance > healthyBalance) {
             storedUnderlyingBalance = _underlyingBalance - underlyingBal;

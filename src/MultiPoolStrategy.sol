@@ -81,9 +81,11 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     event HardWork(uint256 totalClaimed, uint256 fee);
     /// @dev emit every time a new rewards cycle starts
     event NewRewardsCycle(uint32 indexed cycleEnd, uint256 rewardAmount);
-
+    /// @dev emitted with every adjust
+    event Adjusted(uint256 amount, bool isAdjustIn);
     /// @dev The contract automatically disables initializers when deployed so that nobody can highjack the
     /// implementation contract.
+
     constructor() {
         _disableInitializers();
     }
@@ -95,42 +97,44 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      */
     function initialize(address _stakingToken, address _monitor) public initializer {
         __Ownable_init_unchained();
-        __ERC20_init_unchained(
-            string(abi.encodePacked("multipool")),
-            string(abi.encodePacked("share"))
-        );
+        __ERC20_init_unchained(string(abi.encodePacked("multipool")), string(abi.encodePacked("share")));
 
         _initialize(_stakingToken, _monitor);
     }
     /**
-    * @dev Initializes the contract with the provided parameters.
-    * @param _stakingToken Address of the staking token.
-    * @param _monitor Address of the monitor.
-    * @param _name Name for the strategy.
-    * @param _symbol Symbol for the strategy share token.
-    *
-    * @notice _name + _symbol must be less than 32 characters.
-    */
-    function initialize(address _stakingToken, address _monitor, string calldata _name, string calldata _symbol) public initializer {
+     * @dev Initializes the contract with the provided parameters.
+     * @param _stakingToken Address of the staking token.
+     * @param _monitor Address of the monitor.
+     * @param _name Name for the strategy.
+     * @param _symbol Symbol for the strategy share token.
+     *
+     * @notice _name + _symbol must be less than 32 characters.
+     */
+
+    function initialize(
+        address _stakingToken,
+        address _monitor,
+        string calldata _name,
+        string calldata _symbol
+    )
+        public
+        initializer
+    {
         __Ownable_init_unchained();
-        __ERC20_init_unchained(
-            string(abi.encodePacked(_name)),
-            string(abi.encodePacked(_symbol))
-        );
+        __ERC20_init_unchained(string(abi.encodePacked(_name)), string(abi.encodePacked(_symbol)));
 
         _initialize(_stakingToken, _monitor);
     }
 
     /**
-    * @dev Internal function to set the necessary variables for the contract.
-    * @param _stakingToken Address of the staking token.
-    * @param _monitor Sddress of the monitor.
-    * 
-    * @notice This function sets various parameters such as monitor address, 
-    * intervals for adjustment, reward cycle lengths, and fee percentages.
-    */
-    function _initialize(address _stakingToken,  address _monitor) internal {
-
+     * @dev Internal function to set the necessary variables for the contract.
+     * @param _stakingToken Address of the staking token.
+     * @param _monitor Sddress of the monitor.
+     *
+     * @notice This function sets various parameters such as monitor address,
+     * intervals for adjustment, reward cycle lengths, and fee percentages.
+     */
+    function _initialize(address _stakingToken, address _monitor) internal {
         __ERC4626_init(IERC20Upgradeable(_stakingToken));
         monitor = _monitor;
         adjustInInterval = 6 hours;
@@ -167,7 +171,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         return storedTotalAssets_ + unlockedRewards + total;
     }
 
-    function deposit(uint256 assets, address receiver) public nonReentrant override returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) public override nonReentrant returns (uint256 shares) {
         if (paused) revert StrategyPaused();
         address[] memory _adapters = adapters; // SSTORE
         for (uint256 i = 0; i < _adapters.length; i++) {
@@ -190,8 +194,8 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         uint256 minimumReceive
     )
         public
-        nonReentrant
         override
+        nonReentrant
         returns (uint256)
     {
         require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
@@ -218,8 +222,8 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         uint256 minimumReceive
     )
         public
-        nonReentrant
         override
+        nonReentrant
         returns (uint256)
     {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
@@ -302,25 +306,35 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
 
         if (adjustOutLength > 0 && block.timestamp - lastAdjustOut > adjustOutInterval) {
             uint256 balBefore = IERC20Upgradeable(asset()).balanceOf(address(this));
-            for (uint256 i = 0; i < adjustOutLength; i++) {
+            for (uint256 i = 0; i < adjustOutLength;) {
                 IAdapter(_adjustOuts[i].adapter).withdraw(_adjustOuts[i].amount, _adjustOuts[i].minReceive);
+                unchecked {
+                    ++i;
+                }
             }
             uint256 balAfter = IERC20Upgradeable(asset()).balanceOf(address(this));
             storedTotalAssets += (balAfter - balBefore); // add the assets back to the contract
             lastAdjustOut = block.timestamp;
+            emit Adjusted(balAfter - balBefore, false);
         }
         uint256 adjustInLength = _adjustIns.length;
         if (adjustInLength > 0 && block.timestamp - lastAdjustIn > adjustInInterval) {
             uint256 totalOut;
-            for (uint256 i = 0; i < adjustInLength; i++) {
+            for (uint256 i = 0; i < adjustInLength;) {
                 if (!isAdapter[_adjustIns[i].adapter]) revert Unauthorized();
-                SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(asset()), _adjustIns[i].adapter, _adjustIns[i].amount);
+                SafeERC20Upgradeable.safeTransfer(
+                    IERC20Upgradeable(asset()), _adjustIns[i].adapter, _adjustIns[i].amount
+                );
                 IAdapter(_adjustIns[i].adapter).deposit(_adjustIns[i].amount, _adjustIns[i].minReceive);
                 totalOut += _adjustIns[i].amount;
+                unchecked {
+                    ++i;
+                }
             }
 
             storedTotalAssets -= totalOut; // remove the assets from the contract
             lastAdjustIn = block.timestamp;
+            emit Adjusted(totalOut, true);
         }
 
         uint256 _totalAssets = totalAssets();
@@ -336,17 +350,17 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      * @param _adaptersToClaim List of adapters to claim from
      * @param _swapDatas List of SwapData structs
      */
-    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) 
-        external
-        nonReentrant 
-    {
+    function doHardWork(address[] calldata _adaptersToClaim, SwapData[] calldata _swapDatas) external nonReentrant {
         if (_msgSender() != monitor && _msgSender() != owner()) revert Unauthorized();
 
-        for (uint256 i = 0; i < _adaptersToClaim.length; i++) {
+        for (uint256 i = 0; i < _adaptersToClaim.length;) {
             IAdapter(_adaptersToClaim[i]).claim();
+            unchecked {
+                ++i;
+            }
         }
         uint256 underlyingBalanceBefore = IERC20Upgradeable(asset()).balanceOf(address(this));
-        for (uint256 i = 0; i < _swapDatas.length; i++) {
+        for (uint256 i = 0; i < _swapDatas.length;) {
             SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(_swapDatas[i].token), LIFI_DIAMOND, 0);
             SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(_swapDatas[i].token), LIFI_DIAMOND, _swapDatas[i].amount);
             (bool success,) = LIFI_DIAMOND.call(_swapDatas[i].callData);
@@ -362,7 +376,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         if (totalClaimed > 0) {
             fee = totalClaimed * feePercentage / 10_000;
             if (fee > 0) {
-                SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(asset()), feeRecipient, fee);    
+                SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(asset()), feeRecipient, fee);
             }
         }
         uint256 rewardAmount = totalClaimed - fee;
