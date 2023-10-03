@@ -24,6 +24,10 @@ def get_quote(
         "fromAddress": fromAddress,
     }
 
+    resp = requests.get(API_URL, params=queryParams)
+    print(resp.text)
+    return
+
     try:
         for retry in range(MAX_RETRIES):
             resp = requests.get(API_URL, params=queryParams)
