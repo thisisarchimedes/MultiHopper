@@ -1204,7 +1204,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         returns (uint256 _quote, uint256 _toAmountMin, bytes memory data)
     {
         string[] memory inputs = new string[](7);
-        inputs[0] = "python3";
+        inputs[0] = "python";
         inputs[1] = "test/get_quote_lifi.py";
         inputs[2] = vm.toString(srcToken);
         inputs[3] = vm.toString(dstToken);
