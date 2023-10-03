@@ -115,6 +115,9 @@ jobs:
 
       - name: "Run the tests"
         run: |
+          pip list
+          source .venv/bin/activate
+          pip list
           python3 test/get_quote_lifi.py 0xdAC17F958D2ee523a2206206994597C13D831ec7 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 10000000 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f true
           forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-contract GenericZapper --match-test testRedeemWithInvalidSwapData -vvvv
 
