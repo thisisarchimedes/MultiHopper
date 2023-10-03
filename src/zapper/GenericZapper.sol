@@ -20,8 +20,8 @@ contract GenericZapper is Context, IGenericZapper {
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
-    event Deposited(address sender, address receiver, uint256 underlyingAmount, uint256 shares);
-    event Redeemed(address sender, address receiver, uint256 underlyingAmount, uint256 shares);
+    event Deposited(address sender, address receiver, address underlyingAsset, uint256 underlyingAmount, uint256 shares);
+    event Redeemed(address sender, address receiver, address underlyingAsset, uint256 underlyingAmount, uint256 shares);
 
     /**
      * @inheritdoc IGenericZapper
@@ -44,33 +44,34 @@ contract GenericZapper is Context, IGenericZapper {
         // check if the amount is not zero
         if (amount == 0) revert EmptyInput();
 
+        address underlyingAsset = multiPoolStrategy.asset();
 
         // transfer tokens to this contract
-        uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
+        uint256 underlyingBalanceBefore = IERC20(underlyingAsset).balanceOf(address(this));
         SafeERC20.safeTransferFrom(IERC20(token), _msgSender(), address(this), amount);
 
         // swap for the underlying asset
-        if(token != multiPoolStrategy.asset()) {
+        if(token != underlyingAsset) {
             SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, 0);
             SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, amount);
             (bool success,) = LIFI_DIAMOND.call(swapTx);
             if (!success) revert SwapFailed();
         }
 
-        uint256 underlyingBalanceAfter = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
+        uint256 underlyingBalanceAfter = IERC20(underlyingAsset).balanceOf(address(this));
         uint256 underlyingAmount = underlyingBalanceAfter - underlyingBalanceBefore;
 
         if (underlyingAmount == 0) revert EmptyInput();
         if (underlyingAmount < toAmountMin) revert AmountBelowMinimum();
 
         // we need to approve the strategy to spend underlying asset
-        if(IERC20(multiPoolStrategy.asset()).allowance(address(this), strategyAddress) < type(uint256).max) {
-            IERC20(multiPoolStrategy.asset()).approve(strategyAddress, type(uint256).max);
+        if(IERC20(underlyingAsset).allowance(address(this), strategyAddress) < type(uint256).max) {
+            IERC20(underlyingAsset).approve(strategyAddress, type(uint256).max);
         }
 
         // deposit
         shares = multiPoolStrategy.deposit(underlyingAmount, address(this));
-        emit Deposited(_msgSender(), receiver, underlyingAmount, shares);
+        emit Deposited(_msgSender(), receiver, underlyingAsset, underlyingAmount, shares);
 
         // transfer shares to receiver
         SafeERC20.safeTransfer(IERC20(strategyAddress), receiver, shares);
@@ -99,15 +100,17 @@ contract GenericZapper is Context, IGenericZapper {
         // check if the amount is not zero
         if (sharesAmount == 0) revert EmptyInput();
 
+        address underlyingAsset = multiPoolStrategy.asset();
+
         // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
         uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
         uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
-        emit Redeemed(_msgSender(), receiver, underlyingAmount, sharesAmount);
+        emit Redeemed(_msgSender(), receiver, underlyingAsset, underlyingAmount, sharesAmount);
 
         // swap for the underlying asset
-        if(redeemToken != multiPoolStrategy.asset()) {
-            SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, 0);
-            SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, underlyingAmount);
+        if(redeemToken != underlyingAsset) {
+            SafeERC20.safeApprove(IERC20(underlyingAsset), LIFI_DIAMOND, 0);
+            SafeERC20.safeApprove(IERC20(underlyingAsset), LIFI_DIAMOND, underlyingAmount);
             (bool success,) = LIFI_DIAMOND.call(swapTx);
             if (!success) revert SwapFailed();
         }
