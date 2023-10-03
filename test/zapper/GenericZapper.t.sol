@@ -406,16 +406,16 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // DEPOSIT - NEGATIVE TESTS
-    // function testDepositRevertReentrantCall() public {
-    //     uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+    function testDepositRevertReentrantCall() public {
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
 
-    //     ERC20Hackable erc20Hackable = new ERC20Hackable(genericZapper, address(multiPoolStrategy));
+        ERC20Hackable erc20Hackable = new ERC20Hackable(genericZapper, address(multiPoolStrategy));
 
-    //     (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(this));
+        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(this));
 
-    //     vm.expectRevert("ReentrancyGuard: reentrant call");
-    //     genericZapper.deposit(amountToDeposit, address(erc20Hackable), toAmountMin, address(this), address(multiPoolStrategy), txData);
-    // }
+        vm.expectRevert();
+        genericZapper.deposit(amountToDeposit, address(erc20Hackable), toAmountMin, address(this), address(multiPoolStrategy), txData);
+    }
 
     function testDepositRevertZeroAddress() public {
         address receiver = address(0);
@@ -900,27 +900,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertTrue(toAmountMinRedeemed < balanceAfterDeposit - balanceBeforeDeposit);
     }
 
-    // REDEEM - NEGATIVE TESTS
-    function testRedeemRevertZeroAddress() public {
-        address receiver = address(0);
-
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this)); // Using
-            // address(this) for the query to pass
-
-        vm.expectRevert(IGenericZapper.ZeroAddress.selector);
-        genericZapper.redeem(1, USDT, toAmountMin, receiver, address(multiPoolStrategy), txData);
-    }
-
-    function testRedeemRevertEmptyInput() public {
-        uint256 amount = 0;
-
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this));
-
-        vm.expectRevert(IGenericZapper.EmptyInput.selector);
-        genericZapper.redeem(amount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
-    }
-
-    function testRedeemRevertMultiPoolStrategyIsPaused() public {
+    function testRedeemEvenIfMultiPoolStrategyIsPaused() public {
         uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
 
         (, uint256 toAmountMin, bytes memory txData) =
@@ -943,6 +923,26 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         genericZapper.redeem(
             shares, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
         );
+    }
+
+    // REDEEM - NEGATIVE TESTS
+    function testRedeemRevertZeroAddress() public {
+        address receiver = address(0);
+
+        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this)); // Using
+            // address(this) for the query to pass
+
+        vm.expectRevert(IGenericZapper.ZeroAddress.selector);
+        genericZapper.redeem(1, USDT, toAmountMin, receiver, address(multiPoolStrategy), txData);
+    }
+
+    function testRedeemRevertEmptyInput() public {
+        uint256 amount = 0;
+
+        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this));
+
+        vm.expectRevert(IGenericZapper.EmptyInput.selector);
+        genericZapper.redeem(amount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
     // function testRedeemIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
