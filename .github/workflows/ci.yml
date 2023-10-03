@@ -116,7 +116,7 @@ jobs:
       - name: "Run the tests"
         run: |
           source .venv/bin/activate
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-contract GenericZapper --match-test testRedeemWithInvalidSwapData -vvvv
+          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-contract GenericZapper -vvvv
 
       - name: "Add test summary"
         run: |
