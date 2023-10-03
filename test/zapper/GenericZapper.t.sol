@@ -1182,8 +1182,6 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         internal
         returns (uint256 _quote, uint256 _toAmountMin, bytes memory data)
     {
-        sleep(60); // Li.Fi Quote Rate Limit is 2rpm
-
         string[] memory inputs = new string[](7);
         inputs[0] = "python3";
         inputs[1] = "test/get_quote_lifi.py";
@@ -1206,13 +1204,6 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             result[k++] = b[i];
         }
         return result;
-    }
-
-    function sleep(uint256 secs) public {
-        string[] memory inputs = new string[](2);
-        inputs[0] = "sleep";
-        inputs[1] = vm.toString(secs);
-        vm.ffi(inputs);
     }
 }
 
