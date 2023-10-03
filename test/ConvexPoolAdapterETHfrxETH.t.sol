@@ -56,8 +56,9 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "ETH/frxETH Strat";
-
+    string public constant SALT = "D231003";
+    string public constant STRATEGY_NAME = "frxETH Guard"; 
+    string public constant TOKEN_NAME = "psp.ETH:frxETH";
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
      */
@@ -176,7 +177,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
             AuraComposableStablePoolAdapterImplementation
             );
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
         );
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
