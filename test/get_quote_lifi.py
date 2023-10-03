@@ -24,8 +24,8 @@ def get_quote(
         "fromAddress": fromAddress,
     }
 
-    resp = requests.get(API_URL, params=queryParams)
-    print(resp.text)
+    # resp = requests.get(API_URL, params=queryParams)
+    print("12345")
     return
 
     try:
