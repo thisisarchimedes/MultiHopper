@@ -1212,7 +1212,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         inputs[5] = vm.toString(fromAddress);
         inputs[6] = vm.toString(true);
 
-        return abi.decode(vm.ffi(inputs), (uint256, uint256, bytes));
+        bytes memory resp = vm.ffi(inputs);
+        console2.log(string(resp));
+        return abi.decode(resp, (uint256, uint256, bytes));
     }
 
     function concat(bytes memory a, bytes memory b) public pure returns (bytes memory) {

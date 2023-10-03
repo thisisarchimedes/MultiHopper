@@ -41,6 +41,7 @@ def get_quote(
         if retry == MAX_RETRIES - 1:
             raise Exception(format(f"Max retries reached. {resp.text}, code: {resp.status_code}"))
     
+    print(resp.text) # Debug
     resp = resp.json()
 
     encodeTypes = ["uint256"]
