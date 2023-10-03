@@ -24,22 +24,25 @@ def get_quote(
         "fromAddress": fromAddress,
     }
 
-    for retry in range(MAX_RETRIES):
-        resp = requests.get(API_URL, params=queryParams)
-        
-        # Check if the status code is 200 (OK)
-        if resp.status_code == 200:
-            # Request was successful, break the loop
-            break
-        elif resp.status_code == 429:
-            # Status code 429 (Too Many Requests), retry after a delay
-            time.sleep(int(resp.headers.get('Retry-After', '5')))
-        else:
-            # Handle other status codes as needed
-            time.sleep(5)  # Wait for a few seconds before retrying
+    try:
+        for retry in range(MAX_RETRIES):
+            resp = requests.get(API_URL, params=queryParams)
+            
+            # Check if the status code is 200 (OK)
+            if resp.status_code == 200:
+                # Request was successful, break the loop
+                break
+            elif resp.status_code == 429:
+                # Status code 429 (Too Many Requests), retry after a delay
+                time.sleep(int(resp.headers.get('Retry-After', '5')))
+            else:
+                # Handle other status codes as needed
+                time.sleep(5)  # Wait for a few seconds before retrying
 
-        if retry == MAX_RETRIES - 1:
-            raise Exception(format(f"Max retries reached. {resp.text}, code: {resp.status_code}"))
+            if retry == MAX_RETRIES - 1:
+                raise Exception(format(f"Max retries reached. {resp.text}, code: {resp.status_code}"))
+    except Exception as e:
+        print(f"Error: {e}")
     
     print(f"status: {resp.status_code}") # Debug
     resp = resp.json()
