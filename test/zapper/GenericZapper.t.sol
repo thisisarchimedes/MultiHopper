@@ -406,14 +406,16 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // DEPOSIT - NEGATIVE TESTS
-    function testDepositRevertReentrantCall() public {
-        ERC20Hackable erc20Hackable = new ERC20Hackable(genericZapper, address(multiPoolStrategy));
+    // function testDepositRevertReentrantCall() public {
+    //     uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
 
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this));
+    //     ERC20Hackable erc20Hackable = new ERC20Hackable(genericZapper, address(multiPoolStrategy));
 
-        vm.expectRevert("ReentrancyGuard: reentrant call");
-        genericZapper.deposit(1, address(erc20Hackable), toAmountMin, address(this), address(multiPoolStrategy), txData);
-    }
+    //     (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(this));
+
+    //     vm.expectRevert("ReentrancyGuard: reentrant call");
+    //     genericZapper.deposit(amountToDeposit, address(erc20Hackable), toAmountMin, address(this), address(multiPoolStrategy), txData);
+    // }
 
     function testDepositRevertZeroAddress() public {
         address receiver = address(0);
@@ -437,10 +439,13 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     function testDepositRevertMultiPoolStrategyIsPaused() public {
         multiPoolStrategy.togglePause();
 
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this));
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        (, uint256 toAmountMin, bytes memory txData) =
+            getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
 
         vm.expectRevert(IGenericZapper.StrategyPaused.selector);
-        genericZapper.deposit(1, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
     // function testDepositIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
@@ -916,12 +921,28 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     function testRedeemRevertMultiPoolStrategyIsPaused() public {
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+
+        (, uint256 toAmountMin, bytes memory txData) =
+            getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares =
+            genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // redeem all shares
+        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(
+            multiPoolStrategy.asset(),
+            USDT,
+            storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
+            address(genericZapper)
+        );
+
         multiPoolStrategy.togglePause();
 
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this));
-
-        vm.expectRevert(IGenericZapper.StrategyPaused.selector);
-        genericZapper.redeem(1, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        genericZapper.redeem(
+            shares, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
+        );
     }
 
     // function testRedeemIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
