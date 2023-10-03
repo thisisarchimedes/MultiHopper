@@ -20,8 +20,8 @@ contract GenericZapper is Context, IGenericZapper {
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
-    event Deposited(address sender, address receiver, address underlyingAsset, uint256 underlyingAmount, uint256 shares);
-    event Redeemed(address sender, address receiver, address underlyingAsset, uint256 underlyingAmount, uint256 shares);
+    event Deposited(address sender, address receiver, address underlyingAsset, uint256 underlyingAmount);
+    event Redeemed(address sender, address receiver, address underlyingAsset, uint256 underlyingAmount);
 
     /**
      * @inheritdoc IGenericZapper
@@ -71,7 +71,7 @@ contract GenericZapper is Context, IGenericZapper {
 
         // deposit
         shares = multiPoolStrategy.deposit(underlyingAmount, address(this));
-        emit Deposited(_msgSender(), receiver, underlyingAsset, underlyingAmount, shares);
+        emit Deposited(_msgSender(), receiver, underlyingAsset, underlyingAmount);
 
         // transfer shares to receiver
         SafeERC20.safeTransfer(IERC20(strategyAddress), receiver, shares);
@@ -105,7 +105,7 @@ contract GenericZapper is Context, IGenericZapper {
         // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
         uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
         uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
-        emit Redeemed(_msgSender(), receiver, underlyingAsset, underlyingAmount, sharesAmount);
+        emit Redeemed(_msgSender(), receiver, underlyingAsset, underlyingAmount);
 
         // swap for the underlying asset
         if(redeemToken != underlyingAsset) {
