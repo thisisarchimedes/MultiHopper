@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import { IGenericZapper } from "../interfaces/IGenericZapper.sol";
 import { MultiPoolStrategy } from "../MultiPoolStrategy.sol";
-import { ReentrancyGuard } from "openzeppelin-contracts/security/ReentrancyGuard.sol";
 import { Context } from "openzeppelin-contracts/utils/Context.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
@@ -14,7 +13,7 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
  * It swaps the given token using Li.Fi (given data) to the underliying asset
  * and interacts with the MultiPoolStrategy contract to perform the operations.
  */
-contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
+contract GenericZapper is Context, IGenericZapper {
     error SwapFailed();
     error AmountBelowMinimum();
     
@@ -36,7 +35,6 @@ contract GenericZapper is ReentrancyGuard, Context, IGenericZapper {
         bytes calldata swapTx
     )
         external
-        nonReentrant
         returns (uint256 shares)
     {
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(strategyAddress);
