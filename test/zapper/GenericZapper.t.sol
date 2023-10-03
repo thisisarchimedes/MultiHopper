@@ -893,8 +893,6 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         );
         uint256 balanceAfterDeposit = IERC20(USDT).balanceOf(address(this));
 
-        console2.log(shares, toAmountMinRedeemed, balanceBeforeDeposit, balanceAfterDeposit);
-
         assertEq(multiPoolStrategy.storedTotalAssets(), 0);
         assertEq(IERC20(address(multiPoolStrategy)).balanceOf(address(this)), 0);
         assertTrue(toAmountMinRedeemed < balanceAfterDeposit - balanceBeforeDeposit);
@@ -1213,7 +1211,6 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         inputs[6] = vm.toString(true);
 
         bytes memory resp = vm.ffi(inputs);
-        console2.log(string(resp));
         return abi.decode(resp, (uint256, uint256, bytes));
     }
 
