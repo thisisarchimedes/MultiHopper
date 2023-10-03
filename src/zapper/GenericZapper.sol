@@ -49,8 +49,6 @@ contract GenericZapper is Context, IGenericZapper {
         uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
         SafeERC20.safeTransferFrom(IERC20(token), _msgSender(), address(this), amount);
 
-        // TODO! it would be a good idea to add the same check to the multi-pool strategy
-
         // swap for the underlying asset
         if(token != multiPoolStrategy.asset()) {
             SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, 0);
@@ -66,8 +64,9 @@ contract GenericZapper is Context, IGenericZapper {
         if (underlyingAmount < toAmountMin) revert AmountBelowMinimum();
 
         // we need to approve the strategy to spend underlying asset
-        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), strategyAddress, 0);
-        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), strategyAddress, underlyingAmount);
+        if(IERC20(multiPoolStrategy.asset()).allowance(address(this), strategyAddress) < type(uint256).max) {
+            IERC20(multiPoolStrategy.asset()).approve(strategyAddress, type(uint256).max);
+        }
 
         // deposit
         shares = multiPoolStrategy.deposit(underlyingAmount, address(this));
@@ -105,13 +104,11 @@ contract GenericZapper is Context, IGenericZapper {
         uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
         emit Redeemed(_msgSender(), receiver, underlyingAmount, sharesAmount);
 
-        // TODO! verify call data amount and amount given
-
         // swap for the underlying asset
         if(redeemToken != multiPoolStrategy.asset()) {
             SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, 0);
             SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, underlyingAmount);
-            (bool success,) = LIFI_DIAMOND.call(swapTx); // TODO! Dangerous?
+            (bool success,) = LIFI_DIAMOND.call(swapTx);
             if (!success) revert SwapFailed();
         }
 
