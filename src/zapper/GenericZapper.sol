@@ -20,8 +20,8 @@ contract GenericZapper is Context, IGenericZapper {
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
-    event Deposited(uint256 underlyingAmount, uint256 shares);
-    event Redeemed(uint256 underlyingAmount, uint256 shares);
+    event Deposited(address sender, address receiver, uint256 underlyingAmount, uint256 shares);
+    event Redeemed(address sender, address receiver, uint256 underlyingAmount, uint256 shares);
 
     /**
      * @inheritdoc IGenericZapper
@@ -47,7 +47,7 @@ contract GenericZapper is Context, IGenericZapper {
 
         // transfer tokens to this contract
         uint256 underlyingBalanceBefore = IERC20(multiPoolStrategy.asset()).balanceOf(address(this));
-        SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount);
+        SafeERC20.safeTransferFrom(IERC20(token), _msgSender(), address(this), amount);
 
         // TODO! it would be a good idea to add the same check to the multi-pool strategy
 
@@ -71,7 +71,7 @@ contract GenericZapper is Context, IGenericZapper {
 
         // deposit
         shares = multiPoolStrategy.deposit(underlyingAmount, address(this));
-        emit Deposited(underlyingAmount, shares);
+        emit Deposited(_msgSender(), receiver, underlyingAmount, shares);
 
         // transfer shares to receiver
         SafeERC20.safeTransfer(IERC20(strategyAddress), receiver, shares);
@@ -103,7 +103,7 @@ contract GenericZapper is Context, IGenericZapper {
         // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
         uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
         uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
-        emit Redeemed(underlyingAmount, sharesAmount);
+        emit Redeemed(_msgSender(), receiver, underlyingAmount, sharesAmount);
 
         // TODO! verify call data amount and amount given
 
