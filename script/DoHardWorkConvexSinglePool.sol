@@ -109,14 +109,14 @@ contract DoHardWorkConvexSinglePool is Script {
 
         // get CRV qoute
         (quote, txData) = getQuoteLiFi(
-            rewardData[0].token, UNDERLYING_ASSET, _crvRewardAmount, address(0x46f1325b17Ac070DfbF66F6B87fCaE4bd2570869)
+            rewardData[0].token, UNDERLYING_ASSET, _crvRewardAmount, address(STRATEGY_ADDRESS)
         );
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: _crvRewardAmount, callData: txData });
 
         // get CVX quote
         (quote, txData) =
-            getQuoteLiFi(CVX, UNDERLYING_ASSET, _crvRewardAmount, address(0x46f1325b17Ac070DfbF66F6B87fCaE4bd2570869));
+            getQuoteLiFi(CVX, UNDERLYING_ASSET, _crvRewardAmount, address(STRATEGY_ADDRESS));
         swapDatas[1] = MultiPoolStrategy.SwapData({ token: CVX, amount: _cvxRewardAmount, callData: txData });
     }
 
