@@ -56,7 +56,9 @@ contract ConvexPoolAdapterUSDTcrvUSDGenericTest is PRBTest, StdCheats {
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "USDT/crvUSD Strat";
+    string public constant SALT = "F231003";
+    string public constant STRATEGY_NAME = "crvUSD Guard"; 
+    string public constant TOKEN_NAME = "psp.USDT:crvUSD";
 
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
@@ -176,7 +178,7 @@ contract ConvexPoolAdapterUSDTcrvUSDGenericTest is PRBTest, StdCheats {
 
 
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
         );
 
         //return;

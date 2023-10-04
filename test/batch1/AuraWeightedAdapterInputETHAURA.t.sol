@@ -32,8 +32,12 @@ contract AuraWeightedPoolAdapterInputETHAURATest is PRBTest, StdCheats {
         0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274;
     uint256 public constant AURA_PID = 100;
 
+    string public constant SALT = "G231003";
+    string public constant STRATEGY_NAME = "Aura Guard"; 
+    string public constant TOKEN_NAME = "psp.WETH:AURA";
+
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_294;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18272273;
     uint256 tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests
@@ -90,7 +94,10 @@ contract AuraWeightedPoolAdapterInputETHAURATest is PRBTest, StdCheats {
             AuraComposableWeightedPoolAdapterImplementation
             );
         multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat"));
+            MultiPoolStrategy(
+                multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
+            );
+
         auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(
                 BALANCER_WEIGHTED_POOL_ID, address(multiPoolStrategy), AURA_PID
