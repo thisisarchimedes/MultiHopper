@@ -52,8 +52,9 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "FRAXBP/alUSD Stra";
-
+    string public constant SALT = "D231003";
+    string public constant STRATEGY_NAME = "alUSD Guard"; 
+    string public constant TOKEN_NAME = "psp.FRAXBP:alUSD";
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
      */
@@ -81,7 +82,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
     address constant ZAPPER = address(0);
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_485;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18271783;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -168,9 +169,11 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation
             );
+
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
         );
+            
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
