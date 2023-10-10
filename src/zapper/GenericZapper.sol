@@ -65,9 +65,8 @@ contract GenericZapper is Context, IGenericZapper {
         if (underlyingAmount < toAmountMin) revert AmountBelowMinimum();
 
         // we need to approve the strategy to spend underlying asset
-        if(IERC20(underlyingAsset).allowance(address(this), strategyAddress) < type(uint256).max) {
-            IERC20(underlyingAsset).approve(strategyAddress, type(uint256).max);
-        }
+        SafeERC20.safeApprove(IERC20(underlyingAsset), strategyAddress, 0);
+        SafeERC20.safeApprove(IERC20(underlyingAsset), strategyAddress, underlyingAmount);
 
         // deposit
         shares = multiPoolStrategy.deposit(underlyingAmount, address(this));
