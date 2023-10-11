@@ -287,7 +287,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(usdcDepositedAmountToMultiPoolStrategy, shares, shares * 1 / 100);
     }
 
-    // function testDepositToUSDTLyingStrategy(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
+    // function testDepositToUSDTLyingStrategy(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup
+    // runs
     function testDepositToUSDTLyingStrategy() public {
         // create a strategy with USDT as an underlying asset
         multiPoolStrategy =
@@ -644,6 +645,23 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         vm.expectRevert(GenericZapper.SwapFailed.selector);
         genericZapper.deposit(amountToDeposit, USDT, 0, address(this), address(multiPoolStrategy), "0000000000");
+    }
+
+    function testInvalidFromAddress() public {
+        uint256 amountToDeposit = 10 * 10 ** IERC20(DAI).decimals();
+
+        // the correct address should be the genericZapper address
+        address invalidAddress = address(this);
+
+        (, uint256 toAmountMin, bytes memory txData) =
+            getQuoteLiFi(DAI, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+
+        genericZapper.deposit(amountToDeposit, DAI, toAmountMin, address(this), address(multiPoolStrategy), txData);
+
+        (, toAmountMin, txData) = getQuoteLiFi(DAI, multiPoolStrategy.asset(), amountToDeposit, invalidAddress);
+
+        vm.expectRevert(IGenericZapper.EmptyInput.selector);
+        genericZapper.deposit(amountToDeposit, DAI, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
     // REDEEM - POSITIVE TESTS
