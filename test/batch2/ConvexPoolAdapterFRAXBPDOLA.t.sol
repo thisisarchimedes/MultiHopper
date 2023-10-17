@@ -16,7 +16,7 @@ import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
 
-contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
+contract ConvexPoolAdapterFRAXBPDOLAGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
     ConvexPoolAdapter convexGenericAdapter;
@@ -41,20 +41,20 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
      * @dev Address of the Curve pool used in the integration.
      * default: ETH/msETH Curve pool
      */
-    address public constant CURVE_POOL_ADDRESS = 0xB30dA2376F63De30b42dC055C93fa474F31330A5; // https://curve.fi/#/ethereum/pools/factory-v2-147/deposit
+    address public constant CURVE_POOL_ADDRESS = 0xE57180685E3348589E9521aa53Af0BCD497E884d; // https://curve.fi/#/ethereum/pools/factory-v2-147/deposit
 
     /**
      * @dev Convex pool ID used in the integration.
      * default: ETH/msETH Curve pool PID
      */
-    uint256 public constant CONVEX_PID = 106;
+    uint256 public constant CONVEX_PID = 115;
 
     /**
      * @dev Name of the strategy.
      */
-    string public constant SALT = "H231004";
-    string public constant STRATEGY_NAME = "alUSD Guard"; 
-    string public constant TOKEN_NAME = "psp.FRAXBP:alUSD";
+    string public constant SALT = "A231013";
+    string public constant STRATEGY_NAME = "DOLA Guard"; 
+    string public constant TOKEN_NAME = "psp.FRAXBP:DOLA";
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
      */
