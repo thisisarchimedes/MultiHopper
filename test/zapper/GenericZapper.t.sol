@@ -293,6 +293,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // create a strategy with USDT as an underlying asset
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(USDT, "Generic MultiPool Strategy"));
+        SafeERC20.safeApprove(IERC20(address(multiPoolStrategy)), address(genericZapper), type(uint256).max);
 
         // we swap USDC to USDT, here the underlying asset is USDT
         address USDC = UNDERLYING_ASSET;
@@ -836,6 +837,62 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
         assertAlmostEq(
             amountToDeposit, IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre, amountToDeposit / 100
+        );
+        // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+    }
+
+    // function testRedeemToUSDTLyingStrategy(uint256 amountToRedeem) public { // TODO! once we have the API-KEY setup
+    // runs
+    function testRedeemFromUSDTLyingStrategy() public {
+        // create a strategy with USDT as an underlying asset
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(USDT, "Generic MultiPool Strategy"));
+        SafeERC20.safeApprove(IERC20(address(multiPoolStrategy)), address(genericZapper), type(uint256).max);
+
+        // we swap USDC to USDT, here the underlying asset is USDT
+        address USDC = UNDERLYING_ASSET;
+
+        // amountToDeposit =
+        //     bound(amountToDeposit, 10 * 10 ** IERC20(FRAX).decimals(), 10_000_000 * 10 ** IERC20(FRAX).decimals());
+        // TODO! once we have the API-KEY setup runs
+        uint256 amountToDeposit = 10 * 10 ** IERC20(USDC).decimals();
+
+        // firstly deposit
+        (, uint256 toAmountMinDeposited, bytes memory depositTxData) =
+            getQuoteLiFi(USDC, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
+        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
+        uint256 shares = genericZapper.deposit(
+            amountToDeposit, USDC, toAmountMinDeposited, address(this), address(multiPoolStrategy), depositTxData
+        );
+        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
+
+        // get values before redeem
+        uint256 usdcBalanceOfThisPre = IERC20(USDC).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+
+        // redeem all shares
+        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(
+            multiPoolStrategy.asset(),
+            USDC,
+            storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
+            address(genericZapper)
+        );
+        uint256 redeemedAmount = genericZapper.redeem(
+            shares, USDC, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
+        );
+
+        console2.log(amountToDeposit, redeemedAmount);
+
+        // check that redeem works correctly and swap fees are less than 1%
+        assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+        // check USDC amount of this contract after redeem
+        assertEq(IERC20(USDC).balanceOf(address(this)), usdcBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
+        assertAlmostEq(
+            amountToDeposit, IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre, amountToDeposit / 100
         );
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
