@@ -202,7 +202,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
 
         uint256 shares = previewWithdraw(assets);
 
-        uint256 currBal = IERC20Upgradeable(asset()).balanceOf(address(this));
+        uint256 currBal = storedTotalAssets;
 
         // in the contract
         if (assets > currBal) {
@@ -229,7 +229,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
 
         uint256 assets = previewRedeem(shares);
-        uint256 currBal = IERC20Upgradeable(asset()).balanceOf(address(this));
+        uint256 currBal = storedTotalAssets;
         if (assets > currBal) {
             assets = _withdrawFromAdapter(assets, currBal, minimumReceive);
         } else {
