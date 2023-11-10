@@ -414,8 +414,10 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      * @notice Add rewards to the storedTotalAssets if the rewards cycle has ended
      */
     function _updateRewards() internal {
+        uint256 lastRewardAmount_ = lastRewardAmount; // SSTORE
+        if (lastRewardAmount_ == 0) return;
         if (block.timestamp >= rewardsCycleEnd) {
-            storedTotalAssets += lastRewardAmount;
+            storedTotalAssets += lastRewardAmount_;
             lastRewardAmount = 0;
         }
     }
