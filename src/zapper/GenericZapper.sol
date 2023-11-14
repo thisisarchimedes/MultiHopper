@@ -83,14 +83,12 @@ contract GenericZapper is Context, IGenericZapper {
      */
     function redeem(
         uint256 sharesAmount,
-        address redeemToken,
         uint256 toAmountMin,
         address receiver,
-        address strategyAddress,
-        bytes calldata swapTx
+        address strategyAddress
     )
         external
-        returns (uint256 redeemTokenAmount)
+        returns (uint256 underlyingAmount)
     {
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(strategyAddress);
         
@@ -101,25 +99,10 @@ contract GenericZapper is Context, IGenericZapper {
 
         address underlyingAsset = multiPoolStrategy.asset();
 
-        // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
-        uint256 tokenBalanceBefore = IERC20(redeemToken).balanceOf(address(this));
-        uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
+        underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), toAmountMin);
+
+        SafeERC20.safeTransfer(IERC20(underlyingAsset), receiver, underlyingAmount);
+
         emit Redeemed(_msgSender(), receiver, underlyingAsset, underlyingAmount);
-
-        // swap for the underlying asset
-        if(redeemToken != underlyingAsset) {
-            SafeERC20.safeApprove(IERC20(underlyingAsset), LIFI_DIAMOND, 0);
-            SafeERC20.safeApprove(IERC20(underlyingAsset), LIFI_DIAMOND, underlyingAmount);
-            (bool success,) = LIFI_DIAMOND.call(swapTx);
-            if (!success) revert SwapFailed();
-        }
-
-        uint256 tokenBalanceAfter = IERC20(redeemToken).balanceOf(address(this));
-        redeemTokenAmount = tokenBalanceAfter - tokenBalanceBefore;
-
-        if (redeemTokenAmount == 0) revert EmptyInput();
-        if (redeemTokenAmount < toAmountMin) revert AmountBelowMinimum();
-
-        SafeERC20.safeTransfer(IERC20(redeemToken), receiver, redeemTokenAmount);
     }
 }

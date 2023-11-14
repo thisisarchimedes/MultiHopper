@@ -41,20 +41,16 @@ interface IGenericZapper {
     /**
      * @dev Redeems asset from the MultiPoolStrategy contract.
      * @param sharesAmount The amount of shares to redeem.
-     * @param redeemToken The token address redeem.
-     * @param toAmountMin Minimum amount of required asset (like: USDT) to recieve after withdraw.
-     * @param receiver The address to receive the redeemed asset.
+     * @param toAmountMin Minimum amount of the underlying asset to recieve after withdraw.
+     * @param receiver The address to receive the underlying asset.
      * @param strategyAddress The address of the MultiPoolStrategy contract to redeem from.
-     * @param swapTx containing the transaction data for the swap.
      * @return redeemAmount The redeemed amount.
      */
     function redeem(
         uint256 sharesAmount,
-        address redeemToken,
         uint256 toAmountMin,
         address receiver,
-        address strategyAddress,
-        bytes calldata swapTx
+        address strategyAddress
     )
         external
         returns (uint256 redeemAmount);
