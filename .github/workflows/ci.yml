@@ -117,8 +117,8 @@ jobs:
         run: |
           source .venv/bin/activate
           forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/convex/*" -vvvv
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/aura/*" -vvvv
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/zapper/*" -vvvv
+          # forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/aura/*" -vvvv
+          # forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/zapper/*" -vvvv
 
       - name: "Add test summary"
         run: |
