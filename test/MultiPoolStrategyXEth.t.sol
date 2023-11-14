@@ -404,7 +404,10 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         adjustIns[0] =
             MultiPoolStrategy.Adjust({ adapter: address(convexEthPEthAdapter), amount: 10e18, minReceive: 0 });
         MultiPoolStrategy.Adjust[] memory adjustOuts;
-        address[] memory adapters;
+        address[] memory adapters = new address[](3);
+        adapters[0] = address(convexEthAlEthAdapter);
+        adapters[1] = address(convexEthMsEthAdapter);
+        adapters[2] = address(convexEthPEthAdapter);
         vm.prank(monitor);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         vm.warp(block.timestamp + 1 weeks);
@@ -424,9 +427,13 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         uint256 wethBalanceAfter = IERC20(WETH).balanceOf(address(multiPoolStrategy));
         assertEq(wethBalanceBefore, 0);
         assertGt(wethBalanceAfter, 0);
-        console2.log("wethbalanceafter", wethBalanceAfter);
         // try to withdraw less amount than in strategy
         uint256 withdrawAmount = wethBalanceAfter * 10 / 100;
+        uint256 wethBalanceBeforeWithdraw = IERC20(WETH).balanceOf(address(this));
         multiPoolStrategy.withdraw(withdrawAmount, address(this), address(this), 0);
+        uint256 wethBalanceAfterWithdraw = IERC20(WETH).balanceOf(address(this));
+        assertAlmostEq(
+            wethBalanceAfterWithdraw - wethBalanceBeforeWithdraw, withdrawAmount, (withdrawAmount * 50 / 10_000)
+        );
     }
 }
