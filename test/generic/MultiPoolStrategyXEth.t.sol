@@ -4,14 +4,15 @@ pragma solidity >=0.8.19 <0.9.0;
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
-import { MultiPoolStrategyFactory } from "../src/MultiPoolStrategyFactory.sol";
-import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
-import { IBaseRewardPool } from "../src/interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
-import { IBooster } from "../src/interfaces/IBooster.sol";
-import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
-import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
+
+import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
+import { ConvexPoolAdapter } from "../../src/ConvexPoolAdapter.sol";
+import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
+import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
+import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
+import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 
 contract MultiPoolStrategyTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;

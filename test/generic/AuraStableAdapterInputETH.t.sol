@@ -6,34 +6,35 @@ pragma solidity >=0.8.19 <0.9.0;
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
-import { MultiPoolStrategyFactory } from "../src/MultiPoolStrategyFactory.sol";
-import { IBaseRewardPool } from "../src/interfaces/IBaseRewardPool.sol";
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { ETHZapper } from "../src/ETHZapper.sol";
-import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
-import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
-import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import { IBooster } from "../src/interfaces/IBooster.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
-/// @title AuraWeightedPoolAdapterInputETHTest
+import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
+import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
+import { ETHZapper } from "../../src/ETHZapper.sol";
+import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
+import { AuraStablePoolAdapter } from "../../src/AuraStablePoolAdapter.sol";
+import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
+import { IBooster } from "../../src/interfaces/IBooster.sol";
+
+/// @title AuraStablePoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged Aura pool (WETH/rETH) with native ETH input from user using zapper
-contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
+contract AuraStablePoolAdapterInputETHTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
-    AuraWeightedPoolAdapter auraWeightedPoolAdapter;
+    AuraStablePoolAdapter auraStablePoolAdapter;
     ETHZapper ethZapper;
     address public staker = makeAddr("staker");
     ///CONSTANTS
-    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant AURA_BOOSTER = 0x1204f5060bE8b716F5A62b4Df4cE32acD01a69f5;
+    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; //strategy underlying asset such as
+        // WETH,USDC,DAI,USDT etc.
+    address public constant AURA_BOOSTER = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
     /// POOL CONSTANTS
-    bytes32 public constant BALANCER_WEIGHTED_POOL_ID =
-        0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274;
-    uint256 public constant AURA_PID = 100;
+    bytes32 public constant BALANCER_STABLE_POOL_ID = 0xb08885e6026bab4333a80024ec25a1a3e1ff2b8a000200000000000000000445;
+    uint256 public constant AURA_PID = 63;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_294;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
     uint256 tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests
@@ -59,7 +60,7 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
     //// get current block number using a python script that gets the latest number and substracts 10 blocks  | this
     // method lives on all tests
 
-     function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
@@ -77,26 +78,27 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
             blockNumber: forkBlockNumber == 0 ? DEFAULT_FORK_BLOCK_NUMBER : forkBlockNumber
         });
         //// we only deploy the adapters we will use in this test
-        address auraWeightedPoolAdapterImplementation = address(0);
+        address auraStablePoolAdapterImplementation = address(0);
         address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
-        address AuraWeightedPoolAdapterImplementation = address(new AuraWeightedPoolAdapter());
-        address AuraComposableWeightedPoolAdapterImplementation = address(0);
+        address AuraWeightedPoolAdapterImplementation = address(0);
+        address AuraStablePoolAdapterImplementation = address(new AuraStablePoolAdapter());
+        address AuraComposableStablePoolAdapterImplementation = address(0);
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
-            auraWeightedPoolAdapterImplementation,
+            auraStablePoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
-            AuraWeightedPoolAdapterImplementation,
-            AuraComposableWeightedPoolAdapterImplementation
+            AuraStablePoolAdapterImplementation,
+            AuraComposableStablePoolAdapterImplementation
             );
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat"));
-        auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
-            multiPoolStrategyFactory.createAuraWeightedPoolAdapter(
-                BALANCER_WEIGHTED_POOL_ID, address(multiPoolStrategy), AURA_PID
+        auraStablePoolAdapter = AuraStablePoolAdapter(
+            multiPoolStrategyFactory.createAuraStablePoolAdapter(
+                BALANCER_STABLE_POOL_ID, address(multiPoolStrategy), AURA_PID
             )
         );
-        multiPoolStrategy.addAdapter(address(auraWeightedPoolAdapter));
+        multiPoolStrategy.addAdapter(address(auraStablePoolAdapter));
         tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
         // create and initialize the ETHzapper
         ethZapper = new ETHZapper();
@@ -131,16 +133,16 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adapterAdjustAmount = (depositAmount) * 94 / 100; // %94
         adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraWeightedPoolAdapter),
+            adapter: address(auraStablePoolAdapter),
             amount: adapterAdjustAmount,
             minReceive: 0
         });
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
-        adapters[0] = address(auraWeightedPoolAdapter);
+        adapters[0] = address(auraStablePoolAdapter);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         //// withdraw all shares using this contract as receiver should get same as put in
-        uint256 underlyingBalanceInAdapterBeforeWithdraw = auraWeightedPoolAdapter.underlyingBalance();
+        uint256 underlyingBalanceInAdapterBeforeWithdraw = auraStablePoolAdapter.underlyingBalance();
         uint256 shares = multiPoolStrategy.balanceOf(address(this));
         uint256 ETHBalanceOfThisBeforeRedeem = address(this).balance;
         //// need to approve shares to zapper so the zapper can spend the shares on behalf of this contract
@@ -148,7 +150,7 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
         multiPoolStrategy.approve(address(ethZapper), shares);
         //// withdraw by shares (reedem)
         ethZapper.redeemETH(shares, address(this), 0, address(multiPoolStrategy));
-        uint256 underlyingBalanceInAdapterAfterWithdraw = auraWeightedPoolAdapter.underlyingBalance();
+        uint256 underlyingBalanceInAdapterAfterWithdraw = auraStablePoolAdapter.underlyingBalance();
         uint256 ETHBalanceOfThisAfterRedeem = address(this).balance;
         assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
         assertEq(underlyingBalanceInAdapterAfterWithdraw, 0);
@@ -165,16 +167,16 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adapterAdjustAmount = (depositAmount) * 94 / 100; // %94
         adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraWeightedPoolAdapter),
+            adapter: address(auraStablePoolAdapter),
             amount: adapterAdjustAmount,
             minReceive: 0
         });
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
-        adapters[0] = address(auraWeightedPoolAdapter);
+        adapters[0] = address(auraStablePoolAdapter);
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         //// withdraw all shares using this contract as receiver should get same as put in
-        uint256 underlyingBalanceInAdapterBeforeWithdraw = auraWeightedPoolAdapter.underlyingBalance();
+        uint256 underlyingBalanceInAdapterBeforeWithdraw = auraStablePoolAdapter.underlyingBalance();
         uint256 shares = multiPoolStrategy.balanceOf(address(this));
         uint256 ETHBalanceOfThisBeforeRedeem = address(this).balance;
         //// need to approve shares to zapper so the zapper can spend the shares on behalf of this contract
@@ -183,7 +185,7 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
         //// withdraw by asset ( withdraw )
         uint256 assetstoWithdraw = multiPoolStrategy.previewRedeem(shares);
         ethZapper.withdrawETH(assetstoWithdraw, address(this), 0, address(multiPoolStrategy));
-        uint256 underlyingBalanceInAdapterAfterWithdraw = auraWeightedPoolAdapter.underlyingBalance();
+        uint256 underlyingBalanceInAdapterAfterWithdraw = auraStablePoolAdapter.underlyingBalance();
         uint256 ETHBalanceOfThisAfterRedeem = address(this).balance;
         assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
         assertEq(underlyingBalanceInAdapterAfterWithdraw, 0);
