@@ -15,6 +15,7 @@ import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -53,7 +54,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
      * @dev Name of the strategy.
      */
     string public constant SALT = "A231017";
-    string public constant STRATEGY_NAME = "msUSD Guard"; 
+    string public constant STRATEGY_NAME = "msUSD Guard";
     string public constant TOKEN_NAME = "psp.FRAXBP:msUSD";
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
@@ -161,6 +162,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
@@ -168,9 +170,12 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation
+            ,address(proxyAdmin)
             );
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
+            )
         );
         convexGenericAdapter = ConvexPoolAdapter(
             payable(

@@ -166,10 +166,13 @@ contract ConvexPoolAdapterDOLAFRAXBPGenericTest is PRBTest, StdCheats {
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(this)
             );
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
+            )
         );
         convexGenericAdapter = ConvexPoolAdapter(
             payable(

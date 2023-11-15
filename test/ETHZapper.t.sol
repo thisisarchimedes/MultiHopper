@@ -16,6 +16,7 @@ import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
 import { ETHZapper } from "../src/ETHZapper.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -103,16 +104,20 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
+            )
         );
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
@@ -140,7 +145,6 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
     }
 
     function testDeposit(uint256 ethAmount) public {
-
         // assuming ethAmount is withing reasonable range
         vm.assume(ethAmount > 0);
         vm.assume(ethAmount < 100_000_000 ether);
@@ -164,11 +168,8 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
         assertEq(multiPoolStrategy.balanceOf(address(this)), shares);
     }
 
-    
-
     function testWithdraw(uint256 ethAmount) public {
-
-         // assuming ethAmount is withing reasonable range
+        // assuming ethAmount is withing reasonable range
         vm.assume(ethAmount > 1);
         vm.assume(ethAmount < 100_000_000 ether);
         //ethAmount = ethAmount / 2; // so we don't need to deal with rounding errors
@@ -176,20 +177,20 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
         // load some ETH into this address
         vm.deal(address(this), ethAmount);
 
-         // deposit ETH to WETH straetgy via zapper
+        // deposit ETH to WETH straetgy via zapper
         uint256 shares = ethZapper.depositETH{ value: ethAmount }(address(this), address(multiPoolStrategy));
 
         // approving shares
         IERC20(address(multiPoolStrategy)).approve(address(ethZapper), shares);
 
-        // get how many assets we have on the strategy pre withdraw 
+        // get how many assets we have on the strategy pre withdraw
         uint256 storedAssetsPre = multiPoolStrategy.storedTotalAssets();
         uint256 ethBalancePre = address(this).balance;
 
         // withdraw half the ETH from WETH straetgy via zapper
         uint256 ethRet = ethZapper.withdrawETH(ethAmount / 2, address(this), 0, address(multiPoolStrategy));
 
-        // get how many assets we have on the strategy post withdraw 
+        // get how many assets we have on the strategy post withdraw
         uint256 storedAssetsPost = multiPoolStrategy.storedTotalAssets();
         uint256 ethBalancePost = address(this).balance;
 
@@ -218,7 +219,6 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
     }
 
     function testRedeem(uint256 ethAmount) public {
-
         // assuming ethAmount is withing reasonable range
         vm.assume(ethAmount > 1);
         vm.assume(ethAmount < 100_000_000 ether);
@@ -227,7 +227,7 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
         // load some ETH into this address
         vm.deal(address(this), ethAmount);
 
-         // deposit ETH to WETH straetgy via zapper
+        // deposit ETH to WETH straetgy via zapper
         uint256 shares = ethZapper.depositETH{ value: ethAmount }(address(this), address(multiPoolStrategy));
 
         // we deposit the ETH just checking that the balance is 0
@@ -236,13 +236,13 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
         // approving shares
         IERC20(address(multiPoolStrategy)).approve(address(ethZapper), shares);
 
-        // get how many assets we have on the strategy pre withdraw 
+        // get how many assets we have on the strategy pre withdraw
         uint256 storedAssetsPre = multiPoolStrategy.storedTotalAssets();
 
         uint256 ethRet = ethZapper.redeemETH(shares, address(this), 0, address(multiPoolStrategy));
 
         uint256 storedAssetsPost = multiPoolStrategy.storedTotalAssets();
-        
+
         // retETH should be the same as the amount of ETH we had on the strategy
         assertEq(ethRet, address(this).balance);
 
@@ -254,7 +254,6 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
     }
 
     receive() external payable {
-         // solhint-disable-previous-line no-empty-blocks
-     }
-    
+        // solhint-disable-previous-line no-empty-blocks
+    }
 }

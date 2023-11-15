@@ -71,7 +71,9 @@ contract PoolHopper is PRBTest, StdCheats {
 
         // create the MultiPoolStrategy contract for the underlying asset
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, "generic", "generic"
+            )
         );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
 

@@ -15,6 +15,7 @@ import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 /// @title AuraWeightedPoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged Aura pool (WETH/rETH) with native ETH input from user using zapper
@@ -59,7 +60,7 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
     //// get current block number using a python script that gets the latest number and substracts 10 blocks  | this
     // method lives on all tests
 
-     function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
@@ -81,16 +82,19 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
         address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
         address AuraWeightedPoolAdapterImplementation = address(new AuraWeightedPoolAdapter());
         address AuraComposableWeightedPoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             auraWeightedPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraWeightedPoolAdapterImplementation,
-            AuraComposableWeightedPoolAdapterImplementation
+            AuraComposableWeightedPoolAdapterImplementation,
+            address(proxyAdmin)
             );
-        multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat"));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat", "generic", "generic")
+        );
         auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(
                 BALANCER_WEIGHTED_POOL_ID, address(multiPoolStrategy), AURA_PID

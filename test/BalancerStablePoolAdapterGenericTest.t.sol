@@ -15,6 +15,7 @@ import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -110,16 +111,18 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(new AuraStablePoolAdapter());
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,address(proxyAdmin)
             );
-        multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat"));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat", "generic", "generic")
+        );
         auraStablePoolAdapter = AuraStablePoolAdapter(
             multiPoolStrategyFactory.createAuraStablePoolAdapter(
                 BALANCER_STABLE_POOL_ID, address(multiPoolStrategy), AURA_PID

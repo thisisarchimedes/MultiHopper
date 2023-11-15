@@ -13,6 +13,7 @@ import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 /// @title ConvexPoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged convex pool (ETH/msETH) with native ETH input from user using zapper
@@ -127,16 +128,19 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
-        multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat"));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat", "generic", "generic")
+        );
         convexPoolAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(

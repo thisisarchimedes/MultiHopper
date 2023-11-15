@@ -16,6 +16,7 @@ import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { ICVX } from "../../src/interfaces/ICVX.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract BalancerWeightedPoolAdapterETHAURA is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -33,7 +34,7 @@ contract BalancerWeightedPoolAdapterETHAURA is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 100;
     address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18078820;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_078_820;
     uint256 tokenDecimals;
 
     function getQuoteLiFi(
@@ -136,23 +137,24 @@ contract BalancerWeightedPoolAdapterETHAURA is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(new AuraWeightedPoolAdapter());
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
-        
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
-        
+
         //multiPoolStrategyFactory = MultiPoolStrategyFactory(0x4f19e6A97778417C33AA6034089378b093619fe5);
         address ownerFactory = multiPoolStrategyFactory.owner();
         vm.startPrank(ownerFactory);
-    
 
-        multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat"));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat", "generic", "generic")
+        );
         auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(
                 BALANCER_WEIGHTED_POOL_ID, address(multiPoolStrategy), AURA_PID
@@ -165,7 +167,6 @@ contract BalancerWeightedPoolAdapterETHAURA is PRBTest, StdCheats {
         multiPoolStrategy.changeFeeRecipient(feeRecipient);
 
         vm.stopPrank();
-
     }
 
     function testDeposit() public {

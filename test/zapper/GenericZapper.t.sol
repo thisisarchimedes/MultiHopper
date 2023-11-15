@@ -15,6 +15,7 @@ import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { GenericZapper } from "../../src/zapper/GenericZapper.sol";
 import { IGenericZapper } from "../../src/interfaces/IGenericZapper.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 public constant ETHER_DECIMALS = 18;
@@ -74,18 +75,20 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
-
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,address(proxyAdmin)
         );
 
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
+            )
         );
 
         convex3PoolAdapter = ConvexPoolAdapter(
@@ -291,8 +294,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     // runs
     function testDepositToUSDTLyingStrategy() public {
         // create a strategy with USDT as an underlying asset
-        multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(USDT, "Generic MultiPool Strategy"));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(USDT, "Generic MultiPool Strategy", "generic", "generic")
+        );
         SafeERC20.safeApprove(IERC20(address(multiPoolStrategy)), address(genericZapper), type(uint256).max);
 
         // we swap USDC to USDT, here the underlying asset is USDT
@@ -848,8 +852,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     // runs
     function testRedeemFromUSDTLyingStrategy() public {
         // create a strategy with USDT as an underlying asset
-        multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(USDT, "Generic MultiPool Strategy"));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(USDT, "Generic MultiPool Strategy", "generic", "generic")
+        );
         SafeERC20.safeApprove(IERC20(address(multiPoolStrategy)), address(genericZapper), type(uint256).max);
 
         // we swap USDC to USDT, here the underlying asset is USDT

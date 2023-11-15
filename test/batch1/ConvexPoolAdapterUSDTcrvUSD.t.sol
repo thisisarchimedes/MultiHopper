@@ -16,10 +16,10 @@ import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ConvexPoolAdapterUSDTcrvUSDGenericTest is PRBTest, StdCheats {
     using SafeERC20 for IERC20;
-
 
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
@@ -57,7 +57,7 @@ contract ConvexPoolAdapterUSDTcrvUSDGenericTest is PRBTest, StdCheats {
      * @dev Name of the strategy.
      */
     string public constant SALT = "F231003";
-    string public constant STRATEGY_NAME = "crvUSD Guard"; 
+    string public constant STRATEGY_NAME = "crvUSD Guard";
     string public constant TOKEN_NAME = "psp.USDT:crvUSD";
 
     /**
@@ -155,7 +155,7 @@ contract ConvexPoolAdapterUSDTcrvUSDGenericTest is PRBTest, StdCheats {
         if (bytes(alchemyApiKey).length == 0) {
             return;
         }
-        
+
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({
             urlOrAlias: "mainnet",
@@ -166,6 +166,7 @@ contract ConvexPoolAdapterUSDTcrvUSDGenericTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
@@ -173,12 +174,14 @@ contract ConvexPoolAdapterUSDTcrvUSDGenericTest is PRBTest, StdCheats {
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
 
-
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME
+            )
         );
 
         //return;

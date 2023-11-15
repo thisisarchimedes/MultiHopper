@@ -15,6 +15,7 @@ import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -53,7 +54,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
      * @dev Name of the strategy.
      */
     string public constant SALT = "D231003";
-    string public constant STRATEGY_NAME = "alUSD Guard"; 
+    string public constant STRATEGY_NAME = "alUSD Guard";
     string public constant TOKEN_NAME = "psp.FRAXBP:alUSD";
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
@@ -82,7 +83,7 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
     address constant ZAPPER = address(0);
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18271783;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_271_783;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -161,19 +162,23 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
 
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME
+            )
         );
-            
+
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(

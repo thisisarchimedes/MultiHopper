@@ -9,6 +9,7 @@ import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
 import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
 import { AuraComposableStablePoolAdapter } from "src/AuraComposableStablePoolAdapter.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 
 contract MultiPoolStrategyFactory is Ownable {
     using Clones for address;
@@ -98,7 +99,7 @@ contract MultiPoolStrategyFactory is Ownable {
             keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
         );
         bytes memory initData =
-            abi.encodeWithSelector(AuraWeightedPoolAdapter.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
+            abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(auraAdapter,proxyAdmin,initData);
         auraAdapter = address(proxy);
     }
@@ -116,7 +117,7 @@ contract MultiPoolStrategyFactory is Ownable {
             keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
         );
         bytes memory initData =
-            abi.encodeWithSelector(AuraStablePoolAdapter.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
+            abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(auraAdapter,proxyAdmin,initData);
         auraAdapter = address(proxy);
     }
@@ -133,9 +134,8 @@ contract MultiPoolStrategyFactory is Ownable {
         auraAdapter = auraComposableStablePoolAdapterImplementation.cloneDeterministic(
             keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
         );
-        bytes memory initData = abi.encodeWithSelector(
-            AuraComposableStablePoolAdapter.initialize.selector, _poolId, _multiPoolStrategy, _auraPid
-        );
+        bytes memory initData =
+            abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(auraAdapter,proxyAdmin,initData);
         auraAdapter = address(proxy);
     }

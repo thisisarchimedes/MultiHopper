@@ -12,6 +12,7 @@ import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract MultiPoolStrategyTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -131,6 +132,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             monitor,
             ConvexPoolAdapterImplementation,
@@ -138,8 +140,11 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation
+            ,address(proxyAdmin)
             );
-        multiPoolStrategy = MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(WETH, "ETHX Strat"));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(WETH, "ETHX Strat", "generic", "generic")
+        );
         convexEthPEthAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(

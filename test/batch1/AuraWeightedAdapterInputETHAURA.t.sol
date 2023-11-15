@@ -15,6 +15,7 @@ import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 /// @title AuraWeightedPoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged Aura pool (WETH/rETH) with native ETH input from user using zapper
@@ -33,11 +34,11 @@ contract AuraWeightedPoolAdapterInputETHAURATest is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 100;
 
     string public constant SALT = "G231003";
-    string public constant STRATEGY_NAME = "Aura Guard"; 
+    string public constant STRATEGY_NAME = "Aura Guard";
     string public constant TOKEN_NAME = "psp.WETH:AURA";
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18272273;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_272_273;
     uint256 tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests
@@ -63,7 +64,7 @@ contract AuraWeightedPoolAdapterInputETHAURATest is PRBTest, StdCheats {
     //// get current block number using a python script that gets the latest number and substracts 10 blocks  | this
     // method lives on all tests
 
-     function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
@@ -85,18 +86,21 @@ contract AuraWeightedPoolAdapterInputETHAURATest is PRBTest, StdCheats {
         address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
         address AuraWeightedPoolAdapterImplementation = address(new AuraWeightedPoolAdapter());
         address AuraComposableWeightedPoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             auraWeightedPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraWeightedPoolAdapterImplementation,
-            AuraComposableWeightedPoolAdapterImplementation
+            AuraComposableWeightedPoolAdapterImplementation,
+            address(proxyAdmin)
             );
-        multiPoolStrategy =
-            MultiPoolStrategy(
-                multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
-            );
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME
+            )
+        );
 
         auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(

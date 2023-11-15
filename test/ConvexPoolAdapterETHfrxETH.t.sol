@@ -17,6 +17,7 @@ import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../src/interfaces/IBooster.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
     using SafeERC20 for IERC20;
@@ -57,7 +58,7 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
      * @dev Name of the strategy.
      */
     string public constant SALT = "D231003";
-    string public constant STRATEGY_NAME = "frxETH Guard"; 
+    string public constant STRATEGY_NAME = "frxETH Guard";
     string public constant TOKEN_NAME = "psp.ETH:frxETH";
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
@@ -168,16 +169,20 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME
+            )
         );
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
