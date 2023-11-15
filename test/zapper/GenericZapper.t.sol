@@ -751,7 +751,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // check that redeem works correctly and swap fees are less than 1%
         assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
         // check usdt amount of this contract after redeem
-        // assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + redeemedAmount);
+        assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
         assertTrue(IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
@@ -903,7 +903,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // check that redeem works correctly and swap fees are less than 1%
         assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
         // check USDC amount of this contract after redeem
-        // assertEq(IERC20(USDC).balanceOf(address(this)), usdcBalanceOfThisPre + redeemedAmount);
+        assertEq(IERC20(USDC).balanceOf(address(this)), usdcBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
         assertTrue(IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
