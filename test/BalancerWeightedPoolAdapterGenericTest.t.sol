@@ -16,6 +16,7 @@ import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { ICVX } from "../src/interfaces/ICVX.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -136,6 +137,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(new AuraWeightedPoolAdapter());
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
@@ -143,7 +145,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation,
-            address(this)
+            address(proxyAdmin)
             );
         multiPoolStrategy = MultiPoolStrategy(
             multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat", "generic", "generic")
