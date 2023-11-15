@@ -755,7 +755,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
         assertTrue(IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
-        // assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // // check shares amount of this contract after redeem
         // assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     }
@@ -907,7 +907,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
         assertTrue(IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
-        // assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
+        assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // // check shares amount of this contract after redeem
         // assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     }
