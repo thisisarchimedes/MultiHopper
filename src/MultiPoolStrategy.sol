@@ -199,10 +199,10 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         returns (uint256)
     {
         require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
-
+        _updateRewards();
         uint256 shares = previewWithdraw(assets);
 
-        uint256 currBal = IERC20Upgradeable(asset()).balanceOf(address(this));
+        uint256 currBal = storedTotalAssets;
 
         // in the contract
         if (assets > currBal) {
@@ -227,9 +227,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         returns (uint256)
     {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
-
+        _updateRewards();
         uint256 assets = previewRedeem(shares);
-        uint256 currBal = IERC20Upgradeable(asset()).balanceOf(address(this));
+        uint256 currBal = storedTotalAssets;
         if (assets > currBal) {
             assets = _withdrawFromAdapter(assets, currBal, minimumReceive);
         } else {
@@ -278,7 +278,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
                 --i;
             }
         }
-        assets = IERC20Upgradeable(asset()).balanceOf(address(this));
+        assets = IERC20Upgradeable(asset()).balanceOf(address(this)) - lastRewardAmount;
         if (assets < minimumReceive) revert WithdrawTooLow();
         storedTotalAssets = 0; // withdraw all assets from this contract
 
@@ -408,6 +408,18 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         rewardsCycleEnd = end;
 
         emit NewRewardsCycle(end, nextRewards);
+    }
+
+    /**
+     * @notice Add rewards to the storedTotalAssets if the rewards cycle has ended
+     */
+    function _updateRewards() internal {
+        uint256 lastRewardAmount_ = lastRewardAmount; // SSTORE
+        if (lastRewardAmount_ == 0) return;
+        if (block.timestamp >= rewardsCycleEnd) {
+            storedTotalAssets += lastRewardAmount_;
+            lastRewardAmount = 0;
+        }
     }
 
     /**

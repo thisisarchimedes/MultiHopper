@@ -22,6 +22,7 @@ def get_quote(
         "toToken": dstToken,
         "fromAmount": amount,
         "fromAddress": fromAddress,
+        "slippage":0.99
     }
 
     for retry in range(MAX_RETRIES):
