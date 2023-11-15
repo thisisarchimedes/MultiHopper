@@ -394,4 +394,46 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         multiPoolStrategy.redeem(stakerShares, address(staker), address(staker), 0);
         vm.stopPrank();
     }
+
+    function test_should_able_to_withdraw_after_hardwork() external {
+        forkBlockNumber = 18_566_318;
+        IERC20(WETH).approve(address(multiPoolStrategy), 10_000e18);
+        multiPoolStrategy.setMinimumPercentage(0);
+        multiPoolStrategy.deposit(10e18, address(this));
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
+        adjustIns[0] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexEthPEthAdapter), amount: 10e18, minReceive: 0 });
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](3);
+        adapters[0] = address(convexEthAlEthAdapter);
+        adapters[1] = address(convexEthMsEthAdapter);
+        adapters[2] = address(convexEthPEthAdapter);
+        vm.prank(monitor);
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        vm.warp(block.timestamp + 1 weeks);
+        IBooster(CONVEX_BOOSTER).earmarkRewards(CONVEX_ETH_PETH_PID);
+        vm.warp(block.timestamp + 1 weeks);
+        uint256 wethBalanceBefore = IERC20(WETH).balanceOf(address(multiPoolStrategy));
+        /// ETH PETH REWARD DATA
+        ConvexPoolAdapter.RewardData[] memory rewardData = convexEthPEthAdapter.totalClaimable();
+        (uint256 quote, bytes memory txData) =
+            getQuoteLiFi(rewardData[0].token, WETH, rewardData[0].amount, address(multiPoolStrategy));
+        MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
+        address[] memory doHardWorkAdapters = new address[](1);
+        doHardWorkAdapters[0] = address(convexEthPEthAdapter);
+        swapDatas[0] =
+            MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: rewardData[0].amount, callData: txData });
+        multiPoolStrategy.doHardWork(doHardWorkAdapters, swapDatas);
+        uint256 wethBalanceAfter = IERC20(WETH).balanceOf(address(multiPoolStrategy));
+        assertEq(wethBalanceBefore, 0);
+        assertGt(wethBalanceAfter, 0);
+        // try to withdraw less amount than in strategy
+        uint256 withdrawAmount = wethBalanceAfter * 10 / 100;
+        uint256 wethBalanceBeforeWithdraw = IERC20(WETH).balanceOf(address(this));
+        multiPoolStrategy.withdraw(withdrawAmount, address(this), address(this), 0);
+        uint256 wethBalanceAfterWithdraw = IERC20(WETH).balanceOf(address(this));
+        assertAlmostEq(
+            wethBalanceAfterWithdraw - wethBalanceBeforeWithdraw, withdrawAmount, (withdrawAmount * 50 / 10_000)
+        );
+    }
 }
