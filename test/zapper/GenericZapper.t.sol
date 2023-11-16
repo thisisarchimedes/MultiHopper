@@ -22,7 +22,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
     address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet, underlying
-        // asset
+    // asset
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT - mainnet
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI - mainnet
     address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e; // FRAX - mainnet
@@ -727,7 +727,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         // get values before redeem
         uint256 usdtBalanceOfThisPre = IERC20(USDT).balanceOf(address(this));
-        // uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
         // redeem all shares
         (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(
@@ -741,23 +741,16 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         uint256 redeemedAmount = swap(USDT, underlyingAmount, redeemTxData);
 
-        console2.log(
-            "here",
-            redeemedAmount,
-            IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre,
-            amountToDeposit * 99 / 100
-        );
-
         // check that redeem works correctly and swap fees are less than 1%
-        // assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
-        // // check usdt amount of this contract after redeem
-        // assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + redeemedAmount);
-        // // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
-        // assertTrue(IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre > amountToDeposit * 99 / 100);
+        assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
+        // check usdt amount of this contract after redeem
+        assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
+        assertTrue(IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
-        // // check shares amount of this contract after redeem
-        // assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     }
 
     // function testRedeemDAI(uint256 amountToDeposit) public { // TODO! once we have the API-KEY setup runs
@@ -878,7 +871,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         // get values before redeem
         uint256 usdcBalanceOfThisPre = IERC20(USDC).balanceOf(address(this));
-        // uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
+        uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
         // redeem all shares
         (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(
@@ -893,23 +886,16 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         uint256 redeemedAmount = swap(USDC, underlyingAmount, redeemTxData);
 
-        console2.log(
-            "here",
-            redeemedAmount,
-            IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre,
-            amountToDeposit * 99 / 100
-        );
-
         // check that redeem works correctly and swap fees are less than 1%
-        // assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
-        // // check USDC amount of this contract after redeem
-        // assertEq(IERC20(USDC).balanceOf(address(this)), usdcBalanceOfThisPre + redeemedAmount);
-        // // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
-        // assertTrue(IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre > amountToDeposit * 99 / 100);
+        assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
+        // check USDC amount of this contract after redeem
+        assertEq(IERC20(USDC).balanceOf(address(this)), usdcBalanceOfThisPre + redeemedAmount);
+        // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
+        assertTrue(IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
-        // // check shares amount of this contract after redeem
-        // assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
+        // check shares amount of this contract after redeem
+        assertEq(multiPoolStrategy.balanceOf(address(this)), sharesBalanceOfThisPre - shares);
     }
 
     // TODO! Add further funcctionality for LP-tokens
