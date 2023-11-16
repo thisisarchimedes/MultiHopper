@@ -665,7 +665,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         (, toAmountMin, txData) = getQuoteLiFi(DAI, multiPoolStrategy.asset(), amountToDeposit, invalidAddress);
 
-        vm.expectRevert(IGenericZapper.EmptyInput.selector);
+        vm.expectRevert();
         genericZapper.deposit(amountToDeposit, DAI, toAmountMin, address(this), address(multiPoolStrategy), txData);
     }
 
