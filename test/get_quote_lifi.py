@@ -3,8 +3,8 @@
 import sys
 import time
 import codecs
-import requests
 from eth_abi import encode
+import requests
 
 API_URL = "https://partner-archimedes.li.quest/v1/quote"
 MAX_RETRIES = 5
