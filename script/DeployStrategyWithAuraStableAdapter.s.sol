@@ -31,6 +31,8 @@ contract DeployAuraStable is BaseScript {
     bytes32 public constant BALANCER_STABLE_POOL_ID = 0;
     uint256 public constant AURA_PID = 0;
     string public constant STRATEGY_NAME = "WETH/rETH Strat";
+    string public constant TOKEN_NAME = "WETH/rETH";
+    string public constant SYMBOL = "WETH/rETH";
     /**
      * @dev Executes the deployment and configuration of the Aura Stable Pool Strategy.
      * It performs the following steps:
@@ -45,8 +47,9 @@ contract DeployAuraStable is BaseScript {
 
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
-        MultiPoolStrategy multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, STRATEGY_NAME));
+        MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, STRATEGY_NAME, TOKEN_NAME, SYMBOL)
+        );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
         AuraStablePoolAdapter AuraPoolAdapter = AuraStablePoolAdapter(
             multiPoolStrategyFactory.createAuraStablePoolAdapter(

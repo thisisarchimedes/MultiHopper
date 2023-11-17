@@ -75,12 +75,14 @@ contract SetupTenderly is Script {
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(this)
+
             );
         console2.log(
             "deployed MultiPoolStrategyFactory contract at address %s with monitor %s", address(factory), MONITOR
         );
-        address multiPoolStrategy = factory.createMultiPoolStrategy(UNDERLYING_TOKEN, "TEST STRAT");
+        address multiPoolStrategy = factory.createMultiPoolStrategy(UNDERLYING_TOKEN, "TEST STRAT", "test", "test");
         console2.log("created MultiPoolStrategy contract at address %s", address(multiPoolStrategy));
         address auraAdapter =
             factory.createAuraStablePoolAdapter(BALANCER_STABLE_POOL_ID, multiPoolStrategy, AURA_STABLE_PID);
@@ -90,7 +92,7 @@ contract SetupTenderly is Script {
         IWETH(payable(WETH)).approve(multiPoolStrategy, type(uint256).max);
         MultiPoolStrategy(multiPoolStrategy).deposit(100e18, MONITOR);
 
-        address multiPoolStrategyConvex = factory.createMultiPoolStrategy(USDC, "TEST STRAT CVX");
+        address multiPoolStrategyConvex = factory.createMultiPoolStrategy(USDC, "TEST STRAT CVX", "test", "test");
         console2.log("created MultiPoolStrategyConvex contract at address %s", address(multiPoolStrategyConvex));
         address convexAdapter = factory.createConvexAdapter(
             CURVE_POOL, multiPoolStrategyConvex, CONVEX_PID, TOKEN_LENGTH, ZAPPER, false, false, 2
@@ -100,7 +102,8 @@ contract SetupTenderly is Script {
         uint256 usdcBal = IERC20(USDC).balanceOf(address(MONITOR));
         IERC20(USDC).approve(multiPoolStrategyConvex, type(uint256).max);
         MultiPoolStrategy(multiPoolStrategyConvex).deposit(usdcBal / 2, MONITOR);
-        address multoPoolStrategyComposable = factory.createMultiPoolStrategy(USDC, "TEST STRAT COMPOSABLE");
+        address multoPoolStrategyComposable =
+            factory.createMultiPoolStrategy(USDC, "TEST STRAT COMPOSABLE", "test", "test");
         console2.log("created MultiPoolStrategyComposable contract at address %s", address(multoPoolStrategyComposable));
         address auraComposableAdapter = factory.createAuraComposableStablePoolAdapter(
             BALANCER_COMPOSABLE_POOL_ID, multoPoolStrategyComposable, AURA_COMPOSABLE_PID

@@ -91,17 +91,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     }
 
     /**
-     *
-     * @param _stakingToken address of the underlying token
-     * @param _monitor  address of the monitor
-     */
-    function initialize(address _stakingToken, address _monitor) public initializer {
-        __Ownable_init_unchained();
-        __ERC20_init_unchained(string(abi.encodePacked("multipool")), string(abi.encodePacked("share")));
-
-        _initialize(_stakingToken, _monitor);
-    }
-    /**
      * @dev Initializes the contract with the provided parameters.
      * @param _stakingToken Address of the staking token.
      * @param _monitor Address of the monitor.
@@ -271,8 +260,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         for (uint256 i = _adjustOuts.length; i > 0;) {
             if (_adjustOuts[i - 1].adapter != address(0)) {
                 IAdapter(_adjustOuts[i - 1].adapter).withdraw(_adjustOuts[i - 1].amount, _adjustOuts[i - 1].minReceive);
-            } else {
-                break;
             }
             unchecked {
                 --i;

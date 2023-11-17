@@ -51,6 +51,8 @@ contract DeployPoolHopperStrategy is Script {
      * @dev Name of the strategy.
      */
     string public constant STRATEGY_NAME = "ETH/xETH Hopper";
+    string public constant TOKEN_NAME = "ETH/xETH Hopper";
+    string public constant SYMBOL = "ETH/xETH Hopper";
 
     function run() external {
         // solhint-disable-previous-line no-empty-blocks
@@ -77,7 +79,9 @@ contract DeployPoolHopperStrategy is Script {
 
         // create the MultiPoolStrategy contract for the underlying asset
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME, SYMBOL
+            )
         );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
 
