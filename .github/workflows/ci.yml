@@ -104,10 +104,6 @@ jobs:
 
       - name: "Prepare Python environment"
         run: |
-          pip3 install --upgrade pip
-          pip3 install virtualenv 
-          python3 -m venv venv
-          source venv/bin/activate
           pip3 install -r requirements.txt --no-build-isolation
           pip3 install web3 --no-build-isolation
           pip3 install eth-abi --no-build-isolation
