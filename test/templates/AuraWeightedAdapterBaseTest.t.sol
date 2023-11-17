@@ -6,40 +6,40 @@ pragma solidity >=0.8.19 <0.9.0;
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
+
 import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
 import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { ETHZapper } from "../../src/ETHZapper.sol";
 import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
-import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
-import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 /// @title AuraWeightedPoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged Aura pool (WETH/rETH) with native ETH input from user using zapper
-contract AuraWeightedPoolAdapterInputETHAURATest is PRBTest, StdCheats {
+contract AuraWeightedPoolAdapterBaseTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
     AuraWeightedPoolAdapter auraWeightedPoolAdapter;
     ETHZapper ethZapper;
     address public staker = makeAddr("staker");
     ///CONSTANTS
-    address constant UNDERLYING_ASSET = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant AURA_BOOSTER = 0x1204f5060bE8b716F5A62b4Df4cE32acD01a69f5;
+    address public UNDERLYING_ASSET;
+    address public  AURA_BOOSTER;
     /// POOL CONSTANTS
-    bytes32 public constant BALANCER_WEIGHTED_POOL_ID =
-        0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274;
-    uint256 public constant AURA_PID = 100;
+    bytes32 public  BALANCER_WEIGHTED_POOL_ID;
+    uint256 public  AURA_PID;
 
-    string public constant SALT = "G231003";
-    string public constant STRATEGY_NAME = "Aura Guard";
-    string public constant TOKEN_NAME = "psp.WETH:AURA";
+    string public  SALT;
+    string public  STRATEGY_NAME;
+    string public  TOKEN_NAME;
 
-    uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_272_273;
-    uint256 tokenDecimals;
+    uint256 public forkBlockNumber;
+    uint256 public DEFAULT_FORK_BLOCK_NUMBER;
+    uint256 public tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests
     function getQuoteLiFi(

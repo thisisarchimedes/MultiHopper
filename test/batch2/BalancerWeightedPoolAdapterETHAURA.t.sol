@@ -334,3 +334,4 @@ contract BalancerWeightedPoolAdapterETHAURA is PRBTest, StdCheats {
         assertAlmostEq(stakerWethBalance, withdrawAmount, withdrawAmount * 300 / 10_000); // %3 slippage
     }
 }
+

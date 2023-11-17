@@ -357,3 +357,4 @@ contract ConvexPoolAdapterFRAXBPalUSDPGenericTest is PRBTest, StdCheats {
         ); // %1 margin of error
     }
 }
+

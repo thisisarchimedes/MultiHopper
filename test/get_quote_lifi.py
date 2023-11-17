@@ -7,6 +7,7 @@ from eth_abi import encode
 API_URL = "https://partner-archimedes.li.quest/v1/quote"
 MAX_RETRIES = 5
 
+
 def get_quote(
     srcToken,
     dstToken,
@@ -22,11 +23,12 @@ def get_quote(
         "toToken": dstToken,
         "fromAmount": amount,
         "fromAddress": fromAddress,
+        "slippage": 0.99
     }
 
     for retry in range(MAX_RETRIES):
         resp = requests.get(API_URL, params=queryParams)
-        
+
         # Check if the status code is 200 (OK)
         if resp.status_code == 200:
             # Request was successful, break the loop
@@ -39,26 +41,21 @@ def get_quote(
             time.sleep(5)  # Wait for a few seconds before retrying
 
         if retry == MAX_RETRIES - 1:
-            raise Exception(format(f"Max retries reached. {resp.text}, code: {resp.status_code}"))
-    
+            raise Exception(
+                format(f"Max retries reached. {resp.text}, code: {resp.status_code}"))
+
     resp = resp.json()
 
     encodeTypes = ["uint256"]
     encodeData = [int(resp["estimate"]["toAmount"])]
 
-    if returnToAmountMin!=False:
+    if returnToAmountMin != False:
         encodeTypes.append("uint256")
         encodeData.append(int(resp["estimate"]["toAmountMin"]))
-    
-    encodeTypes.append("bytes")
-    encodeData.append(codecs.decode(resp['transactionRequest']['data'][2:], 'hex_codec'))
 
-    data = encode(
-        encodeTypes,
-        encodeData,
-    ).hex()
-    
-    print("0x" + str(data))
+    encodeTypes.append("bytes")
+    encodeData.append(codecs.decode(
+        resp['transactionRequest']['data'][2:], 'hex_codec'))
 
 
 def main():

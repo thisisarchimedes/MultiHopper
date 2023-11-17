@@ -452,3 +452,4 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         assertEq(strategyAsset, multiPoolStrategy.asset());
     }
 }
+

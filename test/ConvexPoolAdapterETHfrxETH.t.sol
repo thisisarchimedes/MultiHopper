@@ -369,3 +369,4 @@ contract ConvexPoolAdapterGenericTest is PRBTest, StdCheats {
         ); // %1 margin of error
     }
 }
+

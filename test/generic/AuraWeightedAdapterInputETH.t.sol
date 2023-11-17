@@ -6,16 +6,18 @@ pragma solidity >=0.8.19 <0.9.0;
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
-import { MultiPoolStrategyFactory } from "../src/MultiPoolStrategyFactory.sol";
-import { IBaseRewardPool } from "../src/interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { ETHZapper } from "../src/ETHZapper.sol";
-import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
-import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
-import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import { IBooster } from "../src/interfaces/IBooster.sol";
+
+import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
+import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
+import { ETHZapper } from "../../src/ETHZapper.sol";
+import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
+import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
+import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
+import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
+
 
 /// @title AuraWeightedPoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged Aura pool (WETH/rETH) with native ETH input from user using zapper

@@ -1356,3 +1356,4 @@ contract ERC20Hackable is ERC20("Hackable", "HACK") {
         return super.transferFrom(from, to, amount);
     }
 }
+

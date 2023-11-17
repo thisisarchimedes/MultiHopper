@@ -1,23 +1,28 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
+import "forge-std/console.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
 import { ConvexPoolAdapter } from "../../src/ConvexPoolAdapter.sol";
 import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
-import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
+contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
+    using SafeERC20 for IERC20;
+
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
     ConvexPoolAdapter convexGenericAdapter;
@@ -30,59 +35,59 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
      * @dev Address of the underlying token used in the integration.
      * default: WETH
      */
-    address constant UNDERLYING_ASSET = 0x853d955aCEf822Db058eb8505911ED77F175b99e; // FRAX
+    address public UNDERLYING_ASSET;
 
     /**
      * @dev Address of the Convex booster contract.
      * default: https://etherscan.io/address/0xF403C135812408BFbE8713b5A23a04b3D48AAE31
      */
-    address public constant CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
+    address public CONVEX_BOOSTER;
 
     /**
      * @dev Address of the Curve pool used in the integration.
-     * default: ETH/msETH Curve pool
      */
-    address public constant CURVE_POOL_ADDRESS = 0xaE34574AC03A15cd58A92DC79De7B1A0800F1CE3;
+    address public CURVE_POOL_ADDRESS; 
 
     /**
      * @dev Convex pool ID used in the integration.
      * default: ETH/msETH Curve pool PID
      */
-    uint256 public constant CONVEX_PID = 169;
+    uint256 public CONVEX_PID;
 
     /**
      * @dev Name of the strategy.
      */
-    string public constant STRATEGY_NAME = "FRAX/USDP Strat";
-
+    string public SALT;
+    string public STRATEGY_NAME; 
+    string public TOKEN_NAME;
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
      */
-    bool constant USE_ETH = false;
+    bool public USE_ETH ;
 
     /**
      * @dev The index of the strategies underlying asset in the pool tokens array
      * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
      */
-    int128 constant CURVE_POOL_TOKEN_INDEX = 0;
+    int128 public CURVE_POOL_TOKEN_INDEX ;
 
     /**
      * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
      */
-    bool constant IS_INDEX_UINT = false;
+    bool public IS_INDEX_UINT ;
 
     /**
-     * @dev the amount of tokens used in this pool , e.g. 2 for ETH/alETH
+     * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
      */
-    uint256 constant POOL_TOKEN_LENGTH = 2;
+    uint256 public POOL_TOKEN_LENGTH;
 
     /**
      * @dev address of zapper for pool if needed
      */
-    address constant ZAPPER = address(0);
+    address ZAPPER = address(0);
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_485;
+    uint256 public DEFAULT_FORK_BLOCK_NUMBER = 17_637_585;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(
@@ -102,6 +107,9 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
         inputs[4] = vm.toString(amount);
         inputs[5] = vm.toString(fromAddress);
 
+        // bytes memory funcResult = vm.ffi(inputs);
+        // console.logBytes(funcResult);
+
         return abi.decode(vm.ffi(inputs), (uint256, bytes));
     }
 
@@ -110,7 +118,7 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
     }
 
     function harvest(uint256 _depositAmount) internal {
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), _depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), _depositAmount);
         multiPoolStrategy.deposit(_depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 wethBalanceOfMultiPool = IERC20(UNDERLYING_ASSET).balanceOf(address(multiPoolStrategy));
@@ -130,7 +138,6 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
 
         vm.warp(block.timestamp + 10 weeks);
 
-        /// ETH PETH REWARD DATA
         ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
 
         assertGt(rewardData[0].amount, 0); // expect some CRV rewards
@@ -162,17 +169,20 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
         ProxyAdmin proxyAdmin = new ProxyAdmin();
+
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation,address(proxyAdmin)
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
+
         multiPoolStrategy = MultiPoolStrategy(
             multiPoolStrategyFactory.createMultiPoolStrategy(
-                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
+                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME
             )
         );
         convexGenericAdapter = ConvexPoolAdapter(
@@ -201,7 +211,7 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
 
     function testDeposit() public {
         getBlockNumber();
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), 500 * 10 ** tokenDecimals);
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), address(multiPoolStrategy), type(uint256).max);
         multiPoolStrategy.deposit(500 * 10 ** tokenDecimals, address(this));
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
         assertEq(storedAssets, 500 * 10 ** tokenDecimals);
@@ -210,7 +220,7 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
     function testAdjustIn() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
         console2.log("dep amount", depositAmount);
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         uint256 curveLPBalance = curveLpToken.balanceOf(address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
@@ -224,7 +234,6 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
 
         uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-
         uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
         assertEq(storedAssetsBefore, depositAmount);
         assertEq(storedAssetsAfter, storedAssetsBefore - adjustInAmount);
@@ -232,7 +241,7 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
 
     function testAdjustOut() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustInAmount = depositAmount * 94 / 100;
@@ -265,7 +274,7 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
 
     function testWithdraw() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adapterAdjustAmount = depositAmount * 94 / 100; // %94
@@ -296,7 +305,7 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
 
     function testClaimRewards() public {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustInAmount = depositAmount * 94 / 100;
@@ -320,9 +329,14 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
         uint256 totalCrvRewards = rewardData[0].amount;
         (uint256 quote, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
+
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
+
+        console.logBytes(txData);
+        console.log("block number", block.number);
+
         uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         multiPoolStrategy.doHardWork(adapters, swapDatas);
         uint256 wethBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
@@ -334,11 +348,11 @@ contract ConvexPoolAdapterFRAXUSDPenericTest is PRBTest, StdCheats {
     function testWithdrawExceedContractBalance() public {
         uint256 depositAmount = 100 * 10 ** tokenDecimals;
         vm.startPrank(staker);
-        IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount / 2);
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount / 2);
         multiPoolStrategy.deposit(depositAmount / 2, address(staker));
         vm.stopPrank();
         harvest(depositAmount);
-        vm.warp(block.timestamp + 10 days);
+        vm.warp(block.timestamp + 14 days);
         uint256 stakerShares = multiPoolStrategy.balanceOf(staker);
         uint256 withdrawAmount = multiPoolStrategy.convertToAssets(stakerShares);
         uint256 stakerUnderlyingBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(staker));
