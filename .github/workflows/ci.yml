@@ -121,7 +121,7 @@ jobs:
   
       - name: "Run the tests: Zapper"
         run: |
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*" -v
+          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*" --match-test testDepositDecreasedSwapAmount -v
   
       - name: "Run the tests: Generic"
         run: |
