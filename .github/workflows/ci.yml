@@ -117,6 +117,7 @@ jobs:
       - name: Set PYTHONPATH
         run: |
           echo "PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE:/test:$GITHUB_WORKSPACE:/script" >> $GITHUB_ENV
+          export PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE:/test:$GITHUB_WORKSPACE:/script
   
       - name: "Run the tests: Generic"
         run: |
