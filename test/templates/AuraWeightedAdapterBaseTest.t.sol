@@ -8,6 +8,7 @@ import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
 import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
@@ -63,7 +64,7 @@ contract AuraWeightedPoolAdapterBaseTest is PRBTest, StdCheats {
     //// get current block number using a python script that gets the latest number and substracts 10 blocks  | this
     // method lives on all tests
 
-     function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
@@ -85,18 +86,21 @@ contract AuraWeightedPoolAdapterBaseTest is PRBTest, StdCheats {
         address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
         address AuraWeightedPoolAdapterImplementation = address(new AuraWeightedPoolAdapter());
         address AuraComposableWeightedPoolAdapterImplementation = address(0);
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             auraWeightedPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraWeightedPoolAdapterImplementation,
-            AuraComposableWeightedPoolAdapterImplementation
+            AuraComposableWeightedPoolAdapterImplementation,
+            address(proxyAdmin)
             );
-        multiPoolStrategy =
-            MultiPoolStrategy(
-                multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
-            );
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME
+            )
+        );
 
         auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(

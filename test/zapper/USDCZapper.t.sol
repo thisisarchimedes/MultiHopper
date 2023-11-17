@@ -13,12 +13,14 @@ import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { USDCZapper } from "../../src/zapper/USDCZapper.sol";
 import { ERC20Hackable } from "../../src/test/ERC20Hackable.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 public constant DEFAULT_FORK_BLOCK_NUMBER = 17_886_763;
     uint256 public constant ETHER_DECIMALS = 18;
 
-    address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet, underlying asset
+    address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet, underlying
+        // asset
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT - mainnet
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI - mainnet
     address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e; // FRAX - mainnet
@@ -63,7 +65,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 public tokenDecimals;
 
     function setUp() public virtual {
-        vm.createSelectFork({urlOrAlias: "mainnet", blockNumber: DEFAULT_FORK_BLOCK_NUMBER});
+        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: DEFAULT_FORK_BLOCK_NUMBER });
 
         usdcZapper = new USDCZapper();
 
@@ -72,18 +74,21 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
-
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
             );
 
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "Generic MultiPool Strategy")
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
+            )
         );
 
         convex3PoolAdapter = ConvexPoolAdapter(
@@ -333,7 +338,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         ERC20Hackable erc20Hackable = new ERC20Hackable(usdcZapper, address(multiPoolStrategy));
 
         usdcZapper.addAsset(
-            address(erc20Hackable), USDCZapper.AssetInfo({pool: CURVE_3POOL, index: 0, isLpToken: false})
+            address(erc20Hackable), USDCZapper.AssetInfo({ pool: CURVE_3POOL, index: 0, isLpToken: false })
         );
 
         vm.expectRevert("ReentrancyGuard: reentrant call");
@@ -377,7 +382,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     function testDepositRevertPoolDoesNotExist() public {
-        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({pool: address(0), index: 0, isLpToken: false}));
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({ pool: address(0), index: 0, isLpToken: false }));
 
         vm.expectRevert(IZapper.PoolDoesNotExist.selector);
         usdcZapper.deposit(1, USDT, 0, address(this), address(multiPoolStrategy));
@@ -425,7 +430,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawUSDT, withdrawnAmount, withdrawnAmount / 100);
         // check usdt amount of this contract after withdraw
         assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -477,7 +483,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawUSDT, withdrawnAmount, withdrawnAmount / 100);
         // check usdt amount of this contract after withdraw
         assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -531,7 +538,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawDAI, withdrawnAmount, withdrawnAmount / 100);
         // check usdt amount of this contract after withdraw
         assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -583,7 +591,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawDAI, withdrawnAmount, withdrawnAmount / 100);
         // check DAI amount of this contract after withdraw
         assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -634,7 +643,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawFRAX, withdrawnAmount, withdrawnAmount / 100);
         // check frax amount of this contract after withdraw
         assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -686,7 +696,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawFRAX, withdrawnAmount, withdrawnAmount / 100);
         // check FRAX amount of this contract after withdraw
         assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -738,7 +749,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawCRV, withdrawnAmount, withdrawnAmount / 100);
         // check CRV amount of this contract after withdraw
         assertEq(IERC20(CRV).balanceOf(address(this)), crvBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -791,7 +803,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawCRV, withdrawnAmount, withdrawnAmount / 100);
         // check CRV amount of this contract after withdraw
         assertEq(IERC20(CRV).balanceOf(address(this)), crvBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -844,7 +857,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawCRVFRAX, withdrawnAmount, withdrawnAmount / 100);
         // check CRV amount of this contract after withdraw
         assertEq(IERC20(CRVFRAX).balanceOf(address(this)), crvfraxBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -898,7 +912,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
         assertAlmostEq(amountToWithdrawCRVFRAX, withdrawnAmount, withdrawnAmount / 100);
         // check CRV amount of this contract after withdraw
         assertEq(IERC20(CRVFRAX).balanceOf(address(this)), crvfraxBalanceOfThisPre + withdrawnAmount);
-        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal amount
+        // check usdc amount of multipool strategy after withdraw, difference should be less than 1% of with withdrawal
+        // amount
         assertAlmostEq(
             multiPoolStrategy.storedTotalAssets(),
             storedTotalAssetsAfterDeposit - amountToWithdrawUSDC,
@@ -947,7 +962,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     function testWithdrawRevertPoolDoesNotExist() public {
-        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({pool: address(0), index: 0, isLpToken: false}));
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({ pool: address(0), index: 0, isLpToken: false }));
 
         vm.expectRevert(IZapper.PoolDoesNotExist.selector);
         usdcZapper.withdraw(1, USDT, 0, address(this), address(multiPoolStrategy));
@@ -1177,7 +1192,7 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     function testRedeemRevertPoolDoesNotExist() public {
-        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({pool: address(0), index: 0, isLpToken: false}));
+        usdcZapper.updateAsset(USDT, USDCZapper.AssetInfo({ pool: address(0), index: 0, isLpToken: false }));
 
         vm.expectRevert(IZapper.PoolDoesNotExist.selector);
         usdcZapper.redeem(1, USDT, 0, address(this), address(multiPoolStrategy));

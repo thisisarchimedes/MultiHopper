@@ -11,6 +11,7 @@ import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
 import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
 import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
 import { AuraComposableStablePoolAdapter } from "src/AuraComposableStablePoolAdapter.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { console2 } from "forge-std/console2.sol";
 /// @dev See the Solidity Scripting tutorial: https://book.getfoundry.sh/tutorials/solidity-scripting
 
@@ -37,13 +38,15 @@ contract DeployFactory is Script {
         address AuraWeightedPoolAdapterImplementation = address(new AuraWeightedPoolAdapter());
         address AuraStablePoolAdapterImplementation = address(new AuraStablePoolAdapter());
         address AuraComposableStablePoolAdapterImplementation = address(new AuraComposableStablePoolAdapter());
+        address proxyAdmin = address(new ProxyAdmin());
         factory = new MultiPoolStrategyFactory(
             MONITOR,
             ConvexPoolAdapterImplementation,
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation
+            AuraComposableStablePoolAdapterImplementation,
+            proxyAdmin
             );
         console2.log(
             "deployed MultiPoolStrategyFactory contract at address %s with monitor %s", address(factory), MONITOR
