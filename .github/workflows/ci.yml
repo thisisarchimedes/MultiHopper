@@ -108,10 +108,10 @@ jobs:
           pip3 install virtualenv 
           python3 -m venv venv
           source venv/bin/activate
-          pip3 install -r requirements.txt
-          pip3 install web3
-          pip3 install eth-abi
-          pip3 install requests
+          pip3 install -r requirements.txt --no-build-isolation
+          pip3 install web3 --no-build-isolation
+          pip3 install eth-abi --no-build-isolation
+          pip3 install requests --no-build-isolation
           export API_KEY_ALCHEMY=$API_KEY_ALCHEMY
 
       - name: Set PYTHONPATH
