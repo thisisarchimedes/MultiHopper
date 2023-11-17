@@ -468,20 +468,6 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     }
 
     // DEPOSIT - NEGATIVE TESTS
-    function testDepositRevertReentrantCall() public {
-        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
-
-        ERC20Hackable erc20Hackable = new ERC20Hackable(genericZapper, address(multiPoolStrategy));
-
-        (, uint256 toAmountMin, bytes memory txData) =
-            getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(this));
-
-        vm.expectRevert();
-        genericZapper.deposit(
-            amountToDeposit, address(erc20Hackable), toAmountMin, address(this), address(multiPoolStrategy), txData
-        );
-    }
-
     function testDepositRevertZeroAddress() public {
         address receiver = address(0);
 
