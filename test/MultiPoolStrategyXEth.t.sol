@@ -13,6 +13,7 @@ import { IBooster } from "../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../src/interfaces/ICurvePool.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
+import { ITransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract MultiPoolStrategyTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
@@ -20,6 +21,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
     ConvexPoolAdapter convexEthPEthAdapter;
     ConvexPoolAdapter convexEthMsEthAdapter;
     ConvexPoolAdapter convexEthAlEthAdapter;
+    ProxyAdmin proxyAdmin;
 
     address public staker = makeAddr("staker");
     address public monitor = makeAddr("monitor");
@@ -132,7 +134,7 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        proxyAdmin = new ProxyAdmin();
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             monitor,
             ConvexPoolAdapterImplementation,
@@ -440,5 +442,13 @@ contract MultiPoolStrategyTest is PRBTest, StdCheats {
         assertAlmostEq(
             wethBalanceAfterWithdraw - wethBalanceBeforeWithdraw, withdrawAmount, (withdrawAmount * 50 / 10_000)
         );
+    }
+
+    function testUpgradeablity() external {
+        ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(payable(address(multiPoolStrategy)));
+        address strategyAsset = multiPoolStrategy.asset();
+        address newImplementetion = address(new MultiPoolStrategy());
+        proxyAdmin.upgrade(proxy, newImplementetion);
+        assertEq(strategyAsset, multiPoolStrategy.asset());
     }
 }

@@ -260,8 +260,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         for (uint256 i = _adjustOuts.length; i > 0;) {
             if (_adjustOuts[i - 1].adapter != address(0)) {
                 IAdapter(_adjustOuts[i - 1].adapter).withdraw(_adjustOuts[i - 1].amount, _adjustOuts[i - 1].minReceive);
-            } else {
-                break;
             }
             unchecked {
                 --i;
