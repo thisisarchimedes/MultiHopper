@@ -212,3 +212,4 @@ contract AuraStablePoolAdapter is AuraAdapterBase {
         revert("STABLE_INVARIANT_DIDNT_CONVERGE");
     }
 }
+
