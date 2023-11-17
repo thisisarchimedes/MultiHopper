@@ -16,7 +16,7 @@ import { ERC20Hackable } from "../../src/test/ERC20Hackable.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
-    uint256 public constant DEFAULT_FORK_BLOCK_NUMBER = 17_886_763;
+    uint256 public constant DEFAULT_FORK_BLOCK_NUMBER = 18_593_713;
     uint256 public constant ETHER_DECIMALS = 18;
 
     address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet, underlying

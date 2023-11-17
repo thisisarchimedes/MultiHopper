@@ -22,7 +22,7 @@ contract ConvexPoolAdapterETHOETHGenericTest is ConvexPoolAdapterBaseTest {
         POOL_TOKEN_LENGTH = 2;
         ZAPPER = address(0);
     
-        DEFAULT_FORK_BLOCK_NUMBER = 17_637_585;
+        DEFAULT_FORK_BLOCK_NUMBER = 18_593_713;
 
     }
     
