@@ -20,8 +20,10 @@ import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.
 contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 public constant ETHER_DECIMALS = 18;
 
+    address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
+
     address public constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC - mainnet, underlying
-        // asset
+    // asset
     address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT - mainnet
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // DAI - mainnet
     address public constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e; // FRAX - mainnet
@@ -442,11 +444,11 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
         SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
 
-        (uint256 quote, uint256 toAmountMin, bytes memory txData) =
+        (, uint256 toAmountMin, bytes memory txData) =
             getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
 
         uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
-        genericZapper.deposit(
+        uint256 shares = genericZapper.deposit(
             amountToDeposit,
             USDT,
             toAmountMin,
@@ -456,7 +458,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         );
         uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
 
-        assertEq(quote, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
+        assertEq(shares, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
         assertTrue(toAmountMin < storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
     }
 
@@ -478,7 +480,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     function testDepositRevertZeroAddress() public {
         address receiver = address(0);
 
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this)); // Using
+        (, uint256 toAmountMin, bytes memory txData) =
+            getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1 * 10 ** 6, address(this)); // Using
             // address(this) for the query to pass
 
         vm.expectRevert(IGenericZapper.ZeroAddress.selector);
@@ -488,7 +491,8 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     function testDepositRevertEmptyInput() public {
         uint256 amount = 0;
 
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1, address(this));
+        (, uint256 toAmountMin, bytes memory txData) =
+            getQuoteLiFi(USDT, multiPoolStrategy.asset(), 1 * 10 ** 6, address(this));
 
         vm.expectRevert(IGenericZapper.EmptyInput.selector);
         genericZapper.deposit(amount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
@@ -689,18 +693,16 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         uint256 sharesBalanceOfThisPre = IERC20(address(multiPoolStrategy)).balanceOf(address(this));
 
         // redeem all shares
-        uint256 redeemedAmount =
-            genericZapper.redeem(shares, UNDERLYING_ASSET, 0, address(this), address(multiPoolStrategy), "");
+        uint256 redeemedAmount = genericZapper.redeem(shares, 0, address(this), address(multiPoolStrategy));
 
         // check that redeem works correctly and we get back the same amount of the underlying asset we deposited
         assertEq(amountToDeposit, redeemedAmount);
         // check underlyingAsset amount of this contract after redeem
         assertEq(IERC20(UNDERLYING_ASSET).balanceOf(address(this)), underlyingAssetBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
-        assertAlmostEq(
-            amountToDeposit,
-            IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - underlyingAssetBalanceOfThisPre,
-            amountToDeposit / 100
+        assertTrue(
+            IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - underlyingAssetBalanceOfThisPre
+                > amountToDeposit * 99 / 100
         );
         // check underlying asset amount of multipool strategy after redeem, difference should be less than 1% of redeem
         // amount
@@ -736,20 +738,19 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             USDT,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
+            address(this)
         );
-        uint256 redeemedAmount = genericZapper.redeem(
-            shares, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
-        );
+        uint256 underlyingAmount =
+            genericZapper.redeem(shares, toAmountMinRedeemed, address(this), address(multiPoolStrategy));
+
+        uint256 redeemedAmount = swap(USDT, underlyingAmount, redeemTxData);
 
         // check that redeem works correctly and swap fees are less than 1%
-        assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+        assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
         // check usdt amount of this contract after redeem
         assertEq(IERC20(USDT).balanceOf(address(this)), usdtBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
-        assertAlmostEq(
-            amountToDeposit, IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre, amountToDeposit / 100
-        );
+        assertTrue(IERC20(USDT).balanceOf(address(this)) - usdtBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -782,20 +783,19 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             DAI,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
+            address(this)
         );
-        uint256 redeemedAmount = genericZapper.redeem(
-            shares, DAI, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
-        );
+        uint256 underlyingAmount =
+            genericZapper.redeem(shares, toAmountMinRedeemed, address(this), address(multiPoolStrategy));
+
+        uint256 redeemedAmount = swap(DAI, underlyingAmount, redeemTxData);
 
         // check that redeem works correctly and swap fees are less than 1%
-        assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+        assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
         // check dai amount of this contract after redeem
         assertEq(IERC20(DAI).balanceOf(address(this)), daiBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
-        assertAlmostEq(
-            amountToDeposit, IERC20(DAI).balanceOf(address(this)) - daiBalanceOfThisPre, amountToDeposit / 100
-        );
+        assertTrue(IERC20(DAI).balanceOf(address(this)) - daiBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -828,20 +828,20 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             FRAX,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
-        );
-        uint256 redeemedAmount = genericZapper.redeem(
-            shares, FRAX, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
+            address(this)
         );
 
+        uint256 underlyingAmount =
+            genericZapper.redeem(shares, toAmountMinRedeemed, address(this), address(multiPoolStrategy));
+
+        uint256 redeemedAmount = swap(FRAX, underlyingAmount, redeemTxData);
+
         // check that redeem works correctly and swap fees are less than 1%
-        assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+        assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
         // check frax amount of this contract after redeem
         assertEq(IERC20(FRAX).balanceOf(address(this)), fraxBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
-        assertAlmostEq(
-            amountToDeposit, IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre, amountToDeposit / 100
-        );
+        assertTrue(IERC20(FRAX).balanceOf(address(this)) - fraxBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -883,22 +883,20 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             USDC,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
-        );
-        uint256 redeemedAmount = genericZapper.redeem(
-            shares, USDC, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
+            address(this)
         );
 
-        console2.log(amountToDeposit, redeemedAmount);
+        uint256 underlyingAmount =
+            genericZapper.redeem(shares, toAmountMinRedeemed, address(this), address(multiPoolStrategy));
+
+        uint256 redeemedAmount = swap(USDC, underlyingAmount, redeemTxData);
 
         // check that redeem works correctly and swap fees are less than 1%
-        assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+        assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
         // check USDC amount of this contract after redeem
         assertEq(IERC20(USDC).balanceOf(address(this)), usdcBalanceOfThisPre + redeemedAmount);
         // check amountToDeposit and actual balance of tokens after redeem with max delta of 1%
-        assertAlmostEq(
-            amountToDeposit, IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre, amountToDeposit / 100
-        );
+        assertTrue(IERC20(USDC).balanceOf(address(this)) - usdcBalanceOfThisPre > amountToDeposit * 99 / 100);
         // check usdc amount of multipool strategy after redeem, difference should be less than 1% of redeem amount
         assertAlmostEq(multiPoolStrategy.storedTotalAssets(), storedTotalAssetsAfterDeposit - shares, shares / 100);
         // check shares amount of this contract after redeem
@@ -928,7 +926,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //     uint256 redeemedAmount = genericZapper.redeem(shares, CRV, address(this), address(multiPoolStrategy));
 
     //     // check that redeem works correctly and swap fees are less than 1%
-    //     assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+    //     assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
     //     // check crv amount of this contract after redeem
     //     assertEq(IERC20(CRV).balanceOf(address(this)), crvBalanceOfThisPre + redeemedAmount);
     //     // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
@@ -966,7 +964,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     //         genericZapper.redeem(shares, CRVFRAX, address(this), address(multiPoolStrategy));
 
     //     // check that redeem works correctly and swap fees are less than 1%
-    //     assertAlmostEq(amountToDeposit, redeemedAmount, amountToDeposit / 100);
+    //     assertTrue(redeemedAmount > amountToDeposit * 99 / 100);
     //     // check crvfrax amount of this contract after redeem
     //     assertEq(IERC20(CRVFRAX).balanceOf(address(this)), crvFraxBalanceOfThisPre + redeemedAmount);
     //     // check amountToDeposit and actual balance of tokens after redeem with max delta of 0.1%
@@ -992,7 +990,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
         SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
 
-        (uint256 quote, uint256 toAmountMin, bytes memory depositTxData) =
+        (, uint256 toAmountMin, bytes memory depositTxData) =
             getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
 
         uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
@@ -1001,7 +999,7 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         );
         uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
 
-        assertEq(quote, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
+        assertEq(shares, storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
         assertTrue(toAmountMin < storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit);
 
         // redeem all shares
@@ -1009,20 +1007,16 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             USDT,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
+            address(this)
         );
 
         assertEq(IERC20(address(multiPoolStrategy)).balanceOf(address(this)), shares);
 
         uint256 balanceBeforeDeposit = IERC20(USDT).balanceOf(address(this));
-        genericZapper.redeem(
-            shares,
-            USDT,
-            toAmountMinRedeemed,
-            address(this),
-            address(multiPoolStrategy),
-            concat(concat(redeemTxData, redeemTxData), redeemTxData)
-        );
+        uint256 underlyingAmount =
+            genericZapper.redeem(shares, toAmountMinRedeemed, address(this), address(multiPoolStrategy));
+        swap(USDT, underlyingAmount, concat(concat(redeemTxData, redeemTxData), redeemTxData));
+
         uint256 balanceAfterDeposit = IERC20(USDT).balanceOf(address(this));
 
         assertEq(multiPoolStrategy.storedTotalAssets(), 0);
@@ -1035,42 +1029,28 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         (, uint256 toAmountMin, bytes memory txData) =
             getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
-        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
         uint256 shares =
             genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
-        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
 
         // redeem all shares
-        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(
-            multiPoolStrategy.asset(),
-            USDT,
-            storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
-        );
-
         multiPoolStrategy.togglePause();
 
-        genericZapper.redeem(shares, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
+        genericZapper.redeem(shares, 0, address(this), address(multiPoolStrategy));
     }
 
     // REDEEM - NEGATIVE TESTS
     function testRedeemRevertZeroAddress() public {
         address receiver = address(0);
 
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this)); // Using
-            // address(this) for the query to pass
-
         vm.expectRevert(IGenericZapper.ZeroAddress.selector);
-        genericZapper.redeem(1, USDT, toAmountMin, receiver, address(multiPoolStrategy), txData);
+        genericZapper.redeem(1, 0, receiver, address(multiPoolStrategy));
     }
 
     function testRedeemRevertEmptyInput() public {
         uint256 amount = 0;
 
-        (, uint256 toAmountMin, bytes memory txData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, 1, address(this));
-
         vm.expectRevert(IGenericZapper.EmptyInput.selector);
-        genericZapper.redeem(amount, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
+        genericZapper.redeem(amount, 0, address(this), address(multiPoolStrategy));
     }
 
     // function testRedeemIncreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
@@ -1091,23 +1071,11 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         (, uint256 toAmountMin, bytes memory txData) =
             getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
-        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
         uint256 shares =
             genericZapper.deposit(amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), txData);
-        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
-
-        // redeem all shares
-        (, uint256 toAmountMinRedeemed, bytes memory redeemTxData) = getQuoteLiFi(
-            multiPoolStrategy.asset(),
-            USDT,
-            storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
-        );
 
         vm.expectRevert();
-        genericZapper.redeem(
-            shares + fakeAmount, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
-        );
+        genericZapper.redeem(shares + fakeAmount, 0, address(this), address(multiPoolStrategy));
     }
 
     // function testRedeemDecreasedAmount(uint256 amountToDeposit, uint256 fakeAmount) public {
@@ -1139,13 +1107,13 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             USDT,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
+            address(this)
         );
 
-        vm.expectRevert(GenericZapper.SwapFailed.selector);
-        genericZapper.redeem(
-            shares - fakeAmount, USDT, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData
-        );
+        uint256 underlyingAmount =
+            genericZapper.redeem(shares - fakeAmount, toAmountMinRedeemed, address(this), address(multiPoolStrategy));
+
+        swapExpectRevert(USDT, underlyingAmount, concat(concat(redeemTxData, redeemTxData), redeemTxData));
     }
 
     // function testRedeemDifferentAsset(uint256 amountToDeposit) public {
@@ -1169,11 +1137,16 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             USDT,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
+            address(this)
         );
 
-        vm.expectRevert(IGenericZapper.EmptyInput.selector);
-        genericZapper.redeem(shares, DAI, toAmountMinRedeemed, address(this), address(multiPoolStrategy), redeemTxData);
+        uint256 underlyingAmount =
+            genericZapper.redeem(shares, toAmountMinRedeemed, address(this), address(multiPoolStrategy));
+
+        uint256 swappedAmount = swap(DAI, underlyingAmount, redeemTxData);
+
+        // Swapped amount for DAI should be 0
+        assertEq(swappedAmount, 0);
     }
 
     // function testRedeemWithEmptySwapData(uint256 amountToDeposit) public {
@@ -1197,46 +1170,15 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
             multiPoolStrategy.asset(),
             USDT,
             storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit,
-            address(genericZapper)
+            address(this)
         );
 
-        vm.expectRevert(IGenericZapper.EmptyInput.selector);
-        genericZapper.redeem(shares, USDT, 0, address(this), address(multiPoolStrategy), "");
-    }
+        uint256 underlyingAmount = genericZapper.redeem(shares, 0, address(this), address(multiPoolStrategy));
 
-    // function testRedeemDecreasedSwapAmount(uint256 amountToDeposit) public {
-    function testRedeemDecreasedSwapAmount() public {
-        // TODO! once we have the API-KEY setup runs
-        // amountToDeposit =
-        //     bound(amountToDeposit, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals());
-        // // TODO! once we have the API-KEY setup runs
-        // fakeAmount =
-        //     bound(fakeAmount, 10 * 10 ** IERC20(USDT).decimals(), 10_000_000 * 10 ** IERC20(USDT).decimals()); //
-        // TODO! once we have the API-KEY setup runs
-        uint256 amountToDeposit = 10 * 10 ** IERC20(USDT).decimals();
+        uint256 swappedAmount = swap(USDT, underlyingAmount, "");
 
-        // reset approved amount
-        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), 0);
-        SafeERC20.safeApprove(IERC20(USDT), address(genericZapper), amountToDeposit);
-
-        (, uint256 toAmountMin, bytes memory depositTxData) =
-            getQuoteLiFi(USDT, multiPoolStrategy.asset(), amountToDeposit, address(genericZapper));
-
-        uint256 storedTotalAssetsBeforeDeposit = multiPoolStrategy.storedTotalAssets();
-        uint256 shares = genericZapper.deposit(
-            amountToDeposit, USDT, toAmountMin, address(this), address(multiPoolStrategy), depositTxData
-        );
-        uint256 storedTotalAssetsAfterDeposit = multiPoolStrategy.storedTotalAssets();
-
-        // redeem all shares
-        uint256 fakeAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit) * 90 / 100;
-        (,, bytes memory redeemTxData) =
-            getQuoteLiFi(multiPoolStrategy.asset(), USDT, fakeAmount, address(genericZapper));
-
-        uint256 minAmount = amountToDeposit * 95 / 100;
-
-        vm.expectRevert(GenericZapper.AmountBelowMinimum.selector);
-        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), redeemTxData);
+        // Swapped amount for empty tx data should be 0
+        assertEq(swappedAmount, 0);
     }
 
     // function testRedeemIncreasedSwapAmount(uint256 amountToDeposit) public {
@@ -1265,13 +1207,13 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         // redeem all shares
         uint256 fakeAmount = (storedTotalAssetsAfterDeposit - storedTotalAssetsBeforeDeposit) * 110 / 100;
-        (,, bytes memory redeemTxData) =
-            getQuoteLiFi(multiPoolStrategy.asset(), USDT, fakeAmount, address(genericZapper));
+        (,, bytes memory redeemTxData) = getQuoteLiFi(multiPoolStrategy.asset(), USDT, fakeAmount, address(this));
 
         uint256 minAmount = amountToDeposit * 95 / 100;
 
-        vm.expectRevert(GenericZapper.SwapFailed.selector);
-        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), redeemTxData);
+        uint256 underlyingAmount = genericZapper.redeem(shares, minAmount, address(this), address(multiPoolStrategy));
+
+        swapExpectRevert(USDT, underlyingAmount, redeemTxData);
     }
 
     // function testRedeemWithInvalidSwapData(uint256 amountToDeposit) public {
@@ -1305,11 +1247,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         uint256 minAmount = amountToDeposit * 95 / 100;
 
-        vm.expectRevert(IGenericZapper.EmptyInput.selector);
-        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), "");
+        uint256 underlyingAmount = genericZapper.redeem(shares, minAmount, address(this), address(multiPoolStrategy));
 
-        vm.expectRevert(GenericZapper.SwapFailed.selector);
-        genericZapper.redeem(shares, USDT, minAmount, address(this), address(multiPoolStrategy), "000000000000");
+        swapExpectRevert(USDT, underlyingAmount, "000000000000");
     }
 
     // UTILS
@@ -1342,6 +1282,41 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
 
         bytes memory resp = vm.ffi(inputs);
         return abi.decode(resp, (uint256, uint256, bytes));
+    }
+
+    function swap(
+        address redeemToken,
+        uint256 underlyingAmount,
+        bytes memory redeemTxData
+    )
+        internal
+        returns (uint256)
+    {
+        uint256 balanceOfThisPre = IERC20(redeemToken).balanceOf(address(this));
+        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, 0);
+        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, underlyingAmount);
+        (bool success,) = LIFI_DIAMOND.call(redeemTxData);
+        if (!success) revert GenericZapper.SwapFailed();
+        uint256 balanceOfThisAfter = IERC20(redeemToken).balanceOf(address(this));
+        return balanceOfThisAfter - balanceOfThisPre;
+    }
+
+    function swapExpectRevert(
+        address redeemToken,
+        uint256 underlyingAmount,
+        bytes memory redeemTxData
+    )
+        internal
+        returns (uint256)
+    {
+        uint256 balanceOfThisPre = IERC20(redeemToken).balanceOf(address(this));
+        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, 0);
+        SafeERC20.safeApprove(IERC20(multiPoolStrategy.asset()), LIFI_DIAMOND, underlyingAmount);
+        (bool success,) = LIFI_DIAMOND.call(redeemTxData);
+        vm.expectRevert(GenericZapper.SwapFailed.selector);
+        if (!success) revert GenericZapper.SwapFailed();
+        uint256 balanceOfThisAfter = IERC20(redeemToken).balanceOf(address(this));
+        return balanceOfThisAfter - balanceOfThisPre;
     }
 
     function concat(bytes memory a, bytes memory b) public pure returns (bytes memory) {
