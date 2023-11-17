@@ -121,6 +121,8 @@ jobs:
   
       - name: "Run the tests: Zapper"
         run: |
+          echo "PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE:/test:$GITHUB_WORKSPACE:/script:$GITHUB_WORKSPACE:/test/zapper" >> $GITHUB_ENV
+          export PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE:/test:$GITHUB_WORKSPACE:/script:$GITHUB_WORKSPACE:/test/zapper
           forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*" --match-test testDepositDecreasedSwapAmount -v
   
       - name: "Run the tests: Generic"
