@@ -87,7 +87,8 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     address ZAPPER = address(0);
 
     uint256 forkBlockNumber;
-    uint256 public DEFAULT_FORK_BLOCK_NUMBER = 17_637_585;
+    uint256 public DEFAULT_FORK_BLOCK_NUMBER = 18_593_713;
+
     uint8 tokenDecimals;
 
     function getQuoteLiFi(

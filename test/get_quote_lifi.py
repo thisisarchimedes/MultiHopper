@@ -23,9 +23,7 @@ def get_quote(
         "toToken": dstToken,
         "fromAmount": amount,
         "fromAddress": fromAddress,
-        "slippage": 0.99
     }
-
     for retry in range(MAX_RETRIES):
         resp = requests.get(API_URL, params=queryParams)
 
@@ -39,16 +37,13 @@ def get_quote(
         else:
             # Handle other status codes as needed
             time.sleep(5)  # Wait for a few seconds before retrying
-
         if retry == MAX_RETRIES - 1:
             raise Exception(
                 format(f"Max retries reached. {resp.text}, code: {resp.status_code}"))
 
     resp = resp.json()
-
     encodeTypes = ["uint256"]
     encodeData = [int(resp["estimate"]["toAmount"])]
-
     if returnToAmountMin != False:
         encodeTypes.append("uint256")
         encodeData.append(int(resp["estimate"]["toAmountMin"]))
@@ -56,6 +51,12 @@ def get_quote(
     encodeTypes.append("bytes")
     encodeData.append(codecs.decode(
         resp['transactionRequest']['data'][2:], 'hex_codec'))
+    data = encode(
+        encodeTypes,
+        encodeData,
+    ).hex()
+
+    print("0x" + str(data))
 
 
 def main():

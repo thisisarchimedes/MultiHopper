@@ -34,7 +34,7 @@ contract DeployPoolHopperStrategy is Script {
     AuraStablePoolAdapter auraStablePoolAdapter;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_601_476;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_593_713;
 
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.

@@ -21,7 +21,7 @@ contract AuraWeightedPoolAdapterInputETHAURATest is AuraWeightedPoolAdapterBaseT
         STRATEGY_NAME = "Aura Guard"; 
         TOKEN_NAME = "psp.WETH:AURA";
 
-        DEFAULT_FORK_BLOCK_NUMBER = 18272273;
+        DEFAULT_FORK_BLOCK_NUMBER = 18_593_713;
     }
 
 }

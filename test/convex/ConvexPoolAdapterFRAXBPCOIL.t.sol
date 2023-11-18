@@ -22,7 +22,7 @@ contract ConvexPoolAdapterDOLAFRAXBPGenericTest is ConvexPoolAdapterBaseTest {
         POOL_TOKEN_LENGTH = 3;
         ZAPPER = address(0x5De4EF4879F4fe3bBADF2227D2aC5d0E2D76C895);
     
-        DEFAULT_FORK_BLOCK_NUMBER = 17_637_585;
+        DEFAULT_FORK_BLOCK_NUMBER = 18_593_713;
 
     }
     
