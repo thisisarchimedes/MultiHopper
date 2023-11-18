@@ -4,7 +4,6 @@ import codecs
 import time
 from eth_abi import encode
 
-API_URL = "https://li.quest/v1/quote"
 API_URL = "https://partner-archimedes.li.quest/v1/quote"
 MAX_RETRIES = 5
 
