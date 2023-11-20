@@ -47,9 +47,8 @@ contract DeployAuraStable is BaseScript {
 
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
-        MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, STRATEGY_NAME, TOKEN_NAME, SYMBOL)
-        );
+        MultiPoolStrategy multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, TOKEN_NAME, SYMBOL));
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
         AuraWeightedPoolAdapter AuraPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(

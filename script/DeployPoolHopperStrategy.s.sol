@@ -79,9 +79,7 @@ contract DeployPoolHopperStrategy is Script {
 
         // create the MultiPoolStrategy contract for the underlying asset
         multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(
-                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME, SYMBOL
-            )
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), TOKEN_NAME, SYMBOL)
         );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
 

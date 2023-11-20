@@ -18,7 +18,6 @@ import { GenericZapper } from "../../src/zapper/GenericZapper.sol";
 import { IGenericZapper } from "../../src/interfaces/IGenericZapper.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
 
-
 contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     uint256 public constant ETHER_DECIMALS = 18;
 
@@ -94,8 +93,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
         );
 
         multiPoolStrategy = MultiPoolStrategy(
-             multiPoolStrategyFactory.createMultiPoolStrategy(
-                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME
+            )
         );
 
         convex3PoolAdapter = ConvexPoolAdapter(
@@ -301,9 +301,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     // runs
     function testDepositToUSDTLyingStrategy() public {
         // create a strategy with USDT as an underlying asset
-        multiPoolStrategy =
-            MultiPoolStrategy( multiPoolStrategyFactory.createMultiPoolStrategy(
-                address(IERC20(USDT)), SALT, STRATEGY_NAME, TOKEN_NAME));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(USDT)), STRATEGY_NAME, TOKEN_NAME)
+        );
         SafeERC20.safeApprove(IERC20(address(multiPoolStrategy)), address(genericZapper), type(uint256).max);
 
         // we swap USDC to USDT, here the underlying asset is USDT
@@ -843,9 +843,9 @@ contract GenericZapperTest is PRBTest, StdCheats, StdUtils {
     // runs
     function testRedeemFromUSDTLyingStrategy() public {
         // create a strategy with USDT as an underlying asset
-        multiPoolStrategy =
-            MultiPoolStrategy( multiPoolStrategyFactory.createMultiPoolStrategy(
-                address(IERC20(USDT)), SALT, STRATEGY_NAME, TOKEN_NAME));
+        multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(USDT)), STRATEGY_NAME, TOKEN_NAME)
+        );
         SafeERC20.safeApprove(IERC20(address(multiPoolStrategy)), address(genericZapper), type(uint256).max);
 
         // we swap USDC to USDT, here the underlying asset is USDT

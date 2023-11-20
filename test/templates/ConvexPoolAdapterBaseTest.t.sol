@@ -183,7 +183,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
         multiPoolStrategy = MultiPoolStrategy(
             multiPoolStrategyFactory.createMultiPoolStrategy(
-                address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME
+                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME
             )
         );
         convexGenericAdapter = ConvexPoolAdapter(

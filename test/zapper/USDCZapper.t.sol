@@ -85,11 +85,8 @@ contract USDCZapperTest is PRBTest, StdCheats, StdUtils {
             address(proxyAdmin)
             );
 
-        multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(
-                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
-            )
-        );
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "generic", "generic"));
 
         convex3PoolAdapter = ConvexPoolAdapter(
             payable(

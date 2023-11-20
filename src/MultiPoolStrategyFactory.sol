@@ -56,20 +56,6 @@ contract MultiPoolStrategyFactory is Ownable {
         onlyOwner
         returns (address convexAdapter)
     {
-        convexAdapter = convexAdapterImplementation.cloneDeterministic(
-            keccak256(
-                abi.encodePacked(
-                    _curvePool,
-                    _multiPoolStrategy,
-                    _convexPid,
-                    _tokensLength,
-                    _zapper,
-                    _useEth,
-                    _indexUint,
-                    _underlyingTokenIndex
-                )
-            )
-        );
         bytes memory initData = abi.encodeWithSelector(
             ConvexPoolAdapter.initialize.selector,
             _curvePool,
@@ -81,7 +67,8 @@ contract MultiPoolStrategyFactory is Ownable {
             _indexUint,
             _underlyingTokenIndex
         );
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(convexAdapter,proxyAdmin,initData);
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(convexAdapterImplementation,proxyAdmin,initData);
 
         convexAdapter = address(proxy);
     }
@@ -95,12 +82,10 @@ contract MultiPoolStrategyFactory is Ownable {
         onlyOwner
         returns (address auraAdapter)
     {
-        auraAdapter = auraWeightedAdapterImplementation.cloneDeterministic(
-            keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
-        );
         bytes memory initData =
             abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(auraAdapter,proxyAdmin,initData);
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(auraWeightedAdapterImplementation,proxyAdmin,initData);
         auraAdapter = address(proxy);
     }
 
@@ -113,12 +98,10 @@ contract MultiPoolStrategyFactory is Ownable {
         onlyOwner
         returns (address auraAdapter)
     {
-        auraAdapter = auraStableAdapterImplementation.cloneDeterministic(
-            keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
-        );
         bytes memory initData =
             abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(auraAdapter,proxyAdmin,initData);
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(auraStableAdapterImplementation,proxyAdmin,initData);
         auraAdapter = address(proxy);
     }
 
@@ -131,19 +114,16 @@ contract MultiPoolStrategyFactory is Ownable {
         onlyOwner
         returns (address auraAdapter)
     {
-        auraAdapter = auraComposableStablePoolAdapterImplementation.cloneDeterministic(
-            keccak256(abi.encodePacked(_poolId, _multiPoolStrategy, _auraPid))
-        );
         bytes memory initData =
             abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(auraAdapter,proxyAdmin,initData);
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(auraComposableStablePoolAdapterImplementation,proxyAdmin,initData);
         auraAdapter = address(proxy);
     }
 
     /**
      * @dev Creates and initializes a new MultiPoolStrategy with the given parameters.
      * @param _underlyingToken The token that will be the underlying value asset in the strategy.
-     * @param _salt A unique salt to produce a deterministic address when cloning the strategy.
      * @param _name Name of the strategy.
      * @param _symbol Symbol of the share token for the strategy.
      * @return multiPoolStrategy The address of the newly created MultiPoolStrategy.
@@ -153,7 +133,6 @@ contract MultiPoolStrategyFactory is Ownable {
      */
     function createMultiPoolStrategy(
         address _underlyingToken,
-        string calldata _salt,
         string calldata _name,
         string calldata _symbol
     )
@@ -161,12 +140,10 @@ contract MultiPoolStrategyFactory is Ownable {
         onlyOwner
         returns (address multiPoolStrategy)
     {
-        multiPoolStrategy = multiPoolStrategyImplementation.cloneDeterministic(
-            keccak256(abi.encodePacked(_underlyingToken, monitor, _salt))
-        );
         bytes memory initData =
             abi.encodeWithSelector(MultiPoolStrategy.initialize.selector, _underlyingToken, monitor, _name, _symbol);
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(multiPoolStrategy,proxyAdmin,initData);
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(multiPoolStrategyImplementation,proxyAdmin,initData);
         multiPoolStrategy = address(proxy);
         MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);
     }

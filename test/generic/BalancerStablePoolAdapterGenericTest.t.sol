@@ -121,9 +121,8 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation,address(proxyAdmin)
             );
-        multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat", "generic", "generic")
-        );
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "generic", "generic"));
         auraStablePoolAdapter = AuraStablePoolAdapter(
             multiPoolStrategyFactory.createAuraStablePoolAdapter(
                 BALANCER_STABLE_POOL_ID, address(multiPoolStrategy), AURA_PID

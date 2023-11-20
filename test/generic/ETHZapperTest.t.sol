@@ -19,7 +19,6 @@ import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { ETHZapper } from "../../src/ETHZapper.sol";
 
-
 contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
@@ -116,11 +115,8 @@ contract ConvexPoolAdapterETHZapperTest is PRBTest, StdCheats {
             AuraComposableStablePoolAdapterImplementation,
             address(proxyAdmin)
             );
-        multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(
-                UNDERLYING_ASSET, "Generic MultiPool Strategy", "generic", "generic"
-            )
-        );
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "generic", "generic"));
         convexGenericAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(

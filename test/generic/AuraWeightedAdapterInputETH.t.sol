@@ -18,7 +18,6 @@ import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
 
-
 /// @title AuraWeightedPoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged Aura pool (WETH/rETH) with native ETH input from user using zapper
 contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
@@ -94,9 +93,8 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
             AuraComposableWeightedPoolAdapterImplementation,
             address(proxyAdmin)
             );
-        multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat", "generic", "generic")
-        );
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "generic", "generic"));
         auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(
                 BALANCER_WEIGHTED_POOL_ID, address(multiPoolStrategy), AURA_PID
