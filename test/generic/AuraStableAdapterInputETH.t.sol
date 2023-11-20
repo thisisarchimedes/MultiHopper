@@ -94,9 +94,8 @@ contract AuraStablePoolAdapterInputETHTest is PRBTest, StdCheats {
             AuraComposableStablePoolAdapterImplementation,
             address(proxyAdmin)
             );
-        multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat", "ETHX", "ethx")
-        );
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX", "ethx"));
         auraStablePoolAdapter = AuraStablePoolAdapter(
             multiPoolStrategyFactory.createAuraStablePoolAdapter(
                 BALANCER_STABLE_POOL_ID, address(multiPoolStrategy), AURA_PID

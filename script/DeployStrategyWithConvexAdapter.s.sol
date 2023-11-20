@@ -41,7 +41,7 @@ contract DeployConvex is Script {
      * @dev Address of the Curve pool used in the integration.
      * default: ETH/msETH Curve pool
      */
-    address public constant CURVE_POOL_ADDRESS = address(0); 
+    address public constant CURVE_POOL_ADDRESS = address(0);
 
     /**
      * @dev Convex pool ID used in the integration.
@@ -55,7 +55,6 @@ contract DeployConvex is Script {
     string public constant SALT = "SALT";
     string public constant STRATEGY_NAME = ""; // "AURA Single pool" | "CVX Single Pool";
     string public constant TOKEN_NAME = ""; // Asp + value token + risk token. For example: "AspETHfAURA"
-
 
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
@@ -84,7 +83,7 @@ contract DeployConvex is Script {
     address constant ZAPPER = address(0);
 
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
-    
+
     /**
      * @dev Executes the deployment and configuration of the Convex Pool Strategy.
      * It performs the following steps:
@@ -107,7 +106,9 @@ contract DeployConvex is Script {
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), SALT, STRATEGY_NAME, TOKEN_NAME)
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME
+            )
         );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
         ConvexPoolAdapter convexPoolAdapter = ConvexPoolAdapter(
@@ -137,6 +138,5 @@ contract DeployConvex is Script {
         console2.log("Deploy: success - Name: %s ; Symbol: %s", multiPoolStrategy.name(), multiPoolStrategy.symbol());
 
         vm.stopBroadcast();
-
     }
 }

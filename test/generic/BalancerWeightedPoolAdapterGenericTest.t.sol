@@ -148,9 +148,8 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
             AuraComposableStablePoolAdapterImplementation,
             address(proxyAdmin)
             );
-        multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "ETHX Strat", "generic", "generic")
-        );
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "generic", "generic"));
         auraWeightedPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(
                 BALANCER_WEIGHTED_POOL_ID, address(multiPoolStrategy), AURA_PID

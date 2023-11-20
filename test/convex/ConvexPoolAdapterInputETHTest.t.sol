@@ -139,9 +139,8 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
             AuraComposableStablePoolAdapterImplementation,
             address(proxyAdmin)
             );
-        multiPoolStrategy = MultiPoolStrategy(
-            multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "ETHX Strat", "generic", "generic")
-        );
+        multiPoolStrategy =
+            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "generic", "generic"));
         convexPoolAdapter = ConvexPoolAdapter(
             payable(
                 multiPoolStrategyFactory.createConvexAdapter(
