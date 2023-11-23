@@ -211,11 +211,12 @@ contract ConvexPoolAdapter is Initializable {
         uint256 lpBal = convexRewardPool.balanceOf(address(this));
         if (lpBal == 0) {
             storedUnderlyingBalance = 0;
-        }
-        if (_underlyingBalance >= healthyBalance) {
-            storedUnderlyingBalance = _underlyingBalance - underlyingBal;
         } else {
-            storedUnderlyingBalance -= underlyingBal; // only update with amount that goes out from this adapter
+            if (_underlyingBalance >= healthyBalance) {
+                storedUnderlyingBalance = _underlyingBalance - underlyingBal;
+            } else {
+                storedUnderlyingBalance -= underlyingBal; // only update with amount that goes out from this adapter
+            }
         }
     }
 
