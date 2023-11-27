@@ -8,7 +8,7 @@ certifi==2023.7.22
 charset-normalizer==3.1.0
 crytic-compile==0.3.3
 cytoolz==0.12.1
-eth-abi==4.1.0
+eth-abi==4.2.0
 eth-account==0.9.0
 eth-hash==0.5.2
 eth-keyfile==0.6.1
