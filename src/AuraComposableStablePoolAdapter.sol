@@ -101,12 +101,13 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         uint256 lpBal = auraRewardPool.balanceOf(address(this));
         if (lpBal == 0) {
             storedUnderlyingBalance = 0;
-        }
-        uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
-        if (_underlyingBalance > healthyBalance) {
-            storedUnderlyingBalance = _underlyingBalance - underlyingBal;
         } else {
-            storedUnderlyingBalance -= underlyingBal;
+            uint256 healthyBalance = storedUnderlyingBalance - (storedUnderlyingBalance * healthFactor / 10_000);
+            if (_underlyingBalance > healthyBalance) {
+                storedUnderlyingBalance = _underlyingBalance - underlyingBal;
+            } else {
+                storedUnderlyingBalance -= underlyingBal;
+            }
         }
     }
 
