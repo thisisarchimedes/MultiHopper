@@ -2,7 +2,9 @@
 pragma solidity >=0.8.19 <0.9.0;
 
 import "forge-std/console.sol";
+import "forge-std/StdStorage.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
+
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
@@ -19,9 +21,14 @@ import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { ConvexRewardPoolManipulator } from "../base/ConvexRewardPoolManipulator.t.sol";
 
 contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     using SafeERC20 for IERC20;
+
+    using stdStorage for StdStorage;
+
+    StdStorage stdstore;
 
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
@@ -30,6 +37,10 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
     address public staker = makeAddr("staker");
     address public feeRecipient = makeAddr("feeRecipient");
+
+    address constant CRV_TOKEN_ADDRESS = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address constant CVX_TOKEN_ADDRESS = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+
     ///CONSTANTS
     /**
      * @dev Address of the underlying token used in the integration.
@@ -46,7 +57,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     /**
      * @dev Address of the Curve pool used in the integration.
      */
-    address public CURVE_POOL_ADDRESS; 
+    address public CURVE_POOL_ADDRESS;
 
     /**
      * @dev Convex pool ID used in the integration.
@@ -58,23 +69,23 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
      * @dev Name of the strategy.
      */
     string public SALT;
-    string public STRATEGY_NAME; 
+    string public STRATEGY_NAME;
     string public TOKEN_NAME;
     /**
      * @dev if the pool uses native ETH as base asset e.g. ETH/msETH
      */
-    bool public USE_ETH ;
+    bool public USE_ETH;
 
     /**
      * @dev The index of the strategies underlying asset in the pool tokens array
      * e.g. 0 for ETH/msETH since tokens are [ETH,msETH]
      */
-    int128 public CURVE_POOL_TOKEN_INDEX ;
+    int128 public CURVE_POOL_TOKEN_INDEX;
 
     /**
      * @dev True if the calc_withdraw_one_coin method uses uint256 indexes as parameter (check contract on etherscan)
      */
-    bool public IS_INDEX_UINT ;
+    bool public IS_INDEX_UINT;
 
     /**
      * @dev the amount of tokens used in this pool , e.g. 2 for ETH/msETH
@@ -305,21 +316,12 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     }
 
     function testClaimRewards() public {
-        uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
-        multiPoolStrategy.deposit(depositAmount, address(this));
-        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        uint256 adjustInAmount = depositAmount * 94 / 100;
-        adjustIns[0] =
-            MultiPoolStrategy.Adjust({ adapter: address(convexGenericAdapter), amount: adjustInAmount, minReceive: 0 });
-
-        MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
         adapters[0] = address(convexGenericAdapter);
-        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-        vm.warp(block.timestamp + 1 weeks);
-        IBooster(CONVEX_BOOSTER).earmarkRewards(CONVEX_PID);
-        vm.warp(block.timestamp + 1 weeks);
+
+        (,,, address convexRewardPool,,) = IBooster(CONVEX_BOOSTER).poolInfo(CONVEX_PID);
+
+        utils_writeConvexPoolReward(convexRewardPool, address(convexGenericAdapter), 10_000 * 10 ** 18);
 
         /// ETH PETH REWARD DATA
         ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
@@ -331,12 +333,14 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         (uint256 quote, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
 
+        console2.log("quote", quote);
+
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
 
-        console.logBytes(txData);
-        console.log("block number", block.number);
+        // console.logBytes(txData);
+        // console.log("block number", block.number);
 
         uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         multiPoolStrategy.doHardWork(adapters, swapDatas);
@@ -344,6 +348,16 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         assertEq(crvBalanceAfter, 0);
         assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
+    }
+
+    function utils_writeConvexPoolReward(address pool, address who, uint256 amount) public {
+        stdstore.target(CRV_TOKEN_ADDRESS).sig(IERC20(CRV_TOKEN_ADDRESS).balanceOf.selector).with_key(pool)
+            .checked_write(amount);
+
+        stdstore.target(CVX_TOKEN_ADDRESS).sig(IERC20(CVX_TOKEN_ADDRESS).balanceOf.selector).with_key(pool)
+            .checked_write(amount);
+
+        stdstore.target(pool).sig("rewards(address)").with_key(who).checked_write(amount);
     }
 
     function testWithdrawExceedContractBalance() public {
