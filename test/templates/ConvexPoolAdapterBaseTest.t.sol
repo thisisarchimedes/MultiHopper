@@ -21,7 +21,6 @@ import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
-import { ConvexRewardPoolManipulator } from "../base/ConvexRewardPoolManipulator.t.sol";
 
 contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     using SafeERC20 for IERC20;
@@ -333,8 +332,6 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         (uint256 quote, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
 
-        console2.log("quote", quote);
-
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
@@ -348,6 +345,21 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         uint256 crvBalanceAfter = IERC20(rewardData[0].token).balanceOf(address(multiPoolStrategy));
         assertEq(crvBalanceAfter, 0);
         assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
+    }
+
+    function testDepositHardWorkWithdraw() public {
+        this.testDeposit();
+
+        this.testClaimRewards();
+
+        this.testWithdraw();
+    }
+
+    function testHardWorkDepositWithdraw() public {
+        this.testClaimRewards();
+        this.testDeposit();
+
+        this.testWithdraw();
     }
 
     function utils_writeConvexPoolReward(address pool, address who, uint256 amount) public {
