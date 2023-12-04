@@ -312,16 +312,8 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         uint256 underlyingBalanceInAdapterAfterWithdraw = convexGenericAdapter.underlyingBalance();
         uint256 underlyingBalanceOfThisAfterRedeem = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
 
-        // assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
-        // assertEq(underlyingBalanceInAdapterAfterWithdraw, 0);
-
-        console2.log("underlyingBalanceOfThisBeforeRedeem", underlyingBalanceOfThisBeforeRedeem);
-        console2.log("underlyingBalanceOfThisAfterRedeem", underlyingBalanceOfThisAfterRedeem);
-        console2.log("depositAmount", depositAmount);
-        console2.log(
-            "underlyingBalanceOfThisAfterRedeem - underlyingBalanceOfThisBeforeRedeem",
-            underlyingBalanceOfThisAfterRedeem - underlyingBalanceOfThisBeforeRedeem
-        );
+        assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
+        assertEq(underlyingBalanceInAdapterAfterWithdraw, 0);
         assertAlmostEq(
             underlyingBalanceOfThisAfterRedeem - underlyingBalanceOfThisBeforeRedeem,
             depositAmount,
@@ -366,17 +358,13 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
     function testDepositHardWorkWithdraw() public {
         this.testDeposit();
-
         this.testClaimRewards();
-
         executeWithdrawOnly();
     }
 
     function testHardWorkDepositWithdraw() public {
         this.testClaimRewards();
-
         this.testDeposit();
-
         executeWithdrawOnly();
     }
 
