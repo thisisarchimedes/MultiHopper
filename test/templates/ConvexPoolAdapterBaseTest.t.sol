@@ -388,8 +388,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         uint256 shares = multiPoolStrategy.balanceOf(address(this));
         uint256 underlyingBalanceOfThisBeforeRedeem = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
         multiPoolStrategy.redeem(shares, address(this), address(this), 0);
-        uint256 underlyingBalanceInAdapterAfterWithdraw = convexGenericAdapter.unde
-        rlyingBalance();
+        uint256 underlyingBalanceInAdapterAfterWithdraw = convexGenericAdapter.underlyingBalance();
         uint256 underlyingBalanceOfThisAfterRedeem = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
 
         assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
