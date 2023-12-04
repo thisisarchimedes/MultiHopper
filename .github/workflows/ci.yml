@@ -116,15 +116,15 @@ jobs:
   
       - name: "Run the tests: Generic"
         run: |
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/generic/*" -v
+          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance" --match-path "test/generic/*" -v
 
       - name: "Run the tests: Convex"
         run: |
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/convex/*" -v
+          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance" --match-path "test/convex/*" -v
 
       - name: "Run the tests: Aura"
         run: |
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/aura/*" -v      
+          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance --match-path "test/aura/*" -v      
 
       - name: "Run the tests: Zapper"
         run: |        
