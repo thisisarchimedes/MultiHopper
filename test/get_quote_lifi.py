@@ -13,6 +13,7 @@ def get_quote(
     dstToken,
     amount,
     fromAddress,
+    slippage=0.09,
     returnToAmountMin=False,
 ):
     queryParams = {
@@ -23,7 +24,7 @@ def get_quote(
         "toToken": dstToken,
         "fromAmount": amount,
         "fromAddress": fromAddress,
-        "slippage":0.07
+        "slippage": slippage
     }
     for retry in range(MAX_RETRIES):
         resp = requests.get(API_URL, params=queryParams)
