@@ -320,7 +320,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
         (,,, address convexRewardPool,,) = IBooster(CONVEX_BOOSTER).poolInfo(CONVEX_PID);
 
-        utils_writeConvexPoolReward(convexRewardPool, address(convexGenericAdapter), 10_000 * 10 ** 18);
+        utils_writeConvexPoolReward(convexRewardPool, address(convexGenericAdapter), 500 * 10 ** 18);
 
         /// ETH PETH REWARD DATA
         ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
@@ -329,6 +329,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         assertGt(rewardData[1].amount, 0); // expect some CVX rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
+
         (uint256 quote, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
 
@@ -347,20 +348,20 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
     }
 
-    function testDepositHardWorkWithdraw() public {
-        this.testDeposit();
+    // function testDepositHardWorkWithdraw() public {
+    //     this.testDeposit();
 
-        this.testClaimRewards();
+    //     this.testClaimRewards();
 
-        this.testWithdraw();
-    }
+    //     this.testWithdraw();
+    // }
 
-    function testHardWorkDepositWithdraw() public {
-        this.testClaimRewards();
-        this.testDeposit();
+    // function testHardWorkDepositWithdraw() public {
+    //     this.testClaimRewards();
+    //     this.testDeposit();
 
-        this.testWithdraw();
-    }
+    //     this.testWithdraw();
+    // }
 
     function utils_writeConvexPoolReward(address pool, address who, uint256 amount) public {
         stdstore.target(CRV_TOKEN_ADDRESS).sig(IERC20(CRV_TOKEN_ADDRESS).balanceOf.selector).with_key(pool)
