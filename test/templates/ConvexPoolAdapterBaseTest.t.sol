@@ -359,16 +359,16 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     function testDepositHardWorkWithdraw() public {
         this.testDeposit();
         this.testClaimRewards();
-        AdjustInAndWithdraw();
+        _adjustInAndWithdraw();
     }
 
     function testHardWorkDepositWithdraw() public {
         this.testClaimRewards();
         this.testDeposit();
-        AdjustInAndWithdraw();
+        _adjustInAndWithdraw();
     }
 
-    function AdjustInAndWithdraw() private {
+    function _adjustInAndWithdraw() private {
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
 
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
