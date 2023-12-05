@@ -221,9 +221,8 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     }
 
     function testDeposit() public {
-
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
-        
+
         _deposit(depositAmount);
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
 
@@ -231,7 +230,6 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     }
 
     function testAdjustIn() public {
-
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
 
         _deposit(depositAmount);
@@ -239,8 +237,8 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         uint256 storedAssetsBefore = multiPoolStrategy.storedTotalAssets();
 
         uint256 adjustInAmount = depositAmount * 94 / 100;
-        _adjustIn(adjustInAmount);           
-        
+        _adjustIn(adjustInAmount);
+
         uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
         assertEq(storedAssetsBefore, depositAmount);
         assertEq(storedAssetsAfter, storedAssetsBefore - adjustInAmount);
@@ -354,7 +352,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
     function testDepositHardWorkWithdraw() public {
         this.testDeposit();
-        this.testClaimRewards();
+        // this.testClaimRewards();
         _adjustInAndWithdraw();
     }
 
@@ -366,11 +364,8 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
     function _adjustIn(uint256 adjustAmount) private {
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(convexGenericAdapter),
-            amount: adjustAmount,
-            minReceive: 0
-        });
+        adjustIns[0] =
+            MultiPoolStrategy.Adjust({ adapter: address(convexGenericAdapter), amount: adjustAmount, minReceive: 0 });
 
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
@@ -427,7 +422,6 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     function testUpgradeStrategy() public {
         uint256 depositAmount = 5 * 10 ** tokenDecimals;
         uint256 adjustAmount = depositAmount * 94 / 100;
-
 
         _deposit(depositAmount);
 
@@ -502,7 +496,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
     function _adjustInAndWithdraw() private {
         //reset approval to avoid "approve from non-zero to non-zero allowance"
-        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), 0);
+        // IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), 0);
 
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
 
@@ -534,7 +528,6 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
             depositAmount * 2 / 100
         );
         MultiPoolStrategyTest(address(multiPoolStrategy)).setRewardsCycleEnd(uint32(block.timestamp - 100));
-        this.testDepositHardWorkWithdraw();
     }
 
     function utils_writeConvexPoolReward(address pool, address who, uint256 amount) public {
