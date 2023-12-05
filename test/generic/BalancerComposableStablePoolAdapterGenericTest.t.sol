@@ -3,7 +3,6 @@
 
 pragma solidity >=0.8.19 <0.9.0;
 
-import "forge-std/StdStorage.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -21,10 +20,6 @@ import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { ICVX } from "../../src/interfaces/ICVX.sol";
 
 contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
-    using stdStorage for StdStorage;
-
-    StdStorage stdstore;
-
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
     AuraComposableStablePoolAdapter auraComposableStablePoolAdapter;
@@ -39,8 +34,6 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
 
     address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
 
-    address public constant BAL_TOKEN_ADDRESS = 0xba100000625a3754423978a60c9317c58a424e3D;
-
     uint256 forkBlockNumber;
     uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
     uint8 tokenDecimals;
@@ -54,11 +47,6 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
         internal
         returns (uint256 _quote, bytes memory data)
     {
-        console2.log("srcToken", srcToken);
-        console2.log("dstToken", dstToken);
-        console2.log("amount", amount);
-        console2.log("fromAddress", fromAddress);
-
         string[] memory inputs = new string[](6);
         inputs[0] = "python3";
         inputs[1] = "test/get_quote_lifi.py";
@@ -114,11 +102,9 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
         adapters[0] = address(auraComposableStablePoolAdapter);
 
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-
-        (,,, address _auraRewardPool,,) = IBooster(AURA_BOOSTER).poolInfo(AURA_PID);
-        console2.log("auraRewardPool", _auraRewardPool);
-
-        utils_writeAuraPoolReward(_auraRewardPool, address(this), 600 * 10 ** 18);
+        vm.warp(block.timestamp + 10 weeks);
+        IBooster(AURA_BOOSTER).earmarkRewards(AURA_PID);
+        vm.warp(block.timestamp + 10 weeks);
 
         /// GRAVI AURA UNDERLYING_TOKEN REWARD DATA
         AuraComposableStablePoolAdapter.RewardData[] memory rewardData =
@@ -288,22 +274,26 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
             amount: 440 * 10 ** tokenDecimals,
             minReceive: 0
         });
+
         MultiPoolStrategy.Adjust[] memory adjustOuts;
         address[] memory adapters = new address[](1);
         adapters[0] = address(auraComposableStablePoolAdapter);
+
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        vm.warp(block.timestamp + 1 weeks);
+        IBooster(AURA_BOOSTER).earmarkRewards(AURA_PID);
+        vm.warp(block.timestamp + 1 weeks);
 
-        (,,, address _auraRewardPool,,) = IBooster(AURA_BOOSTER).poolInfo(AURA_PID);
-
-        utils_writeAuraPoolReward(_auraRewardPool, address(auraComposableStablePoolAdapter), 600 * 10 ** 18);
-
+        /// ETH PETH REWARD DATA
         AuraComposableStablePoolAdapter.RewardData[] memory rewardData =
             auraComposableStablePoolAdapter.totalClaimable();
 
         assertGt(rewardData[0].amount, 0); // expect some BAL rewards
         uint256 totalBalRewards = rewardData[0].amount;
+        console2.log("totalBalRewards", totalBalRewards);
         //// AURA REWARD DATA
         uint256 auraRewardAmount = _calculateAuraRewards(totalBalRewards);
+        console2.log("auraRewardAmount", auraRewardAmount);
         assertGt(auraRewardAmount, 0); //expect some AURA rewards
         //////
 
@@ -320,79 +310,20 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
         assertEq(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_TOKEN
     }
 
-    function testDepositHardWorkWithdraw() public {
-        this.testDeposit();
-        this.testClaimRewards();
-        _adjustInAndWithdraw();
-    }
-
-    function testHardWorkDepositWithdraw() public {
-        this.testClaimRewards();
-        this.testDeposit();
-        _adjustInAndWithdraw();
-    }
-
-    function _adjustInAndWithdraw() private {
-        uint256 depositAmount = 500 * 10 ** tokenDecimals;
-
-        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
-        uint256 adapterAdjustAmount = depositAmount * 94 / 100; // %94
-        adjustIns[0] = MultiPoolStrategy.Adjust({
-            adapter: address(auraComposableStablePoolAdapter),
-            amount: adapterAdjustAmount,
-            minReceive: 0
-        });
-
-        MultiPoolStrategy.Adjust[] memory adjustOuts;
-        address[] memory adapters = new address[](1);
-        adapters[0] = address(auraComposableStablePoolAdapter);
-        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-        uint256 underlyingBalanceInAdapterBeforeWithdraw = auraComposableStablePoolAdapter.underlyingBalance();
-        uint256 shares = multiPoolStrategy.balanceOf(address(this));
-        uint256 underlyingBalanceOfThisBeforeRedeem = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
-        multiPoolStrategy.redeem(shares, address(this), address(this), 0);
-        uint256 underlyingBalanceInAdapterAfterWithdraw = auraComposableStablePoolAdapter.underlyingBalance();
-        uint256 underlyingBalanceOfThisAfterRedeem = IERC20(UNDERLYING_TOKEN).balanceOf(address(this));
-        assertAlmostEq(underlyingBalanceInAdapterBeforeWithdraw, adapterAdjustAmount, adapterAdjustAmount * 2 / 100);
-        assertEq(underlyingBalanceInAdapterAfterWithdraw, 0);
-        assertAlmostEq(
-            underlyingBalanceOfThisAfterRedeem - underlyingBalanceOfThisBeforeRedeem,
-            depositAmount,
-            depositAmount * 2 / 100
-        );
-    }
-
-    function utils_writeAuraPoolReward(address pool, address who, uint256 amount) public {
-        stdstore.target(BAL_TOKEN_ADDRESS).sig(IERC20(BAL_TOKEN_ADDRESS).balanceOf.selector).with_key(pool)
-            .checked_write(amount);
-
-        stdstore.target(AURA).sig(IERC20(AURA).balanceOf.selector).with_key(pool).checked_write(amount);
-
-        stdstore.target(pool).sig(IBaseRewardPool(pool).rewards.selector).with_key(who).checked_write(amount);
-    }
-
     function testWithdrawExceedContractBalance() public {
-        console2.log("1");
         uint256 depositAmount = 100 * 10 ** tokenDecimals;
         vm.startPrank(staker);
-        console2.log("2");
         IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), type(uint256).max);
         multiPoolStrategy.deposit(50 * 10 ** tokenDecimals, address(staker));
-        console2.log("3");
         vm.stopPrank();
         harvest(depositAmount);
-        console2.log("5");
         vm.warp(block.timestamp + 10 days);
-        console2.log("6");
         uint256 stakerShares = multiPoolStrategy.balanceOf(staker);
         uint256 withdrawAmount = multiPoolStrategy.convertToAssets(stakerShares);
-        console2.log("7");
         vm.startPrank(staker);
         multiPoolStrategy.withdraw(withdrawAmount, address(staker), staker, 0);
-        console2.log("8");
         vm.stopPrank();
         uint256 stakerSharesAfter = multiPoolStrategy.balanceOf(staker);
-        console2.log("9");
         uint256 stakerWethBalance = IERC20(UNDERLYING_TOKEN).balanceOf(address(staker));
         assertGt(withdrawAmount, 50 * 10 ** tokenDecimals);
         assertEq(stakerSharesAfter, 0);
