@@ -21,6 +21,7 @@ import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { ITransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
     using SafeERC20 for IERC20;
@@ -101,6 +102,8 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
     uint8 tokenDecimals;
 
+    ProxyAdmin proxyAdmin;
+
     function getQuoteLiFi(
         address srcToken,
         address dstToken,
@@ -179,7 +182,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         address AuraWeightedPoolAdapterImplementation = address(0);
         address AuraStablePoolAdapterImplementation = address(0);
         address AuraComposableStablePoolAdapterImplementation = address(0);
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        proxyAdmin = new ProxyAdmin();
 
         multiPoolStrategyFactory = new MultiPoolStrategyFactory(
             address(this),
@@ -368,7 +371,176 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         _adjustInAndWithdraw();
     }
 
+    function _adjustIn(uint256 depositAmount) private {
+        MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
+        uint256 adapterAdjustAmount = depositAmount * 94 / 100; // %94
+        adjustIns[0] = MultiPoolStrategy.Adjust({
+            adapter: address(convexGenericAdapter),
+            amount: adapterAdjustAmount,
+            minReceive: 0
+        });
+
+        MultiPoolStrategy.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(convexGenericAdapter);
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+    }
+
+    function _deposit(uint256 depositAmount) private {
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), 0);
+
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), depositAmount);
+        multiPoolStrategy.deposit(depositAmount, address(this));
+    }
+
+    function _redeem(
+        uint256 shares,
+        address receiver,
+        address owner,
+        uint256 minimumReceived
+    )
+        private
+        returns (uint256)
+    {
+        return multiPoolStrategy.redeem(shares, receiver, owner, minimumReceived);
+    }
+
+    function testUpgradeAdapter() public {
+        /*
+         1. Deposit and adjust in
+         2. DoHardWork
+         3. Withdraw half of the amount
+         
+         4. Deploy a new adapter
+         5. upgrade the adapter
+         6. withdraw the rest of the amount and check that we got the correct amount
+         OR
+         6. testDepositHardWorkWithdraw
+         OR
+         6. testHardWorkDepositWithdraw
+
+        */
+        ///reset approval to avoid "approve from non-zero to non-zero allowance"
+
+        uint256 depositAmount = 5 * 10 ** tokenDecimals;
+
+        _deposit(depositAmount);
+
+        _adjustIn(depositAmount);
+
+        uint256 shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 balanceBeforeRedeems = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 redeem1 = _redeem(shares / 2, address(this), address(this), 0);
+
+        // UPGRADE
+        address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(convexGenericAdapter)), ConvexPoolAdapterImplementation);
+
+        shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 redeem2 = _redeem(shares, address(this), address(this), 0);
+
+        uint256 currentBalance = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+
+        assertAlmostEq(
+            currentBalance - balanceBeforeRedeems, depositAmount, (currentBalance - balanceBeforeRedeems) / 50
+        );
+        assertAlmostEq(redeem1 + redeem2, currentBalance - balanceBeforeRedeems, (redeem1 + redeem2) / 100);
+    }
+
+    function testUpgradeStrategy() public {
+        uint256 depositAmount = 5 * 10 ** tokenDecimals;
+
+        _deposit(depositAmount);
+
+        _adjustIn(depositAmount);
+
+        uint256 shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 balanceBeforeRedeems = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 redeem1 = _redeem(shares / 2, address(this), address(this), 0);
+
+        // UPGRADE
+        address MultiPoolStrategyImplementation = address(new MultiPoolStrategy());
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(multiPoolStrategy)), MultiPoolStrategyImplementation);
+
+        shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 redeem2 = _redeem(shares, address(this), address(this), 0);
+
+        uint256 currentBalance = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+
+        assertAlmostEq(
+            currentBalance - balanceBeforeRedeems, depositAmount, (currentBalance - balanceBeforeRedeems) / 50
+        );
+        assertAlmostEq(redeem1 + redeem2, currentBalance - balanceBeforeRedeems, (redeem1 + redeem2) / 100);
+    }
+
+    function testUpgradeAdapterWithoutAdjustingIn() public {
+        /*
+         1. Deposit and adjust in
+         2. DoHardWork
+         3. Withdraw half of the amount
+         
+         4. Deploy a new adapter
+         5. upgrade the adapter
+         6. withdraw the rest of the amount and check that we got the correct amount
+         OR
+         6. testDepositHardWorkWithdraw
+         OR
+         6. testHardWorkDepositWithdraw
+
+        */
+        ///reset approval to avoid "approve from non-zero to non-zero allowance"
+
+        uint256 depositAmount = 5 * 10 ** tokenDecimals;
+
+        _deposit(depositAmount);
+
+        uint256 shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 balanceBeforeRedeems = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 redeem1 = _redeem(shares / 2, address(this), address(this), 0);
+
+        // UPGRADE
+        address ConvexPoolAdapterImplementation = address(new ConvexPoolAdapter());
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(convexGenericAdapter)), ConvexPoolAdapterImplementation);
+
+        shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 redeem2 = _redeem(shares, address(this), address(this), 0);
+
+        uint256 currentBalance = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+
+        assertAlmostEq(
+            currentBalance - balanceBeforeRedeems, depositAmount, (currentBalance - balanceBeforeRedeems) / 50
+        );
+        assertAlmostEq(redeem1 + redeem2, currentBalance - balanceBeforeRedeems, (redeem1 + redeem2) / 100);
+    }
+
+    function testUpgradeStrategyWithoutAdjustingIn() public {
+        uint256 depositAmount = 5 * 10 ** tokenDecimals;
+
+        _deposit(depositAmount);
+
+        uint256 shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 balanceBeforeRedeems = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+        uint256 redeem1 = _redeem(shares / 2, address(this), address(this), 0);
+
+        // UPGRADE
+        address MultiPoolStrategyrImplementation = address(new MultiPoolStrategy());
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(multiPoolStrategy)), MultiPoolStrategyrImplementation);
+
+        shares = multiPoolStrategy.balanceOf(address(this));
+        uint256 redeem2 = _redeem(shares, address(this), address(this), 0);
+
+        uint256 currentBalance = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
+
+        assertAlmostEq(
+            currentBalance - balanceBeforeRedeems, depositAmount, (currentBalance - balanceBeforeRedeems) / 50
+        );
+        assertAlmostEq(redeem1 + redeem2, currentBalance - balanceBeforeRedeems, (redeem1 + redeem2) / 100);
+    }
+
     function _adjustInAndWithdraw() private {
+        //reset approval to avoid "approve from non-zero to non-zero allowance"
+        IERC20(UNDERLYING_ASSET).safeApprove(address(multiPoolStrategy), 0);
+
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
 
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
@@ -398,6 +570,8 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
             depositAmount,
             depositAmount * 2 / 100
         );
+
+        this.testDepositHardWorkWithdraw();
     }
 
     function utils_writeConvexPoolReward(address pool, address who, uint256 amount) public {
