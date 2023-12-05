@@ -13,8 +13,8 @@ def get_quote(
     dstToken,
     amount,
     fromAddress,
-    slippage=0.1,
     returnToAmountMin=False,
+    slippage=0.1,
 ):
     queryParams = {
         "integrator": "archimedes",
