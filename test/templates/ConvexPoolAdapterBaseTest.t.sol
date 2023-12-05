@@ -570,8 +570,6 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
             depositAmount,
             depositAmount * 2 / 100
         );
-
-        this.testDepositHardWorkWithdraw();
     }
 
     function utils_writeConvexPoolReward(address pool, address who, uint256 amount) public {
