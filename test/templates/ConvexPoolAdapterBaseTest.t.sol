@@ -144,10 +144,10 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         adapters[0] = address(convexGenericAdapter);
 
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
-        vm.warp(block.timestamp + 10 weeks);
-        IBooster(CONVEX_BOOSTER).earmarkRewards(CONVEX_PID);
 
-        vm.warp(block.timestamp + 10 weeks);
+        (,,, address convexRewardPool,,) = IBooster(CONVEX_BOOSTER).poolInfo(CONVEX_PID);
+
+        utils_writeConvexPoolReward(convexRewardPool, address(convexGenericAdapter), 500 * 10 ** 18);
 
         ConvexPoolAdapter.RewardData[] memory rewardData = convexGenericAdapter.totalClaimable();
 
@@ -407,7 +407,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         stdstore.target(CVX_TOKEN_ADDRESS).sig(IERC20(CVX_TOKEN_ADDRESS).balanceOf.selector).with_key(pool)
             .checked_write(amount);
 
-        stdstore.target(pool).sig("rewards(address)").with_key(who).checked_write(amount);
+        stdstore.target(pool).sig(IBaseRewardPool(pool).rewards.selector).with_key(who).checked_write(amount);
     }
 
     function testWithdrawExceedContractBalance() public {

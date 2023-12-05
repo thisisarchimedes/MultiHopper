@@ -13,7 +13,7 @@ def get_quote(
     dstToken,
     amount,
     fromAddress,
-    slippage=0.09,
+    slippage=0.1,
     returnToAmountMin=False,
 ):
     queryParams = {
