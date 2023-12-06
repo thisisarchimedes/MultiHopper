@@ -35,7 +35,7 @@ contract AuraWeightedPoolAdapterInputETHTest is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 100;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_294;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_728_043;
     uint256 tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests

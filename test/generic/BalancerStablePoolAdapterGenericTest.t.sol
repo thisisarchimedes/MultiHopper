@@ -33,7 +33,7 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 63;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_728_043;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(

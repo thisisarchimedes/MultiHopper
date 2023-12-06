@@ -35,7 +35,7 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
     address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_728_043;
     uint8 tokenDecimals;
 
     function getQuoteLiFi(

@@ -35,7 +35,7 @@ contract AuraStablePoolAdapterInputETHTest is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 63;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_421_496;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_728_043;
     uint256 tokenDecimals;
 
     //// get swap quote from LIFI using a python script | this method lives on all tests
@@ -112,7 +112,6 @@ contract AuraStablePoolAdapterInputETHTest is PRBTest, StdCheats {
 
     //// ensure deposit works by depositing 10k WETH and checking the stored assets
     function testETHDeposit() public {
-        getBlockNumber();
         ethZapper.depositETH{ value: 10 * 10 ** tokenDecimals }(address(this), address(multiPoolStrategy));
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
         assertEq(storedAssets, 10 * 10 ** tokenDecimals);
@@ -121,7 +120,6 @@ contract AuraStablePoolAdapterInputETHTest is PRBTest, StdCheats {
     }
 
     function testDeposit() public {
-        getBlockNumber();
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), type(uint256).max);
         multiPoolStrategy.deposit(10_000 * 10 ** tokenDecimals, address(this));
         uint256 storedAssets = multiPoolStrategy.storedTotalAssets();
