@@ -14,7 +14,7 @@ def get_quote(
     amount,
     fromAddress,
     returnToAmountMin=False,
-    slippage=0.1,
+    slippage=0.2,
 ):
     queryParams = {
         "integrator": "archimedes",

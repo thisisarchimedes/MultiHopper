@@ -18,6 +18,7 @@ import { IBooster } from "../../src/interfaces/IBooster.sol";
 import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
 import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
 import { ICVX } from "../../src/interfaces/ICVX.sol";
+import "forge-std/StdStorage.sol";
 
 /*
  * @title AuraDoHardWorkTest
@@ -29,15 +30,22 @@ import { ICVX } from "../../src/interfaces/ICVX.sol";
  *      code)
  */
 contract AuraDoHardWorkTest is PRBTest, StdCheats {
+    using stdStorage for StdStorage;
+
     MultiPoolStrategyFactory multiPoolStrategyFactory;
     MultiPoolStrategy multiPoolStrategy;
     //AuraStablePoolAdapter auraPoolAdapter;
     AuraWeightedPoolAdapter auraPoolAdapter;
 
+    StdStorage stdstore;
+
     address public staker = makeAddr("staker");
 
     /// @dev Address of the AURA token
     address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
+
+    /// @dev Address of the BAL token
+    address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
 
     /// @dev Address of the underlying token used in the integration. By default: WETH
     address constant UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
@@ -163,6 +171,12 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         address[] memory adapters = new address[](1);
         adapters[0] = address(ADAPTER_ADDRESS);
 
+        (,,, address _auraRewardPool,,) = IBooster(AURA_BOOSTER).poolInfo(AURA_PID);
+
+        //0x6f6801b49B5D8CA2Ea5FEAD9096F347B9355a330
+
+        utils_writeAuraPoolReward(_auraRewardPool, address(auraPoolAdapter), 30_000 * 10 ** 18, 30 * 10 ** 18);
+
         /// Get reward information
         // AuraStablePoolAdapter.RewardData[] memory rewardData = auraPoolAdapter.totalClaimable();
         AuraWeightedPoolAdapter.RewardData[] memory rewardData = auraPoolAdapter.totalClaimable();
@@ -181,11 +195,16 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         // get BAL quote
         (uint256 quote, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, _balRewardAmount, address(multiPoolStrategy));
+
+        console2.log("*** Quote: ", quote);
+
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: _balRewardAmount, callData: txData });
 
         // get AURA quote
         (quote, txData) = getQuoteLiFi(AURA, UNDERLYING_ASSET, _auraRewardAmount, address(multiPoolStrategy));
+        console2.log("*** Quote2: ", quote);
+
         swapDatas[1] = MultiPoolStrategy.SwapData({ token: AURA, amount: _auraRewardAmount, callData: txData });
 
         uint256 wethBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
@@ -220,5 +239,12 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
         assertEq(auraBalanceAfter, 0);
         assertGt(wethBalanceAfter - wethBalanceBefore, 0); // expect receive UNDERLYING_ASSET
         assertGt(fees, 0);
+    }
+
+    function utils_writeAuraPoolReward(address pool, address who, uint256 balance, uint256 amount) public {
+        stdstore.target(AURA).sig(IERC20(AURA).balanceOf.selector).with_key(pool).checked_write(balance);
+        stdstore.target(BAL).sig(IERC20(BAL).balanceOf.selector).with_key(pool).checked_write(balance);
+
+        stdstore.target(pool).sig(IBaseRewardPool(pool).rewards.selector).with_key(who).checked_write(amount);
     }
 }
