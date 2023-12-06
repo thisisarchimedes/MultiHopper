@@ -35,7 +35,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     uint256 public constant AURA_PID = 95;
     address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 17_637_294;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_728_043;
     uint256 tokenDecimals;
 
     function getQuoteLiFi(
