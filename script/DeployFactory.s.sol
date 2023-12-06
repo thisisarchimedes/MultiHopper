@@ -3,7 +3,7 @@
 
 pragma solidity >=0.8.19;
 
-import { BaseScript } from "./Base.s.sol";
+import { BaseScript } from "script/Base.s.sol";
 import "forge-std/Script.sol";
 import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
 import { ConvexPoolAdapter } from "src/ConvexPoolAdapter.sol";

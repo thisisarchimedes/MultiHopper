@@ -12,15 +12,15 @@ import {
     IPoolFactory4,
     IPoolFactory5,
     ICurveMetaPool
-} from "./interfaces/ICurvePool.sol";
+} from "src/interfaces/ICurvePool.sol";
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
-import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
+import { IBaseRewardPool } from "src/interfaces/IBaseRewardPool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import { IBooster } from "./interfaces/IBooster.sol";
+import { IBooster } from "src/interfaces/IBooster.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
-import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
-import { ICVX } from "./interfaces/ICVX.sol";
+import { MultiPoolStrategy as IMultiPoolStrategy } from "src/MultiPoolStrategy.sol";
+import { ICVX } from "src/interfaces/ICVX.sol";
 
 contract ConvexPoolAdapter is Initializable {
     /// @notice The address of the curve pool.

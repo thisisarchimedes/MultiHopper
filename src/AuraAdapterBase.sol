@@ -3,12 +3,12 @@ pragma solidity ^0.8.19;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
-import { IBalancerVault } from "./interfaces/IBalancerVault.sol";
+import { IBalancerVault } from "src/interfaces/IBalancerVault.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import { FixedPoint } from "./utils/FixedPoint.sol";
-import { IBooster } from "./interfaces/IBooster.sol";
-import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
-import { MultiPoolStrategy as IMultiPoolStrategy } from "./MultiPoolStrategy.sol";
+import { FixedPoint } from "src/utils/FixedPoint.sol";
+import { IBooster } from "src/interfaces/IBooster.sol";
+import { IBaseRewardPool } from "src/interfaces/IBaseRewardPool.sol";
+import { MultiPoolStrategy as IMultiPoolStrategy } from "src/MultiPoolStrategy.sol";
 
 contract AuraAdapterBase is Initializable {
     using FixedPoint for uint256;

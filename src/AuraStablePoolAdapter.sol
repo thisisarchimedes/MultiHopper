@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19;
 
-import "./AuraAdapterBase.sol";
-import { FixedPoint } from "./utils/FixedPoint.sol";
-import { Math } from "./utils/Math.sol";
-import { IStablePool } from "./interfaces/IStablepool.sol";
+import "src/AuraAdapterBase.sol";
+import { FixedPoint } from "src/utils/FixedPoint.sol";
+import { Math } from "src/utils/Math.sol";
+import { IStablePool } from "src/interfaces/IStablepool.sol";
 
 contract AuraStablePoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;

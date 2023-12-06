@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19;
 
-import "./AuraAdapterBase.sol";
-import { FixedPoint } from "./utils/FixedPoint.sol";
-import { IWeightedPool } from "./interfaces/IWeightedPool.sol";
+import "src/AuraAdapterBase.sol";
+import { FixedPoint } from "src/utils/FixedPoint.sol";
+import { IWeightedPool } from "src/interfaces/IWeightedPool.sol";
 
 contract AuraWeightedPoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;
