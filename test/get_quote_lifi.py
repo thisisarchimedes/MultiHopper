@@ -14,6 +14,7 @@ def get_quote(
     amount,
     fromAddress,
     returnToAmountMin=False,
+    slippage=0.2,
 ):
     queryParams = {
         "integrator": "archimedes",
@@ -23,6 +24,7 @@ def get_quote(
         "toToken": dstToken,
         "fromAmount": amount,
         "fromAddress": fromAddress,
+        "slippage": slippage
     }
     for retry in range(MAX_RETRIES):
         resp = requests.get(API_URL, params=queryParams)
