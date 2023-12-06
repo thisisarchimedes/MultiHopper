@@ -66,7 +66,7 @@ contract AuraDoHardWorkTest is PRBTest, StdCheats {
     address constant ADAPTER_ADDRESS = 0xe3fC693004D0ab723578D6B00432b139F5ebA329;
 
     uint256 forkBlockNumber;
-    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_593_713;
+    uint256 DEFAULT_FORK_BLOCK_NUMBER = 18_728_043;
 
     uint8 tokenDecimals;
 
