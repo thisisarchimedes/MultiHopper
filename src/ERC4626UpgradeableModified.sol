@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "openzeppelin-contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import "./interfaces/IERC4626.sol";
+import "src/interfaces/IERC4626.sol";
 ///  @dev Implementation of the ERC4626 "Tokenized Vault Standard"
 /// @author Openzeppelin
 

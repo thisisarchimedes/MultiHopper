@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19;
 
-import "./AuraAdapterBase.sol";
-import { FixedPoint } from "./utils/FixedPoint.sol";
-import { Math } from "./utils/Math.sol";
-import { IStablePool } from "./interfaces/IStablepool.sol";
-import { IBalancerVault } from "./interfaces/IBalancerVault.sol";
+import "src/AuraAdapterBase.sol";
+import { FixedPoint } from "src/utils/FixedPoint.sol";
+import { Math } from "src/utils/Math.sol";
+import { IStablePool } from "src/interfaces/IStablepool.sol";
+import { IBalancerVault } from "src/interfaces/IBalancerVault.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract AuraComposableStablePoolAdapter is AuraAdapterBase {

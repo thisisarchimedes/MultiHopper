@@ -3,9 +3,10 @@
 
 pragma solidity >=0.8.19;
 
-import { BaseScript } from "./Base.s.sol";
 import "forge-std/Script.sol";
-import { USDCZapper } from "../src/zapper/USDCZapper.sol";
+
+import { BaseScript } from "script/Base.s.sol";
+import { USDCZapper } from "src/zapper/USDCZapper.sol";
 import { console2 } from "forge-std/console2.sol";
 
 /**

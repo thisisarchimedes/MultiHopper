@@ -3,15 +3,17 @@
 
 pragma solidity >=0.8.19;
 
-import { BaseScript } from "./Base.s.sol";
 import "forge-std/Script.sol";
-import { ETHZapper } from "../src/ETHZapper.sol";
-import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
-import { ConvexPoolAdapter } from "../src/ConvexPoolAdapter.sol";
-import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
 import { console2 } from "forge-std/console2.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+
+import { BaseScript } from "script/Base.s.sol";
+import { ETHZapper } from "src/zapper/ETHZapper.sol";
+import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
+import { ConvexPoolAdapter } from "src/ConvexPoolAdapter.sol";
+import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
+
 /// @dev See the Solidity Scripting tutorial: https://book.getfoundry.sh/tutorials/solidity-scripting
 /**
  * @title DeployConvex

@@ -3,13 +3,14 @@
 
 pragma solidity >=0.8.19;
 
-import { BaseScript } from "./Base.s.sol";
-import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
-import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
 import { console2 } from "forge-std/console2.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { AuraWeightedPoolAdapter } from "../src/AuraWeightedPoolAdapter.sol";
+
+import { BaseScript } from "script/Base.s.sol";
+import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
+import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
+import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
 
 /// @dev See the Solidity Scripting tutorial: https://book.getfoundry.sh/tutorials/solidity-scripting
 /**

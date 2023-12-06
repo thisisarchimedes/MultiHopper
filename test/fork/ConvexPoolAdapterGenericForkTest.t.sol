@@ -71,7 +71,7 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
         return abi.decode(vm.ffi(inputs), (uint256, bytes));
     }
 
-    function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal view returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
@@ -160,7 +160,6 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
         console2.log("dep amount", depositAmount);
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
         multiPoolStrategy.deposit(depositAmount, address(this));
-        uint256 curveLPBalance = curveLpToken.balanceOf(address(this));
         MultiPoolStrategy.Adjust[] memory adjustIns = new MultiPoolStrategy.Adjust[](1);
         uint256 adjustOutAmount = depositAmount * 94 / 100;
         adjustIns[0] =
@@ -246,10 +245,8 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
 
         uint256 underlyingBalanceInAdapterBeforeWithdraw = convexGenericAdapter.underlyingBalance();
         uint256 shares = multiPoolStrategy.balanceOf(monitor);
-        uint256 underlyingBalanceOfThisBeforeRedeem = IERC20(UNDERLYING_ASSET).balanceOf(monitor);
         multiPoolStrategy.redeem(shares, monitor, monitor, 0);
         uint256 underlyingBalanceInAdapterAfterWithdraw = convexGenericAdapter.underlyingBalance();
-        uint256 underlyingBalanceOfThisAfterRedeem = IERC20(UNDERLYING_ASSET).balanceOf(monitor);
         
         assertLt(underlyingBalanceInAdapterAfterWithdraw, underlyingBalanceInAdapterBeforeWithdraw);
        
