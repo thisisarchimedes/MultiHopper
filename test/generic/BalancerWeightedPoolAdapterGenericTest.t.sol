@@ -82,7 +82,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         return auraRewardAmount;
     }
 
-    function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal view returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 

@@ -64,7 +64,7 @@ contract AuraWeightedPoolAdapterBaseTest is PRBTest, StdCheats {
     //// get current block number using a python script that gets the latest number and substracts 10 blocks  | this
     // method lives on all tests
 
-    function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal view returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 

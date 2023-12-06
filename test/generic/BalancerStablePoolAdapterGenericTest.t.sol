@@ -56,7 +56,7 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         return abi.decode(vm.ffi(inputs), (uint256, bytes));
     }
 
-    function getBlockNumber() internal returns (uint256) {
+    function getBlockNumber() internal view returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
 
