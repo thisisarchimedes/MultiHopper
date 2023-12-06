@@ -49,7 +49,10 @@ contract DeployFactory is Script {
             proxyAdmin
             );
         console2.log(
-            "deployed MultiPoolStrategyFactory contract at address %s with monitor %s", address(factory), MONITOR
+            "deployed MultiPoolStrategyFactory contract at address %s with monitor %s and proxy admin %s",
+            address(factory),
+            MONITOR,
+            address(proxyAdmin)
         );
 
         vm.stopBroadcast();
