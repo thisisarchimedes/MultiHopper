@@ -10,13 +10,13 @@ import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IE
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
-import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
-import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
-import { ETHZapper } from "../../src/ETHZapper.sol";
-import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
-import { AuraStablePoolAdapter } from "../../src/AuraStablePoolAdapter.sol";
-import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
-import { IBooster } from "../../src/interfaces/IBooster.sol";
+import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
+import { IBaseRewardPool } from "src/interfaces/IBaseRewardPool.sol";
+import { ETHZapper } from "src/zapper/ETHZapper.sol";
+import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
+import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
+import { ICurveBasePool } from "src/interfaces/ICurvePool.sol";
+import { IBooster } from "src/interfaces/IBooster.sol";
 
 /// @title AuraStablePoolAdapterInputETHTest
 /// @notice A contract for testing an ETH pegged Aura pool (WETH/rETH) with native ETH input from user using zapper

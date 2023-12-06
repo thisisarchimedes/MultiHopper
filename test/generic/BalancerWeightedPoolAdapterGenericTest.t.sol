@@ -10,14 +10,14 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
-import { MultiPoolStrategyFactory } from "../../src/MultiPoolStrategyFactory.sol";
-import { IBaseRewardPool } from "../../src/interfaces/IBaseRewardPool.sol";
-import { MultiPoolStrategy } from "../../src/MultiPoolStrategy.sol";
-import { AuraWeightedPoolAdapter } from "../../src/AuraWeightedPoolAdapter.sol";
-import { IBooster } from "../../src/interfaces/IBooster.sol";
-import { FlashLoanAttackTest } from "../../src/test/FlashLoanAttackTest.sol";
-import { ICurveBasePool } from "../../src/interfaces/ICurvePool.sol";
-import { ICVX } from "../../src/interfaces/ICVX.sol";
+import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
+import { IBaseRewardPool } from "src/interfaces/IBaseRewardPool.sol";
+import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
+import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
+import { IBooster } from "src/interfaces/IBooster.sol";
+import { FlashLoanAttackTest } from "src/test/FlashLoanAttackTest.sol";
+import { ICurveBasePool } from "src/interfaces/ICurvePool.sol";
+import { ICVX } from "src/interfaces/ICVX.sol";
 
 contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
     MultiPoolStrategyFactory multiPoolStrategyFactory;

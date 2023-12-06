@@ -6,9 +6,9 @@ import { ERC4626Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { IAdapter } from "./interfaces/IAdapter.sol";
-import { IERC20UpgradeableDetailed } from "./interfaces/IERC20UpgradeableDetailed.sol";
-import { ERC4626UpgradeableModified } from "./ERC4626UpgradeableModified.sol";
+import { IAdapter } from "src/interfaces/IAdapter.sol";
+import { IERC20UpgradeableDetailed } from "src/interfaces/IERC20UpgradeableDetailed.sol";
+import { ERC4626UpgradeableModified } from "src/ERC4626UpgradeableModified.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { SafeCastLib } from "solmate/utils/SafeCastLib.sol";
 

@@ -3,9 +3,9 @@
 
 pragma solidity >=0.8.19;
 
-import { BaseScript } from "./Base.s.sol";
+import { BaseScript } from "script/Base.s.sol";
 import "forge-std/Script.sol";
-import { ETHZapper } from "../src/ETHZapper.sol";
+import { ETHZapper } from "src/zapper/ETHZapper.sol";
 import { console2 } from "forge-std/console2.sol";
 /// @dev See the Solidity Scripting tutorial: https://book.getfoundry.sh/tutorials/solidity-scripting
 import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
