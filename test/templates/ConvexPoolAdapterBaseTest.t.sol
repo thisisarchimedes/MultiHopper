@@ -154,7 +154,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
         assertGt(rewardData[0].amount, 0); // expect some CRV rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
-        (uint256 quote, bytes memory txData) =
+        (, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
@@ -331,7 +331,7 @@ contract ConvexPoolAdapterBaseTest is PRBTest, StdCheats {
 
         uint256 totalCrvRewards = rewardData[0].amount;
 
-        (uint256 quote, bytes memory txData) =
+        (, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, totalCrvRewards, address(multiPoolStrategy));
 
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);

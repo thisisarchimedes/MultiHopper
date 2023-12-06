@@ -112,7 +112,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         assertGt(rewardData[0].amount, 0); // expect some BAL rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
-        (uint256 quote, bytes memory txData) =
+        (, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
@@ -263,7 +263,7 @@ contract BalancerWeightedPoolAdapterGenericTest is PRBTest, StdCheats {
         IBaseRewardPool(_auraRewardPool).getReward(address(auraWeightedPoolAdapter), true);
         uint256 adapterAuraBalance = IERC20(AURA).balanceOf(address(auraWeightedPoolAdapter));
         assertEq(adapterAuraBalance, auraRewardAmount);
-        (uint256 quote, bytes memory txData) =
+        (, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalBalRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =

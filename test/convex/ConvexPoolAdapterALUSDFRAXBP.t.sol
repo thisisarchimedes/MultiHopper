@@ -4,7 +4,7 @@ pragma solidity >=0.8.19 <0.9.0;
 import { ConvexPoolAdapterBaseTest } from "test/templates/ConvexPoolAdapterBaseTest.t.sol";
 
 contract ConvexPoolAdapterALUSDFRAXBPGenericTest is ConvexPoolAdapterBaseTest {
-    constructor() public {
+    constructor() {
         UNDERLYING_ASSET = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         CONVEX_BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
         CURVE_POOL_ADDRESS = 0xB30dA2376F63De30b42dC055C93fa474F31330A5;

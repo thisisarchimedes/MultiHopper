@@ -86,7 +86,8 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         assertGt(rewardData[0].amount, 0); // expect some BAL rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
-        (uint256 quote, bytes memory txData) =
+        bytes memory txData;
+        (, txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
@@ -161,7 +162,6 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         uint256 storedAssetsAfter = multiPoolStrategy.storedTotalAssets();
         uint256 totalAssets = multiPoolStrategy.totalAssets();
-        uint256 underlyingBalance = auraStablePoolAdapter.underlyingBalance();
 
         assertEq(storedAssetsBefore, depositAmount);
         assertEq(storedAssetsAfter, storedAssetsBefore - depositAmount * 94 / 100);
@@ -257,7 +257,7 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
         assertGt(rewardData[0].amount, 0); // expect some BAL rewards
 
         uint256 totalCrvRewards = rewardData[0].amount;
-        (uint256 quote, bytes memory txData) =
+        (, bytes memory txData) =
             getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
