@@ -134,10 +134,10 @@ jobs:
           #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*" -v
 
       - name: "Calculate Test Duration"
-          run: |
-            end=$(date +%s)
-            duration=$((end-${{ env.DURATION_START }}))
-            echo "DURATION=$duration" >> $GITHUB_ENV
+        run: |
+          end=$(date +%s)
+          duration=$((end-${{ env.DURATION_START }}))
+          echo "DURATION=$duration" >> $GITHUB_ENV
           
       - name: "Add test summary"
         run: |
