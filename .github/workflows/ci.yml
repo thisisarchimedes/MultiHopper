@@ -113,7 +113,7 @@ jobs:
         run: |
           echo "PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE:/test:$GITHUB_WORKSPACE:/script:$GITHUB_WORKSPACE:/test/zapper" >> $GITHUB_ENV
   
-      - name: Prep tests
+      - name: Ready to run tests
         run: |
           echo "DURATION_START=$(date +%s)" >> $GITHUB_ENV
 
@@ -132,13 +132,16 @@ jobs:
       - name: "Run the tests: Zapper"
         run: |        
           #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*" -v
+
+      - name: "Calculate Test Duration"
+          run: |
+            end=$(date +%s)
+            duration=$((end-${{ env.DURATION_START }}))
+            echo "DURATION=$duration" >> $GITHUB_ENV
           
       - name: "Add test summary"
         run: |
-          end=$(date +%s)
-          duration=$((end-${{ env.DURATION_START }}))
-          echo "DURATION=$duration" >> $GITHUB_ENV
-          echo "Time taken to run the script: $duration seconds"
+          echo "Time taken to run the script: ${{ env.DURATION }} seconds"
 
           pip install python-dotenv
           pip install requests
