@@ -27,7 +27,7 @@ packaging==23.1
 parsimonious==0.9.0
 prettytable==3.8.0
 protobuf==4.23.3
-pycryptodome==3.18.0
+pycryptodome==3.19.1
 pyrsistent==0.19.3
 regex==2023.6.3
 requests==2.31.0
