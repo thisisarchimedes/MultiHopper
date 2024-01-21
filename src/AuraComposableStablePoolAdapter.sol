@@ -291,3 +291,4 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         return amountsWithoutBpt;
     }
 }
+

@@ -7,6 +7,8 @@ env:
   FOUNDRY_PROFILE: "ci"
   MNEMONIC: ${{ secrets.MNEMONIC }}
   PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+  API_DEVOPS_EVENT_CATCHER: ${{ vars.API_DEVOPS_EVENT_CATCHER }}
+  DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
 
 on:
   workflow_dispatch:
@@ -111,6 +113,10 @@ jobs:
         run: |
           echo "PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE:/test:$GITHUB_WORKSPACE:/script:$GITHUB_WORKSPACE:/test/zapper" >> $GITHUB_ENV
   
+      - name: Ready to run tests
+        run: |
+          echo "DURATION_START=$(date +%s)" >> $GITHUB_ENV
+
       - name: "Run the tests: Generic"
         run: |
           forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/generic/*" -v
@@ -126,11 +132,28 @@ jobs:
       - name: "Run the tests: Zapper"
         run: |        
           forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*" -v
+
+      - name: "Calculate Test Duration"
+        run: |
+          end=$(date +%s)
+          duration=$((end-${{ env.DURATION_START }}))
+          echo "DURATION=$duration" >> $GITHUB_ENV
           
       - name: "Add test summary"
         run: |
+          echo "Time taken to run the script: ${{ env.DURATION }} seconds"
+
+          pip install python-dotenv
+          pip install requests
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_pass" --metadata '{"duration": ${{ env.DURATION }}}'
+
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
   analyze:
     runs-on: ubuntu-latest
