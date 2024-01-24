@@ -1,0 +1,99 @@
+name: Run Nightly Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+
+env:
+    API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
+    API_KEY_ETHERSCAN: ${{ secrets.API_KEY_ETHERSCAN }}
+    API_KEY_INFURA: ${{ secrets.API_KEY_INFURA }}
+    FOUNDRY_PROFILE: "ci"
+    MNEMONIC: ${{ secrets.MNEMONIC }}
+    PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+    API_DEVOPS_EVENT_CATCHER: ${{ vars.API_DEVOPS_EVENT_CATCHER }}
+    DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
+      
+
+jobs:      
+    test:
+        environment: secrets
+        runs-on: "ubuntu-latest"
+        steps:
+            - uses: actions/setup-python@v4
+              with:
+                python-version: "3.10"
+
+            - name: "Check out the repo"
+              uses: "actions/checkout@v4"
+              with:
+                submodules: "recursive"
+
+            - name: "Install Foundry"
+              uses: "foundry-rs/foundry-toolchain@v1"
+
+            - name: "Show the Foundry config"
+              run: "forge config"
+
+            - name: "Generate a fuzz seed that changes weekly to avoid burning through RPC allowance"
+              run: >
+                echo "FOUNDRY_FUZZ_SEED=$(
+                echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
+                )" >> $GITHUB_ENV
+
+            - name: "Prepare Python environment"
+              run: |
+                pip3 install -r requirements.txt 
+                pip3 install web3 
+                pip3 install eth-abi 
+                pip3 install requests 
+                export API_KEY_ALCHEMY=$API_KEY_ALCHEMY
+
+            - name: Set PYTHONPATH
+              run: |
+                echo "PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/src:$GITHUB_WORKSPACE:/test:$GITHUB_WORKSPACE:/script:$GITHUB_WORKSPACE:/test/zapper" >> $GITHUB_ENV
+        
+            - name: Ready to run tests
+              run: |
+                echo "DURATION_START=$(date +%s)" >> $GITHUB_ENV
+
+            - name: "Run the tests"
+              continue-on-error: true
+              run: |
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/generic/*"
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/convex/*"
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/aura/*"
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*"
+
+                echo "::set-output name=passed::$?"
+
+            - name: "Calculate Test Duration"
+              run: |
+                end=$(date +%s)
+                duration=$((end-${{ env.DURATION_START }}))
+                echo "DURATION=$duration" >> $GITHUB_ENV
+
+            - name: Set Test Result Env Variable
+              run: |
+                if [ ${{ steps.test_suite.outputs.passed }} -eq 0 ]; then
+                echo "TEST_PASS=true" >> $GITHUB_ENV
+                else
+                echo "TEST_PASS=false" >> $GITHUB_ENV
+                fi
+
+            - name: Calculating test coverage
+              continue-on-error: true
+              run: |
+                forge coverage > tmp_report
+                echo "COVERAGE_FUNC=`grep "Total" tmp_report | awk '{print $(NF-2)}'`" >> $GITHUB_ENV
+                
+            - name: Report test run time
+              run: |
+                echo "Time taken to run the tests: ${{ env.DURATION }} seconds"
+                
+                pip install python-dotenv
+                pip install requests          
+                python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}, "coverage.functions": "${{ env.COVERAGE_FUNC }}"}' 
+        
