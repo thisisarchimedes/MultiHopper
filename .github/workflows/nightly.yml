@@ -93,6 +93,7 @@ jobs:
               continue-on-error: true
               run: |
                 npm install solhint
+                npm solhint -c .solhint.json -f compact 'test/**/*.sol'
                 LINT_OUTPUT=`npm solhint -c .solhint.json -f compact 'test/**/*.sol' | grep "problem" | awk '{print $1}'`
                   
                 if [ -z "$LINT_OUTPUT" ]; then
