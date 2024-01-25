@@ -92,9 +92,9 @@ jobs:
             - name: Run lint on tests
               continue-on-error: true
               run: |
-                npm install solhint
-                npm solhint -c .solhint.json -f compact 'test/**/*.sol'
-                LINT_OUTPUT=`npm solhint -c .solhint.json -f compact 'test/**/*.sol' | grep "problem" | awk '{print $1}'`
+                npm install
+                npm install pnpm solhint
+                LINT_OUTPUT=`pnpm solhint -c .solhint.json -f compact 'test/**/*.sol' | grep "problem" | awk '{print $1}'`
                   
                 if [ -z "$LINT_OUTPUT" ]; then
                   LINT_OUTPUT=0
