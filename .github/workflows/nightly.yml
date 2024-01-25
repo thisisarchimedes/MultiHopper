@@ -88,6 +88,18 @@ jobs:
               run: |
                 forge coverage > tmp_report
                 echo "COVERAGE_FUNC=`grep "Total" tmp_report | awk '{print $(NF-2)}'`" >> $GITHUB_ENV
+
+            - name: Run lint on tests
+              continue-on-error: true
+              run: |
+                pnpm install solhint
+                LINT_OUTPUT=`pnpm solhint -c .solhint.json -f compact 'test/**/*.sol' | grep "problem" | awk '{print $1}'`
+                  
+                if [ -z "$LINT_OUTPUT" ]; then
+                  LINT_OUTPUT=0
+                fi
+                  
+                echo "LINT_PROBLEMS=$LINT_OUTPUT" >> $GITHUB_ENV
                 
             - name: Report test run time
               run: |
@@ -95,5 +107,5 @@ jobs:
                 
                 pip install python-dotenv
                 pip install requests          
-                python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}, "coverage.functions": "${{ env.COVERAGE_FUNC }}"}' 
+                python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": "${{ env.TEST_PASS }}", "time": "${{ env.DURATION }}" ,"coverage": {"functions": "${{ env.COVERAGE_FUNC }}"}, "linter_issues": {"tests": "${{ env. LINT_PROBLEMS }}"}}'
         
