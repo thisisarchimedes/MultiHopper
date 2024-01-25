@@ -93,7 +93,7 @@ jobs:
               continue-on-error: true
               run: |
               
-                yarn install solhint
+                yarn add solhint
                 yarn run solhint -c .solhint.json 'test/**/*.sol'
                 LINT_OUTPUT=`yarn run solhint -c .solhint.json 'test/**/*.sol' | grep "problem" | awk '{print $2}'`
                   
