@@ -92,9 +92,10 @@ jobs:
             - name: Run lint on tests
               continue-on-error: true
               run: |
-                npm install
-                npm install pnpm solhint
-                LINT_OUTPUT=`pnpm solhint -c .solhint.json -f compact 'test/**/*.sol' | grep "problem" | awk '{print $1}'`
+              
+                yarn install solhint
+                yarn run solhint -c .solhint.json 'test/**/*.sol'
+                LINT_OUTPUT=`yarn run solhint -c .solhint.json 'test/**/*.sol' | grep "problem" | awk '{print $2}'`
                   
                 if [ -z "$LINT_OUTPUT" ]; then
                   LINT_OUTPUT=0
@@ -102,7 +103,7 @@ jobs:
                   
                 echo "LINT_PROBLEMS=$LINT_OUTPUT" >> $GITHUB_ENV
                 
-            - name: Report test run time
+            - name: Report devops metrics
               run: |
                 echo "Time taken to run the tests: ${{ env.DURATION }} seconds"
                 
