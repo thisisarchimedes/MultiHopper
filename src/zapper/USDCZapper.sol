@@ -4,12 +4,11 @@ pragma solidity ^0.8.19.0;
 import { IZapper } from "../interfaces/IZapper.sol";
 import { ICurveBasePool } from "../interfaces/ICurvePool.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "../MultiPoolStrategy.sol";
-import { console2 } from "forge-std/console2.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/security/ReentrancyGuard.sol";
 import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts/utils/structs/EnumerableSet.sol";
+import { EnumerableSet } from "openzeppelin-contracts/utils/structs/EnumerableSet.sol";
 
 contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
     // Library for working with the _supportedAssets AddressSet.
@@ -154,89 +153,76 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         nonReentrant
         returns (uint256 sharesBurnt)
     {
-        // check if the reciever is not zero address
+        _validateWithdrawParameters(amount, withdrawToken, receiver, strategyAddress);
+
+        uint256 underlyingAmountToWithdraw = _calculateUnderlyingAmountToWithdraw(amount, withdrawToken);
+
+        sharesBurnt = _withdrawTokensAndApprove(underlyingAmountToWithdraw, strategyAddress, withdrawToken);
+
+        _retrieveTokens(withdrawToken, underlyingAmountToWithdraw, minWithdrawAmount, receiver);
+    }
+
+    function _validateWithdrawParameters(
+        uint256 amount,
+        address withdrawToken,
+        address receiver,
+        address strategyAddress
+    )
+        internal
+        view
+    {
         if (receiver == address(0)) revert ZeroAddress();
-        // check if the amount is not zero
         if (amount == 0) revert EmptyInput();
-        // check if the correct strategy provided and it matches underlying asset
         if (!strategyUsesUnderlyingAsset(strategyAddress)) revert StrategyAssetDoesNotMatchUnderlyingAsset();
 
-        // check if the strategy is not paused
         IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
         if (multiPoolStrategy.paused()) revert StrategyPaused();
 
-        // check if the provided token is in the assets array, if false - revert
         if (!_supportedAssets.contains(withdrawToken)) revert InvalidAsset();
 
-        // find the pool regarding the provided token, if pool not found - revert
         AssetInfo storage assetInfo = _supportedAssetsInfo[withdrawToken];
         if (assetInfo.pool == address(0)) revert PoolDoesNotExist();
+    }
 
-        // calculate the amount of underlying asset to withdraw, given the asset the user want to get
-        // i.e. Calculate the amount of USDC (underlying asset) to withdraw, given the amount of CRV (withdraw token)
-        uint256 underlyingAmountToWithdraw;
+    function _calculateUnderlyingAmountToWithdraw(
+        uint256 amount,
+        address withdrawToken
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        AssetInfo storage assetInfo = _supportedAssetsInfo[withdrawToken];
+
         if (assetInfo.isLpToken) {
-            underlyingAmountToWithdraw =
-                ICurveBasePool(assetInfo.pool).calc_withdraw_one_coin(amount, UNDERLYING_ASSET_INDEX);
+            return ICurveBasePool(assetInfo.pool).calc_withdraw_one_coin(amount, UNDERLYING_ASSET_INDEX);
         } else {
-            underlyingAmountToWithdraw =
-                ICurveBasePool(assetInfo.pool).get_dy(assetInfo.index, UNDERLYING_ASSET_INDEX, amount);
+            return ICurveBasePool(assetInfo.pool).get_dy(assetInfo.index, UNDERLYING_ASSET_INDEX, amount);
         }
+    }
 
-        // balance of underlying asset before withdraw
+    function _withdrawTokensAndApprove(
+        uint256 underlyingAmountToWithdraw,
+        address strategyAddress,
+        address withdrawToken
+    )
+        internal
+        returns (uint256 sharesBurnt)
+    {
+        IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
+
         uint256 underlyingBalancePre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));
 
-        // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
-        // in "curvePool.addLiquidity" or "curvePool.exchange" calls
         sharesBurnt = multiPoolStrategy.withdraw(underlyingAmountToWithdraw, address(this), _msgSender(), 0);
 
-        // actual amount of underlying asset after withdraw
         uint256 withdrawnUnderlyingAmount = IERC20(UNDERLYING_ASSET).balanceOf(address(this)) - underlyingBalancePre;
 
-        ICurveBasePool pool = ICurveBasePool(assetInfo.pool);
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), _supportedAssetsInfo[withdrawToken].pool, 0);
+        SafeERC20.safeApprove(
+            IERC20(UNDERLYING_ASSET), _supportedAssetsInfo[withdrawToken].pool, withdrawnUnderlyingAmount
+        );
 
-        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, 0);
-        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, withdrawnUnderlyingAmount);
-
-        // balance of user's token before withdraw
-        uint256 balancePre = IERC20(withdrawToken).balanceOf(address(this));
-
-        // get withdraw tokens by given the underlying asset
-        //
-        // in case if withdraw token is LP Token - then we call "curvePool.addLiquidity",
-        // as LP Tokens can be retrivied only by providing liquidity to the pool
-        // i.e. (withdrawToken = CRV) -> curvePool.addLiquidity(tokenToAdd: USDC) => return CRV
-        //
-        // if the withdrawal token is not LP Token - then we call "curvePool.exchange",
-        // as we just need to exchange one token for another
-        // i.e. (withdrawToken = USDT) -> curvePool.exchange(tokenToProvide: USDC, tokenToGet: USDT) => return USDT
-        //
-        // inside we create an array with a length equal to the number of tokens in the pool,
-        // where the index of each element corresponds to the index of the token in the pool
-        // and then set the token amount corresponding to the token index in the pool that we intend
-        // to add as liquidity or exchange
-        //
-        // this place should be optimized
-        if (assetInfo.isLpToken) {
-            if (assetInfo.pool == CURVE_3POOL) {
-                uint256[CURVE_3POOL_TOKENS_COUNT] memory amounts;
-                amounts[uint256(int256(assetInfo.index))] = withdrawnUnderlyingAmount;
-
-                pool.add_liquidity(amounts, minWithdrawAmount);
-            } else if (assetInfo.pool == CURVE_FRAXUSDC) {
-                uint256[CURVE_FRAXUSDC_TOKENS_COUNT] memory amounts;
-                amounts[uint256(int256(assetInfo.index))] = withdrawnUnderlyingAmount;
-
-                pool.add_liquidity(amounts, minWithdrawAmount);
-            }
-        } else {
-            pool.exchange(UNDERLYING_ASSET_INDEX, assetInfo.index, withdrawnUnderlyingAmount, minWithdrawAmount);
-        }
-
-        // actual amount of tokens user will get after withdraw
-        uint256 withdrawAmount = IERC20(withdrawToken).balanceOf(address(this)) - balancePre;
-
-        SafeERC20.safeTransfer(IERC20(withdrawToken), receiver, withdrawAmount);
+        return sharesBurnt;
     }
 
     /**
@@ -253,72 +239,97 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         override
         returns (uint256 redeemAmount)
     {
-        // check if the reciever is not zero address
+        _validateRedeemParameters(sharesAmount, redeemToken, receiver, strategyAddress);
+
+        uint256 underlyingAmount = _redeemTokens(sharesAmount, strategyAddress, redeemToken);
+
+        redeemAmount = _retrieveTokens(redeemToken, underlyingAmount, minRedeemAmount, receiver);
+    }
+
+    function _validateRedeemParameters(
+        uint256 sharesAmount,
+        address redeemToken,
+        address receiver,
+        address strategyAddress
+    )
+        internal
+        view
+    {
         if (receiver == address(0)) revert ZeroAddress();
-        // check if the amount is not zero
         if (sharesAmount == 0) revert EmptyInput();
-        // check if the correct strategy provided and it matches underlying asset
         if (!strategyUsesUnderlyingAsset(strategyAddress)) revert StrategyAssetDoesNotMatchUnderlyingAsset();
 
-        // check if the strategy is not paused
         IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
         if (multiPoolStrategy.paused()) revert StrategyPaused();
 
-        // check if the provided token is in the assets array, if false - revert
         if (!_supportedAssets.contains(redeemToken)) revert InvalidAsset();
 
-        // find the pool regarding the provided token, if pool not found - revert
         AssetInfo storage assetInfo = _supportedAssetsInfo[redeemToken];
         if (assetInfo.pool == address(0)) revert PoolDoesNotExist();
+    }
 
-        // The last parameter here, minAmount, is set to zero because we enforce it later during the swap
-        // in "curvePool.addLiquidity" or "curvePool.exchange" calls
-        uint256 underlyingAmount = multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
+    function _redeemTokens(
+        uint256 sharesAmount,
+        address strategyAddress,
+        address redeemToken
+    )
+        internal
+        returns (uint256)
+    {
+        IMultiPoolStrategy multiPoolStrategy = IMultiPoolStrategy(strategyAddress);
+
+        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), _supportedAssetsInfo[redeemToken].pool, 0);
+
+        return multiPoolStrategy.redeem(sharesAmount, address(this), _msgSender(), 0);
+    }
+
+    function _retrieveTokens(
+        address redeemToken,
+        uint256 underlyingAmount,
+        uint256 minRedeemAmount,
+        address receiver
+    )
+        internal
+        returns (uint256)
+    {
+        AssetInfo storage assetInfo = _supportedAssetsInfo[redeemToken];
 
         ICurveBasePool pool = ICurveBasePool(assetInfo.pool);
 
-        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, 0);
-        SafeERC20.safeApprove(IERC20(UNDERLYING_ASSET), assetInfo.pool, underlyingAmount);
-
-        // balance of user's token before redeem
         uint256 balancePre = IERC20(redeemToken).balanceOf(address(this));
 
-        // get redeem tokens by given the underlying asset
-        //
-        // in case if redeem token is LP Token - then we call "curvePool.addLiquidity",
-        // as LP Tokens can be retrivied only by providing liquidity to the pool
-        // i.e. redeemToken = CRV) -> curvePool.addLiquidity(tokenToAdd: USDC) => return CRV
-        //
-        // if the redeem token is not LP Token - then we call "curvePool.exchange",
-        // as we just need to exchange one token for another
-        // i.e. (redeemToken = USDT) -> curvePool.exchange(tokenToProvide: USDC, tokenToGet: USDT) => return USDT
-        //
-        // inside we create an array with a length equal to the number of tokens in the pool,
-        // where the index of each element corresponds to the index of the token in the pool
-        // and then set the token amount corresponding to the underlying token index in the pool that we intend
-        // to add as liquidity or exchange
-        //
-        // this place should be optimized
         if (assetInfo.isLpToken) {
-            if (assetInfo.pool == CURVE_3POOL) {
-                uint256[CURVE_3POOL_TOKENS_COUNT] memory amounts;
-                amounts[uint256(int256(UNDERLYING_ASSET_INDEX))] = underlyingAmount;
-
-                pool.add_liquidity(amounts, minRedeemAmount);
-            } else if (assetInfo.pool == CURVE_FRAXUSDC) {
-                uint256[CURVE_FRAXUSDC_TOKENS_COUNT] memory amounts;
-                amounts[uint256(int256(UNDERLYING_ASSET_INDEX))] = underlyingAmount;
-
-                pool.add_liquidity(amounts, minRedeemAmount);
-            }
+            _handleLpTokenRetrieval(assetInfo, underlyingAmount, minRedeemAmount, pool);
         } else {
             pool.exchange(UNDERLYING_ASSET_INDEX, assetInfo.index, underlyingAmount, minRedeemAmount);
         }
 
-        // actual amount of tokens user will get after redeem
-        redeemAmount = IERC20(redeemToken).balanceOf(address(this)) - balancePre;
+        uint256 redeemAmount = IERC20(redeemToken).balanceOf(address(this)) - balancePre;
 
         SafeERC20.safeTransfer(IERC20(redeemToken), receiver, redeemAmount);
+
+        return redeemAmount;
+    }
+
+    function _handleLpTokenRetrieval(
+        AssetInfo storage assetInfo,
+        uint256 underlyingAmount,
+        uint256 minRedeemAmount,
+        ICurveBasePool pool
+    )
+        internal
+    {
+        if (assetInfo.pool == CURVE_3POOL) {
+            uint256[CURVE_3POOL_TOKENS_COUNT] memory amounts;
+            amounts[uint256(int256(UNDERLYING_ASSET_INDEX))] = underlyingAmount;
+
+            pool.add_liquidity(amounts, minRedeemAmount);
+        } else if (assetInfo.pool == CURVE_FRAXUSDC) {
+            uint256[CURVE_FRAXUSDC_TOKENS_COUNT] memory amounts;
+            amounts[uint256(int256(UNDERLYING_ASSET_INDEX))] = underlyingAmount;
+
+            pool.add_liquidity(amounts, minRedeemAmount);
+        }
     }
 
     /**
