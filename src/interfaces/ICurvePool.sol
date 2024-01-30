@@ -1,4 +1,4 @@
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19.0;
 
 interface ICurveBasePool {
     function lp_token() external view returns (address);

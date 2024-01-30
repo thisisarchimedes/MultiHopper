@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -17,7 +17,6 @@ abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable,
     /**
      * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC20 or ERC777).
      */
-
     function __ERC4626_init(IERC20Upgradeable asset_) internal onlyInitializing {
         __ERC4626_init_unchained(asset_);
     }
@@ -152,6 +151,7 @@ abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable,
     /**
      * @dev See {IERC4626-withdraw}.
      */
+
     function withdraw(
         uint256 assets,
         address receiver,

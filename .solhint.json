@@ -4,11 +4,14 @@
     "code-complexity": ["error", 5],
     "compiler-version": ["error", ">=0.8.19"],
     "func-name-mixedcase": "off",
-    "func-visibility": ["error", { "ignoreConstructors": true }],
-    "max-line-length": ["error", 160],
-    "not-rely-on-time": "off",
-    "avoid-low-level-calls": "off",
-    "max-states-count": "off",
-    "no-console": "off"
+    "no-console": "error",
+    "func-visibility": [
+      "error",
+      {
+        "ignoreConstructors": true
+      }
+    ],
+    "max-line-length": ["error", 140],
+    "not-rely-on-time": "off"
   }
 }

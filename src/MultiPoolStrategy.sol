@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import { ERC4626Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -99,7 +99,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      *
      * @notice _name + _symbol must be less than 32 characters.
      */
-
     function initialize(
         address _stakingToken,
         address _monitor,
@@ -137,7 +136,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     /**
      * @notice Fetch all the underlying balances including this contract
      */
-
     function totalAssets() public view override returns (uint256) {
         // cache global vars
         uint256 storedTotalAssets_ = storedTotalAssets;
@@ -175,7 +173,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     /**
      * @dev See {IERC4626-withdraw}.
      */
-
     function withdraw(
         uint256 assets,
         address receiver,

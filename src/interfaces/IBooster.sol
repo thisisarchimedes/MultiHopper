@@ -1,4 +1,4 @@
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19.0;
 
 interface IBooster {
     event Deposited(address indexed user, uint256 indexed poolid, uint256 amount);

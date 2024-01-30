@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19.0;
 
 import { MultiPoolStrategy as IMultiPoolStrategy } from "../MultiPoolStrategy.sol";
 
@@ -21,7 +21,8 @@ interface IGenericZapper {
      * @dev Deposits asset into the MultiPoolStrategy contract.
      * @param amount The asset amount user wants to deposit.
      * @param token The deposited asset address (like: USDT address).
-     * @param toAmountMin Minimum amount of underlying asset to receive after the swap of the provided asset (please pay attention to decimals).
+     * @param toAmountMin Minimum amount of underlying asset to receive after the swap of the provided asset (please pay
+     * attention to decimals).
      * @param receiver The address to receive the shares.
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @param swapTx containing the transaction data for the swap.

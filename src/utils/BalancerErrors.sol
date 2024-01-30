@@ -14,7 +14,7 @@
 
 /* solhint-disable */
 
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19.0;
 
 /**
  * @dev Reverts if `condition` is false, with a revert reason containing `errorCode`. Only codes up to 999 are

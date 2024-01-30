@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import "forge-std/Script.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -19,7 +19,6 @@ import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
  * @dev A contract for deploying and configuring a Single pool Strategy using an Aura Stable pool adapter
  *
  */
-
 contract DeployAuraStable is Script {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.
@@ -43,7 +42,6 @@ contract DeployAuraStable is Script {
      * It performs the following steps:
      *
      */
-
     function run() public {
         require(FACTORY_ADDRESS != address(0), "Deploy: factory address not set");
         require(AURA_BOOSTER != address(0), "Deploy: Aura booster address not set");
@@ -54,11 +52,14 @@ contract DeployAuraStable is Script {
 
         MultiPoolStrategyFactory multiPoolStrategyFactory = MultiPoolStrategyFactory(FACTORY_ADDRESS);
         console2.log("MultiPoolStrategyFactory: %s", address(multiPoolStrategyFactory));
-        
-        MultiPoolStrategy multiPoolStrategy =
-            MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME));
+
+        MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(
+            multiPoolStrategyFactory.createMultiPoolStrategy(
+                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME
+            )
+        );
         console2.log("MultiPoolStrategy: %s", address(multiPoolStrategy));
-        
+
         AuraWeightedPoolAdapter AuraPoolAdapter = AuraWeightedPoolAdapter(
             multiPoolStrategyFactory.createAuraWeightedPoolAdapter(
                 BALANCER_WEIGHTED_POOL_ID, address(multiPoolStrategy), AURA_PID

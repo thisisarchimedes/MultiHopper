@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { IZapper } from "../interfaces/IZapper.sol";
 import { ICurveBasePool } from "../interfaces/ICurvePool.sol";
@@ -58,13 +58,14 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         _supportedAssets.add(CRV);
         _supportedAssets.add(CRVFRAX);
 
-        _supportedAssetsInfo[USDT] = AssetInfo({pool: CURVE_3POOL, index: USDT_INDEX, isLpToken: false});
-        _supportedAssetsInfo[DAI] = AssetInfo({pool: CURVE_3POOL, index: DAI_INDEX, isLpToken: false});
-        _supportedAssetsInfo[FRAX] = AssetInfo({pool: CURVE_FRAXUSDC, index: FRAX_INDEX, isLpToken: false});
-        // for lp tokens indexes are set as index for UNDERLYING_TOKEN (usdc), as after removing liquidity we want to get usdc
-        _supportedAssetsInfo[CRV] = AssetInfo({pool: CURVE_3POOL, index: UNDERLYING_ASSET_INDEX, isLpToken: true});
+        _supportedAssetsInfo[USDT] = AssetInfo({ pool: CURVE_3POOL, index: USDT_INDEX, isLpToken: false });
+        _supportedAssetsInfo[DAI] = AssetInfo({ pool: CURVE_3POOL, index: DAI_INDEX, isLpToken: false });
+        _supportedAssetsInfo[FRAX] = AssetInfo({ pool: CURVE_FRAXUSDC, index: FRAX_INDEX, isLpToken: false });
+        // for lp tokens indexes are set as index for UNDERLYING_TOKEN (usdc), as after removing liquidity we want to
+        // get usdc
+        _supportedAssetsInfo[CRV] = AssetInfo({ pool: CURVE_3POOL, index: UNDERLYING_ASSET_INDEX, isLpToken: true });
         _supportedAssetsInfo[CRVFRAX] =
-            AssetInfo({pool: CURVE_FRAXUSDC, index: UNDERLYING_ASSET_INDEX, isLpToken: true});
+            AssetInfo({ pool: CURVE_FRAXUSDC, index: UNDERLYING_ASSET_INDEX, isLpToken: true });
     }
 
     /**
@@ -110,7 +111,8 @@ contract USDCZapper is ReentrancyGuard, Ownable, IZapper {
         ICurveBasePool pool = ICurveBasePool(assetInfo.pool);
 
         // TODO: I'd prefer to use address.call here, as some pool implementations return amount, some not.
-        // If call eventually returns some data, we can use it in a upcoming calls, if not we need to call UNDERLYING_ASSET.balanceOf(address(this))
+        // If call eventually returns some data, we can use it in a upcoming calls, if not we need to call
+        // UNDERLYING_ASSET.balanceOf(address(this))
         //
         // balance of underlying asset before deposit
         uint256 balancePre = IERC20(UNDERLYING_ASSET).balanceOf(address(this));

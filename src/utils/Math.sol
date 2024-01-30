@@ -2,7 +2,7 @@
 
 /* solhint-disable */
 
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19.0;
 
 import "./BalancerErrors.sol";
 

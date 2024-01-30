@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import "src/AuraAdapterBase.sol";
 import { FixedPoint } from "src/utils/FixedPoint.sol";
@@ -212,4 +212,3 @@ contract AuraStablePoolAdapter is AuraAdapterBase {
         revert("STABLE_INVARIANT_DIDNT_CONVERGE");
     }
 }
-

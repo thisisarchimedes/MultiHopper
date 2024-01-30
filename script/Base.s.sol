@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { Script } from "forge-std/Script.sol";
 

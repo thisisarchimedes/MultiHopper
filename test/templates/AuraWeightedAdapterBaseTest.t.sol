@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity ^0.8.19.0;
 
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -28,14 +28,14 @@ contract AuraWeightedPoolAdapterBaseTest is PRBTest, StdCheats {
     address public staker = makeAddr("staker");
     ///CONSTANTS
     address public UNDERLYING_ASSET;
-    address public  AURA_BOOSTER;
+    address public AURA_BOOSTER;
     /// POOL CONSTANTS
-    bytes32 public  BALANCER_WEIGHTED_POOL_ID;
-    uint256 public  AURA_PID;
+    bytes32 public BALANCER_WEIGHTED_POOL_ID;
+    uint256 public AURA_PID;
 
-    string public  SALT;
-    string public  STRATEGY_NAME;
-    string public  TOKEN_NAME;
+    string public SALT;
+    string public STRATEGY_NAME;
+    string public TOKEN_NAME;
 
     uint256 public forkBlockNumber;
     uint256 public DEFAULT_FORK_BLOCK_NUMBER;
@@ -95,10 +95,10 @@ contract AuraWeightedPoolAdapterBaseTest is PRBTest, StdCheats {
             AuraWeightedPoolAdapterImplementation,
             AuraComposableWeightedPoolAdapterImplementation,
             address(proxyAdmin)
-            );
+        );
         multiPoolStrategy = MultiPoolStrategy(
             multiPoolStrategyFactory.createMultiPoolStrategy(
-                address(IERC20(UNDERLYING_ASSET)),  STRATEGY_NAME, TOKEN_NAME
+                address(IERC20(UNDERLYING_ASSET)), STRATEGY_NAME, TOKEN_NAME
             )
         );
 
