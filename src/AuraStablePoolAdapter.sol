@@ -5,7 +5,7 @@ import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 import { FixedPoint } from "src/utils/FixedPoint.sol";
 import { Math } from "src/utils/Math.sol";
 import { IStablePool } from "src/interfaces/IStablepool.sol";
-
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 contract AuraStablePoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;

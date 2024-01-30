@@ -59,8 +59,6 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     error AdapterAlreadyAdded();
     /// @dev thrown when syncing before cycle ends.
     error SyncError();
-    error WithdrawExceedsMax();
-    error RedeemExceedsMax();
     error HealthFactorTooHigh();
 
     ///STRUCTS
@@ -215,7 +213,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         returns (uint256)
     {
         if (shares > maxRedeem(owner)) {
-            revert RedeemExceedsMax("ERC4626: redeem more than max");
+            revert RedeemExceedsMax();
         }
         _updateRewards();
         uint256 assets = previewRedeem(shares);

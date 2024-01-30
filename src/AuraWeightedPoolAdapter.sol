@@ -4,6 +4,7 @@ pragma solidity ^0.8.19.0;
 import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 import { FixedPoint } from "src/utils/FixedPoint.sol";
 import { IWeightedPool } from "src/interfaces/IWeightedPool.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 contract AuraWeightedPoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;

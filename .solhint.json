@@ -4,7 +4,8 @@
     "code-complexity": ["error", 8],
     "compiler-version": ["error", ">=0.8.19"],
     "func-name-mixedcase": "off",
-    "no-console": "error",
+    "no-console": "error",  
+    "max-states-count": ["warn",20],
     "func-visibility": [
       "error",
       {
