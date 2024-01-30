@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19.0;
 
-import { MultiPoolStrategy as IMultiPoolStrategy } from "../MultiPoolStrategy.sol";
-
 interface IGenericZapper {
     /**
      * @custom:error Thrown when the strategy is paused.

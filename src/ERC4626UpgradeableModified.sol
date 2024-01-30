@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19.0;
 
-import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {
+    ERC20Upgradeable,
+    Initializable,
+    IERC20Upgradeable,
+    IERC20MetadataUpgradeable
+} from "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import "src/interfaces/IERC4626.sol";
+import { MathUpgradeable } from "openzeppelin-contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import { IERC4626Upgradeable } from "src/interfaces/IERC4626.sol";
 ///  @dev Implementation of the ERC4626 "Tokenized Vault Standard"
 /// @author Openzeppelin
 
@@ -13,6 +18,10 @@ abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable,
 
     IERC20Upgradeable private _asset;
     uint8 private _decimals;
+
+    error DepositExceedsMax();
+    error WithdrawExceedsMax();
+    error RedeemExceedsMax();
 
     /**
      * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC20 or ERC777).
@@ -140,7 +149,9 @@ abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable,
      * @dev See {IERC4626-deposit}.
      */
     function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
-        require(assets <= maxDeposit(receiver), "ERC4626: deposit more than max");
+        if (assets > maxDeposit(receiver)) {
+            revert DepositExceedsMax();
+        }
 
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares);
@@ -163,8 +174,9 @@ abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable,
         override
         returns (uint256)
     {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
-
+        if (assets > maxWithdraw(owner)) {
+            revert WithdrawExceedsMax();
+        }
         uint256 shares = previewWithdraw(assets);
         _withdraw(_msgSender(), receiver, owner, assets, shares);
 
@@ -185,8 +197,9 @@ abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable,
         override
         returns (uint256)
     {
-        require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
-
+        if (shares > maxRedeem(owner)) {
+            revert RedeemExceedsMax();
+        }
         uint256 assets = previewRedeem(shares);
         _withdraw(_msgSender(), receiver, owner, assets, shares);
 
