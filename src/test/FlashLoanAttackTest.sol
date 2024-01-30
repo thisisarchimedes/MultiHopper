@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19.0;
 
-import { IPoolWithEth, ICurveBasePool } from "../interfaces/ICurvePool.sol";
+import { IPoolWithEth } from "../interfaces/ICurvePool.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { MultiPoolStrategy } from "../MultiPoolStrategy.sol";
-import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 
 contract FlashLoanAttackTest {
     address public underlyingToken;

@@ -54,6 +54,7 @@ contract GenericZapper is Context, IGenericZapper {
         if (token != underlyingAsset) {
             SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, 0);
             SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, amount);
+            // solhint-disable-next-line avoid-low-level-calls
             (bool success,) = LIFI_DIAMOND.call(swapTx);
             if (!success) revert SwapFailed();
         }

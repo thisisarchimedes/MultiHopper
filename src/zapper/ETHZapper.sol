@@ -3,9 +3,7 @@ pragma solidity ^0.8.19.0;
 
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "src/MultiPoolStrategy.sol";
-import { console2 } from "forge-std/console2.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
@@ -13,12 +11,13 @@ import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/E
 error StrategyPaused();
 error StrategyAssetNotWETH();
 error EmptyInput();
-/**
+error ReceiverIsZeroAddress();
+
+/*
  * @title ETHZapper
  * @dev This contract allows users to deposit, withdraw, and redeem into a MultiPoolStrategy contract using native ETH.
  * It wraps ETH into WETH and interacts with the MultiPoolStrategy contract to perform the operations.
  */
-
 contract ETHZapper is ReentrancyGuardUpgradeable {
     address public constant WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
@@ -42,7 +41,7 @@ contract ETHZapper is ReentrancyGuardUpgradeable {
         returns (uint256 shares)
     {
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
-        require(receiver != address(0), "Receiver is zero address");
+        if (receiver == address(0)) revert ReceiverIsZeroAddress();
 
         if (msg.value == 0) revert EmptyInput();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
@@ -84,7 +83,7 @@ contract ETHZapper is ReentrancyGuardUpgradeable {
         returns (uint256)
     {
         if (assets == 0) revert EmptyInput();
-        require(receiver != address(0), "Receiver is zero address");
+        if (receiver == address(0)) revert ReceiverIsZeroAddress();
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
 
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
@@ -124,7 +123,7 @@ contract ETHZapper is ReentrancyGuardUpgradeable {
         returns (uint256)
     {
         if (shares == 0) revert EmptyInput();
-        require(receiver != address(0), "Receiver is zero address");
+        if (receiver == address(0)) revert ReceiverIsZeroAddress();
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
 
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);

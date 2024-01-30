@@ -5,9 +5,6 @@ import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
 import { ConvexPoolAdapter } from "src/ConvexPoolAdapter.sol";
 import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
-import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
-import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
-import { AuraComposableStablePoolAdapter } from "src/AuraComposableStablePoolAdapter.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 

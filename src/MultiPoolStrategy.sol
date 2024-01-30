@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19.0;
 
-import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
-import { ERC4626Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IAdapter } from "src/interfaces/IAdapter.sol";
-import { IERC20UpgradeableDetailed } from "src/interfaces/IERC20UpgradeableDetailed.sol";
 import { ERC4626UpgradeableModified } from "src/ERC4626UpgradeableModified.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { SafeCastLib } from "solmate/utils/SafeCastLib.sol";
@@ -62,6 +59,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     error AdapterAlreadyAdded();
     /// @dev thrown when syncing before cycle ends.
     error SyncError();
+    error WithdrawExceedsMax();
+    error RedeemExceedsMax();
+    error HealthFactorTooHigh();
 
     ///STRUCTS
     struct Adjust {
@@ -184,7 +184,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         nonReentrant
         returns (uint256)
     {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
+        if (assets > maxWithdraw(owner)) {
+            revert WithdrawExceedsMax();
+        }
         _updateRewards();
         uint256 shares = previewWithdraw(assets);
 
@@ -212,7 +214,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         nonReentrant
         returns (uint256)
     {
-        require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
+        if (shares > maxRedeem(owner)) {
+            revert RedeemExceedsMax("ERC4626: redeem more than max");
+        }
         _updateRewards();
         uint256 assets = previewRedeem(shares);
         uint256 currBal = storedTotalAssets;
@@ -270,24 +274,15 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
     }
 
     /// ADMIN FUNCTIONS
-    /**
-     * @notice Adjust the underlying assets either out from adapters or in to adapters.Total adjust out amount must be
+    /*
+    * @notice Adjust the underlying assets either out from adapters or in to adapters.Total adjust out amount must be
      * smaller/equal to storedTotalAssets - (storedTotalAssets * minPercentage / 10000)
      * @param _adjustIns List of AdjustIn structs
      * @param _adjustOuts List of AdjustOut structs
      * @param _sortedAdapters List of adapters sorted by lowest tvl to highest tvl
      */
-    function adjust(
-        Adjust[] calldata _adjustIns,
-        Adjust[] calldata _adjustOuts,
-        address[] calldata _sortedAdapters
-    )
-        external
-        nonReentrant
-    {
-        if ((_msgSender() != monitor && !paused) || (_msgSender() != owner() && paused)) revert Unauthorized();
+    function adjustOut(Adjust[] calldata _adjustOuts) internal {
         uint256 adjustOutLength = _adjustOuts.length;
-
         if (adjustOutLength > 0 && block.timestamp - lastAdjustOut > adjustOutInterval) {
             uint256 balBefore = IERC20Upgradeable(asset()).balanceOf(address(this));
             for (uint256 i = 0; i < adjustOutLength;) {
@@ -301,6 +296,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
             lastAdjustOut = block.timestamp;
             emit Adjusted(balAfter - balBefore, false);
         }
+    }
+
+    function adjustIn(Adjust[] calldata _adjustIns) internal {
         uint256 adjustInLength = _adjustIns.length;
         if (adjustInLength > 0 && block.timestamp - lastAdjustIn > adjustInInterval) {
             uint256 totalOut;
@@ -320,6 +318,20 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
             lastAdjustIn = block.timestamp;
             emit Adjusted(totalOut, true);
         }
+    }
+
+    function adjust(
+        Adjust[] calldata _adjustIns,
+        Adjust[] calldata _adjustOuts,
+        address[] calldata _sortedAdapters
+    )
+        external
+        nonReentrant
+    {
+        if ((_msgSender() != monitor && !paused) || (_msgSender() != owner() && paused)) revert Unauthorized();
+
+        adjustOut(_adjustOuts);
+        adjustIn(_adjustIns);
 
         uint256 _totalAssets = totalAssets();
         if (storedTotalAssets < _totalAssets * minPercentage / 10_000) {
@@ -347,6 +359,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
         for (uint256 i = 0; i < _swapDatas.length;) {
             SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(_swapDatas[i].token), LIFI_DIAMOND, 0);
             SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(_swapDatas[i].token), LIFI_DIAMOND, _swapDatas[i].amount);
+            /* solhint-disable-next-line avoid-low-level-calls */
             (bool success,) = LIFI_DIAMOND.call(_swapDatas[i].callData);
             if (!success) revert SwapFailed();
             unchecked {
@@ -491,7 +504,9 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      */
     function changeAdapterHealthFactor(address _adapter, uint256 _healthFactor) external onlyOwner {
         // Health factor can't be more than 100%
-        require(_healthFactor <= 10_000, "Health factor>100%");
+        if (_healthFactor <= 10_000) {
+            revert HealthFactorTooHigh();
+        }
         IAdapter(_adapter).setHealthFactor(_healthFactor);
     }
 
