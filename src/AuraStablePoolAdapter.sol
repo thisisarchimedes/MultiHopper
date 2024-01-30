@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19.0;
 
-import "src/AuraAdapterBase.sol";
+import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 import { FixedPoint } from "src/utils/FixedPoint.sol";
 import { Math } from "src/utils/Math.sol";
 import { IStablePool } from "src/interfaces/IStablepool.sol";
+
 
 contract AuraStablePoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;
 
     uint256 internal constant _AMP_PRECISION = 1e3;
+
+    error BalanceDidNotConverge();
+    error InvariantDidNotConverge();
 
     function underlyingBalance() public view override returns (uint256) {
         uint256 lpBal = auraRewardPool.balanceOf(address(this));
@@ -139,7 +143,7 @@ contract AuraStablePoolAdapter is AuraAdapterBase {
         }
 
         // STABLE_GET_BALANCE_DIDNT_CONVERGE
-        revert("BALANCE_DIDNT_CONVERGE");
+        revert BalanceDidNotConverge();
     }
 
     function _calculateInvariant(
@@ -209,6 +213,6 @@ contract AuraStablePoolAdapter is AuraAdapterBase {
             }
         }
 
-        revert("STABLE_INVARIANT_DIDNT_CONVERGE");
+        revert InvariantDidNotConverge();
     }
 }

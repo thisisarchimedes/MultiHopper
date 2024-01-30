@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19.0;
 
-import "src/AuraAdapterBase.sol";
+import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 import { FixedPoint } from "src/utils/FixedPoint.sol";
 import { IWeightedPool } from "src/interfaces/IWeightedPool.sol";
 
@@ -9,6 +9,8 @@ contract AuraWeightedPoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;
 
     uint256 internal constant _MIN_INVARIANT_RATIO = 0.7e18;
+
+    error MinBptInForTokenOut();
 
     function underlyingBalance() public view override returns (uint256) {
         uint256 lpBal = auraRewardPool.balanceOf(address(this));
@@ -57,7 +59,9 @@ contract AuraWeightedPoolAdapter is AuraAdapterBase {
 
         // Calculate the factor by which the invariant will decrease after burning BPTAmountIn
         uint256 invariantRatio = bptTotalSupply.sub(bptAmountIn).divUp(bptTotalSupply);
-        require(invariantRatio >= _MIN_INVARIANT_RATIO, "MIN_BPT_IN_FOR_TOKEN_OUT");
+        if (invariantRatio < _MIN_INVARIANT_RATIO) {
+            revert MinBptInForTokenOut();
+        }
 
         // Calculate by how much the token balance has to decrease to match invariantRatio
         uint256 balanceRatio = invariantRatio.powUp(FixedPoint.ONE.divDown(normalizedWeight));
