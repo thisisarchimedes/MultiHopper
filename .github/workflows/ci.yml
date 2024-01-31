@@ -161,15 +161,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"  
-
-      - name: Check Foundry Installation
-        run: |
-          echo "Checking forge installation..."
-          forge --version
-          echo "PATH: $PATH"
-
       - name: Run Slither
         uses: crytic/slither-action@v0.3.0
         id: slither
