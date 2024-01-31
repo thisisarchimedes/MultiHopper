@@ -166,7 +166,6 @@ jobs:
         id: slither
         with:
           ignore-compile: true
-
           node-version: 16
           fail-on: medium
           slither-args:
