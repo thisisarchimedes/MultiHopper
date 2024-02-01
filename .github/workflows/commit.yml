@@ -1,4 +1,9 @@
-name: "CI"
+name: Commit Stage
+
+on:
+    push:
+      branches-ignore:
+        - 'main' 
 
 env:
   API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
@@ -10,9 +15,6 @@ env:
   API_DEVOPS_EVENT_CATCHER: ${{ vars.API_DEVOPS_EVENT_CATCHER }}
   DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
 
-on:
-  workflow_dispatch:
-  pull_request:
 
 jobs:
   lint:
