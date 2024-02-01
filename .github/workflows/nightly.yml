@@ -1,4 +1,4 @@
-name: Run Nightly Check
+name: Nightly Check
 
 on:
   schedule:
