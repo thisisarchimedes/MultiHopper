@@ -5,8 +5,7 @@ import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "openzeppelin-contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "src/interfaces/IERC4626.sol";
-///  @dev Implementation of the ERC4626 "Tokenized Vault Standard"
-/// @author Openzeppelin
+
 
 abstract contract ERC4626UpgradeableModified is Initializable, ERC20Upgradeable, IERC4626Upgradeable {
     using MathUpgradeable for uint256;

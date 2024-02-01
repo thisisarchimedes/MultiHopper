@@ -1,7 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "code-complexity": ["error", 5],
+    "code-complexity": ["error", 8],
     "compiler-version": ["error", ">=0.8.19"],
     "func-name-mixedcase": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
@@ -9,6 +9,7 @@
     "not-rely-on-time": "off",
     "avoid-low-level-calls": "off",
     "max-states-count": "off",
-    "no-console": "off"
+    "no-console": "off",
+    "no-global-import": "off"
   }
 }

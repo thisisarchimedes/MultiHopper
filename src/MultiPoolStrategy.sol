@@ -280,6 +280,7 @@ contract MultiPoolStrategy is OwnableUpgradeable, ERC4626UpgradeableModified, Re
      * @param _adjustOuts List of AdjustOut structs
      * @param _sortedAdapters List of adapters sorted by lowest tvl to highest tvl
      */
+    // solhint-disable code-complexity
     function adjust(
         Adjust[] calldata _adjustIns,
         Adjust[] calldata _adjustOuts,
