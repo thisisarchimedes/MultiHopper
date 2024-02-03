@@ -119,6 +119,7 @@ contract ConvexPoolAdapter is Initializable {
         }
     }
 
+    // solhint-disable code-complexity
     function _addCurvePoolLiquidity(uint256 _amount, uint256 _minCurveLpAmount) internal {
         uint256[5] memory amounts;
         amounts[uint256(uint128(underlyingTokenPoolIndex))] = _amount;

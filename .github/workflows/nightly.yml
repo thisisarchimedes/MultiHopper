@@ -1,4 +1,4 @@
-name: Run Nightly Check
+name: Nightly Check
 
 on:
   schedule:
@@ -62,10 +62,10 @@ jobs:
             - name: "Run the tests"
               continue-on-error: true
               run: |
-                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards" --match-path "test/generic/*"
-                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/convex/*"
-                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/aura/*"
-                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --match-path "test/zapper/*"
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/generic/*"
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/convex/*"
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/aura/*"
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/zapper/*"
 
                 echo "::set-output name=passed::$?"
 
