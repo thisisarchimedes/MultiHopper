@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { BaseScript } from "script/Base.s.sol";
 import "forge-std/Script.sol";
@@ -10,23 +10,18 @@ import { console2 } from "forge-std/console2.sol";
 /// @dev See the Solidity Scripting tutorial: https://book.getfoundry.sh/tutorials/solidity-scripting
 import { MultiPoolStrategy } from "../src/MultiPoolStrategy.sol";
 
-
 /**
  * @title Deploy
  *
  * @dev A contract for deploying the ETHZapper contract
  */
 contract DeployETHZapper is Script {
-    
     // set before deploy
     address MULTIPOOL_STRATEGY = address(0);
 
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
-    
-    
 
     function run() public {
-
         vm.startBroadcast(deployerPrivateKey);
 
         // create  the ETHzapper
@@ -47,6 +42,5 @@ contract DeployETHZapper is Script {
         /* =========== END TEST - RUN ONLY WITH A FORK =========== */
 
         vm.stopBroadcast();
-
     }
 }

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
 import { MultiPoolStrategy as IMultiPoolStrategy } from "src/MultiPoolStrategy.sol";
-import { console2 } from "forge-std/console2.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
@@ -13,17 +11,18 @@ import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/E
 error StrategyPaused();
 error StrategyAssetNotWETH();
 error EmptyInput();
-/**
+error ReceiverIsZeroAddress();
+
+/*
  * @title ETHZapper
  * @dev This contract allows users to deposit, withdraw, and redeem into a MultiPoolStrategy contract using native ETH.
  * It wraps ETH into WETH and interacts with the MultiPoolStrategy contract to perform the operations.
  */
+contract ETHZapper is ReentrancyGuardUpgradeable {
+    address public constant WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-contract ETHZapper is ReentrancyGuardUpgradeable{
-    address constant public WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-
-    constructor() { 
-         // solhint-disable-previous-line no-empty-blocks
+    constructor() {
+        // solhint-disable-previous-line no-empty-blocks
     }
 
     /**
@@ -32,27 +31,32 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @return shares The amount of shares received.
      */
-    function depositETH(address receiver, address strategyAddress) 
-        external 
-        nonReentrant 
-        payable 
-        returns (uint256 shares) 
+    function depositETH(
+        address receiver,
+        address strategyAddress
+    )
+        external
+        payable
+        nonReentrant
+        returns (uint256 shares)
     {
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
-        require(receiver != address(0), "Receiver is zero address");
+        if (receiver == address(0)) revert ReceiverIsZeroAddress();
 
         if (msg.value == 0) revert EmptyInput();
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
         if (multipoolStrategy.paused()) revert StrategyPaused();
-        
+
         uint256 amountETH = msg.value;
-        
+
         // wrap ether and then call deposit
         IWETH(payable(WETH_ADDRESS)).deposit{ value: amountETH }();
 
         //// we need to approve the strategy to spend our WETH
         SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), 0);
-        SafeERC20Upgradeable.safeApprove(IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), amountETH);
+        SafeERC20Upgradeable.safeApprove(
+            IERC20Upgradeable(multipoolStrategy.asset()), address(multipoolStrategy), amountETH
+        );
         shares = multipoolStrategy.deposit(amountETH, address(this));
         SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(multipoolStrategy), receiver, shares);
 
@@ -75,13 +79,13 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         address strategyAddress
     )
         external
-        nonReentrant 
+        nonReentrant
         returns (uint256)
     {
         if (assets == 0) revert EmptyInput();
-        require(receiver != address(0), "Receiver is zero address");
+        if (receiver == address(0)) revert ReceiverIsZeroAddress();
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
-        
+
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
 
         /// get WETH balance before withdraw
@@ -115,22 +119,22 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
         address strategyAddress
     )
         external
-        nonReentrant 
+        nonReentrant
         returns (uint256)
     {
         if (shares == 0) revert EmptyInput();
-        require(receiver != address(0), "Receiver is zero address");
+        if (receiver == address(0)) revert ReceiverIsZeroAddress();
         if (!strategyUsesWETH(strategyAddress)) revert StrategyAssetNotWETH();
 
         IMultiPoolStrategy multipoolStrategy = IMultiPoolStrategy(strategyAddress);
 
         // redeem shares and get WETH from strategy
         uint256 received = multipoolStrategy.redeem(shares, address(this), msg.sender, minimumReceive);
-        
+
         // unwrap WETH to ETH and send to receiver
         IWETH(payable(WETH_ADDRESS)).withdraw(received);
         payable(address(receiver)).transfer(received);
-        
+
         return received;
     }
 
@@ -145,6 +149,6 @@ contract ETHZapper is ReentrancyGuardUpgradeable{
     }
 
     receive() external payable {
-         // solhint-disable-previous-line no-empty-blocks
-     }
+        // solhint-disable-previous-line no-empty-blocks
+    }
 }

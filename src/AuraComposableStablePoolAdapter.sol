@@ -1,17 +1,24 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
-import "src/AuraAdapterBase.sol";
+import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 import { FixedPoint } from "src/utils/FixedPoint.sol";
 import { Math } from "src/utils/Math.sol";
+import { IBooster } from "src/interfaces/IBooster.sol";
 import { IStablePool } from "src/interfaces/IStablepool.sol";
 import { IBalancerVault } from "src/interfaces/IBalancerVault.sol";
+import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract AuraComposableStablePoolAdapter is AuraAdapterBase {
     using FixedPoint for uint256;
 
     uint256 internal constant _AMP_PRECISION = 1e3;
+
+    error ApproveFailed();
+    error BalanceDidntConverge();
+    error StableInvariantDidntConverge();
 
     function underlyingBalance() public view override returns (uint256) {
         uint256 lpBal = auraRewardPool.balanceOf(address(this));
@@ -93,7 +100,7 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         funds.recipient = address(this);
         funds.toInternalBalance = false;
 
-        require(IERC20(pool).approve(address(vault), _amount), "approve failed");
+        if (!IERC20(pool).approve(address(vault), _amount)) revert ApproveFailed();
 
         vault.swap(swap, funds, _minReceiveAmount, block.timestamp + 20);
         uint256 underlyingBal = IERC20(underlyingToken).balanceOf(address(this));
@@ -206,7 +213,7 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         }
 
         // STABLE_GET_BALANCE_DIDNT_CONVERGE
-        revert("BALANCE_DIDNT_CONVERGE");
+        revert BalanceDidntConverge();
     }
 
     function _calculateInvariant(
@@ -276,7 +283,7 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
             }
         }
 
-        revert("STABLE_INVARIANT_DIDNT_CONVERGE");
+        revert StableInvariantDidntConverge();
     }
     /**
      * @dev Remove the item at `_bptIndex` from an arbitrary array (e.g., amountsIn).
@@ -291,4 +298,3 @@ contract AuraComposableStablePoolAdapter is AuraAdapterBase {
         return amountsWithoutBpt;
     }
 }
-

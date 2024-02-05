@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity ^0.8.19.0;
 
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -148,7 +148,7 @@ contract BalancerComposableStablePoolAdapterGenericTest is PRBTest, StdCheats {
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation,
             address(proxyAdmin)
-            );
+        );
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "generic", "generic"));
         auraComposableStablePoolAdapter = AuraComposableStablePoolAdapter(

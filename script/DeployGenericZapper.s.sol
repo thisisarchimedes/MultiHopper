@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { BaseScript } from "script/Base.s.sol";
 import "forge-std/Script.sol";
@@ -14,11 +14,9 @@ import { console2 } from "forge-std/console2.sol";
  * @dev A contract for deploying the ETHZapper contract
  */
 contract DeployGenericZapper is Script {
-
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
 
     function run() public {
-
         vm.startBroadcast(deployerPrivateKey);
 
         // create the USDCZapper
@@ -26,6 +24,5 @@ contract DeployGenericZapper is Script {
         console2.log("GenericZapper: %s", address(genericZapper));
 
         vm.stopBroadcast();
-
     }
 }

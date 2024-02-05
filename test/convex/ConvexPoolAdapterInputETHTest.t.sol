@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity ^0.8.19.0;
 
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -138,7 +138,7 @@ contract ConvexPoolAdapterInputETHTest is PRBTest, StdCheats {
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation,
             address(proxyAdmin)
-            );
+        );
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_ASSET, "generic", "generic"));
         convexPoolAdapter = ConvexPoolAdapter(

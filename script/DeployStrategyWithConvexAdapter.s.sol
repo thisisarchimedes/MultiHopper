@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import "forge-std/Script.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -21,7 +21,6 @@ import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";
  * @dev A contract for deploying and configuring a Single pool Strategy using the ETH/msETH Curve pool
  *
  */
-
 contract DeployConvex is Script {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.

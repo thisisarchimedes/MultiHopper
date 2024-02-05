@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { Initializable } from "openzeppelin-contracts/proxy/utils/Initializable.sol";
@@ -45,6 +45,8 @@ contract AuraAdapterBase is Initializable {
 
     error Unauthorized();
     error InvalidHealthFactor();
+    error ZeroAddress();
+    error DepositFailed();
 
     modifier onlyMultiPoolStrategy() {
         if (msg.sender != multiPoolStrategy) revert Unauthorized();
@@ -58,8 +60,7 @@ contract AuraAdapterBase is Initializable {
      */
 
     function initialize(bytes32 _poolId, address _multiPoolStrategy, uint256 _auraPid) public initializer {
-        require(_multiPoolStrategy != address(0), "MultiPoolStrategy zero address");
-
+        if (_multiPoolStrategy == address(0)) revert ZeroAddress();
         poolId = _poolId;
         multiPoolStrategy = _multiPoolStrategy;
         underlyingToken = IERC20(IMultiPoolStrategy(_multiPoolStrategy).asset());
@@ -99,7 +100,7 @@ contract AuraAdapterBase is Initializable {
         );
         vault.joinPool(poolId, address(this), address(this), pr);
         uint256 lpBal = IERC20(pool).balanceOf(address(this));
-        require(IBooster(AURA_BOOSTER).deposit(auraPid, lpBal, true), "Deposit failed");
+        if (!IBooster(AURA_BOOSTER).deposit(auraPid, lpBal, true)) revert DepositFailed();
         storedUnderlyingBalance = underlyingBalance();
     }
 

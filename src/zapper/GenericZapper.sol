@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { IGenericZapper } from "../interfaces/IGenericZapper.sol";
 import { MultiPoolStrategy } from "../MultiPoolStrategy.sol";
@@ -16,7 +16,7 @@ import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 contract GenericZapper is Context, IGenericZapper {
     error SwapFailed();
     error AmountBelowMinimum();
-    
+
     /// @notice Address of the LIFI diamond
     address public constant LIFI_DIAMOND = 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE;
 
@@ -51,9 +51,10 @@ contract GenericZapper is Context, IGenericZapper {
         SafeERC20.safeTransferFrom(IERC20(token), _msgSender(), address(this), amount);
 
         // swap for the underlying asset
-        if(token != underlyingAsset) {
+        if (token != underlyingAsset) {
             SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, 0);
             SafeERC20.safeApprove(IERC20(token), LIFI_DIAMOND, amount);
+            // solhint-disable-next-line avoid-low-level-calls
             (bool success,) = LIFI_DIAMOND.call(swapTx);
             if (!success) revert SwapFailed();
         }
@@ -91,7 +92,7 @@ contract GenericZapper is Context, IGenericZapper {
         returns (uint256 underlyingAmount)
     {
         MultiPoolStrategy multiPoolStrategy = MultiPoolStrategy(strategyAddress);
-        
+
         // check if the reciever is not zero address
         if (receiver == address(0)) revert ZeroAddress();
         // check if the amount is not zero

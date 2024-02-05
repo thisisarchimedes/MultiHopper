@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity ^0.8.19.0;
 
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -87,8 +87,7 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
 
         uint256 totalCrvRewards = rewardData[0].amount;
         bytes memory txData;
-        (, txData) =
-            getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
+        (, txData) = getQuoteLiFi(rewardData[0].token, UNDERLYING_TOKEN, totalCrvRewards, address(multiPoolStrategy));
         MultiPoolStrategy.SwapData[] memory swapDatas = new MultiPoolStrategy.SwapData[](1);
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: totalCrvRewards, callData: txData });
@@ -120,8 +119,9 @@ contract BalancerStablePoolAdapterGenericTest is PRBTest, StdCheats {
             MultiPoolStrategyImplementation,
             AuraWeightedPoolAdapterImplementation,
             AuraStablePoolAdapterImplementation,
-            AuraComposableStablePoolAdapterImplementation,address(proxyAdmin)
-            );
+            AuraComposableStablePoolAdapterImplementation,
+            address(proxyAdmin)
+        );
         multiPoolStrategy =
             MultiPoolStrategy(multiPoolStrategyFactory.createMultiPoolStrategy(UNDERLYING_TOKEN, "generic", "generic"));
         auraStablePoolAdapter = AuraStablePoolAdapter(

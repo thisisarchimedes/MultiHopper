@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity ^0.8.19.0;
 
 import { AuraWeightedPoolAdapterBaseTest } from "../templates/AuraWeightedAdapterBaseTest.t.sol";
 

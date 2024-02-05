@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.19.0;
 
 import "forge-std/Script.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -109,15 +109,13 @@ contract DoHardWorkConvexSinglePool is Script {
         bytes memory txData;
 
         // get CRV qoute
-        (quote, txData) = getQuoteLiFi(
-            rewardData[0].token, UNDERLYING_ASSET, _crvRewardAmount, address(STRATEGY_ADDRESS)
-        );
+        (quote, txData) =
+            getQuoteLiFi(rewardData[0].token, UNDERLYING_ASSET, _crvRewardAmount, address(STRATEGY_ADDRESS));
         swapDatas[0] =
             MultiPoolStrategy.SwapData({ token: rewardData[0].token, amount: _crvRewardAmount, callData: txData });
 
         // get CVX quote
-        (quote, txData) =
-            getQuoteLiFi(CVX, UNDERLYING_ASSET, _crvRewardAmount, address(STRATEGY_ADDRESS));
+        (quote, txData) = getQuoteLiFi(CVX, UNDERLYING_ASSET, _crvRewardAmount, address(STRATEGY_ADDRESS));
         swapDatas[1] = MultiPoolStrategy.SwapData({ token: CVX, amount: _cvxRewardAmount, callData: txData });
     }
 

@@ -14,7 +14,7 @@
 
 /* solhint-disable */
 
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19.0;
 
 import "./BalancerErrors.sol";
 
@@ -55,35 +55,36 @@ library LogExpMath {
     int256 constant LN_36_LOWER_BOUND = ONE_18 - 1e17;
     int256 constant LN_36_UPPER_BOUND = ONE_18 + 1e17;
 
-    uint256 constant MILD_EXPONENT_BOUND = 2**254 / uint256(ONE_20);
+    uint256 constant MILD_EXPONENT_BOUND = 2 ** 254 / uint256(ONE_20);
 
     // 18 decimal constants
-    int256 constant x0 = 128000000000000000000; // 2ˆ7
-    int256 constant a0 = 38877084059945950922200000000000000000000000000000000000; // eˆ(x0) (no decimals)
-    int256 constant x1 = 64000000000000000000; // 2ˆ6
-    int256 constant a1 = 6235149080811616882910000000; // eˆ(x1) (no decimals)
+    int256 constant x0 = 128_000_000_000_000_000_000; // 2ˆ7
+    int256 constant a0 = 38_877_084_059_945_950_922_200_000_000_000_000_000_000_000_000_000_000_000; // eˆ(x0) (no
+        // decimals)
+    int256 constant x1 = 64_000_000_000_000_000_000; // 2ˆ6
+    int256 constant a1 = 6_235_149_080_811_616_882_910_000_000; // eˆ(x1) (no decimals)
 
     // 20 decimal constants
-    int256 constant x2 = 3200000000000000000000; // 2ˆ5
-    int256 constant a2 = 7896296018268069516100000000000000; // eˆ(x2)
-    int256 constant x3 = 1600000000000000000000; // 2ˆ4
-    int256 constant a3 = 888611052050787263676000000; // eˆ(x3)
-    int256 constant x4 = 800000000000000000000; // 2ˆ3
-    int256 constant a4 = 298095798704172827474000; // eˆ(x4)
-    int256 constant x5 = 400000000000000000000; // 2ˆ2
-    int256 constant a5 = 5459815003314423907810; // eˆ(x5)
-    int256 constant x6 = 200000000000000000000; // 2ˆ1
-    int256 constant a6 = 738905609893065022723; // eˆ(x6)
-    int256 constant x7 = 100000000000000000000; // 2ˆ0
-    int256 constant a7 = 271828182845904523536; // eˆ(x7)
-    int256 constant x8 = 50000000000000000000; // 2ˆ-1
-    int256 constant a8 = 164872127070012814685; // eˆ(x8)
-    int256 constant x9 = 25000000000000000000; // 2ˆ-2
-    int256 constant a9 = 128402541668774148407; // eˆ(x9)
-    int256 constant x10 = 12500000000000000000; // 2ˆ-3
-    int256 constant a10 = 113314845306682631683; // eˆ(x10)
-    int256 constant x11 = 6250000000000000000; // 2ˆ-4
-    int256 constant a11 = 106449445891785942956; // eˆ(x11)
+    int256 constant x2 = 3_200_000_000_000_000_000_000; // 2ˆ5
+    int256 constant a2 = 7_896_296_018_268_069_516_100_000_000_000_000; // eˆ(x2)
+    int256 constant x3 = 1_600_000_000_000_000_000_000; // 2ˆ4
+    int256 constant a3 = 888_611_052_050_787_263_676_000_000; // eˆ(x3)
+    int256 constant x4 = 800_000_000_000_000_000_000; // 2ˆ3
+    int256 constant a4 = 298_095_798_704_172_827_474_000; // eˆ(x4)
+    int256 constant x5 = 400_000_000_000_000_000_000; // 2ˆ2
+    int256 constant a5 = 5_459_815_003_314_423_907_810; // eˆ(x5)
+    int256 constant x6 = 200_000_000_000_000_000_000; // 2ˆ1
+    int256 constant a6 = 738_905_609_893_065_022_723; // eˆ(x6)
+    int256 constant x7 = 100_000_000_000_000_000_000; // 2ˆ0
+    int256 constant a7 = 271_828_182_845_904_523_536; // eˆ(x7)
+    int256 constant x8 = 50_000_000_000_000_000_000; // 2ˆ-1
+    int256 constant a8 = 164_872_127_070_012_814_685; // eˆ(x8)
+    int256 constant x9 = 25_000_000_000_000_000_000; // 2ˆ-2
+    int256 constant a9 = 128_402_541_668_774_148_407; // eˆ(x9)
+    int256 constant x10 = 12_500_000_000_000_000_000; // 2ˆ-3
+    int256 constant a10 = 113_314_845_306_682_631_683; // eˆ(x10)
+    int256 constant x11 = 6_250_000_000_000_000_000; // 2ˆ-4
+    int256 constant a11 = 106_449_445_891_785_942_956; // eˆ(x11)
 
     /**
      * @dev Exponentiation (x^y) with unsigned 18 decimal fixed point base and exponent.
@@ -105,7 +106,7 @@ library LogExpMath {
         // x^y = exp(y * ln(x)).
 
         // The ln function takes a signed value, so we need to make sure x fits in the signed 256 bit range.
-        _require(x < 2**255, Errors.X_OUT_OF_BOUNDS);
+        _require(x < 2 ** 255, Errors.X_OUT_OF_BOUNDS);
         int256 x_int256 = int256(x);
 
         // We will compute y * ln(x) in a single step. Depending on the value of x, we can either use ln or ln_36. In
@@ -131,8 +132,7 @@ library LogExpMath {
 
         // Finally, we compute exp(y * ln(x)) to arrive at x^y
         _require(
-            MIN_NATURAL_EXPONENT <= logx_times_y && logx_times_y <= MAX_NATURAL_EXPONENT,
-            Errors.PRODUCT_OUT_OF_BOUNDS
+            MIN_NATURAL_EXPONENT <= logx_times_y && logx_times_y <= MAX_NATURAL_EXPONENT, Errors.PRODUCT_OUT_OF_BOUNDS
         );
 
         return uint256(exp(logx_times_y));
@@ -153,7 +153,8 @@ library LogExpMath {
             return ((ONE_18 * ONE_18) / exp(-x));
         }
 
-        // First, we use the fact that e^(x+y) = e^x * e^y to decompose x into a sum of powers of two, which we call x_n,
+        // First, we use the fact that e^(x+y) = e^x * e^y to decompose x into a sum of powers of two, which we call
+        // x_n,
         // where x_n == 2^(7 - n), and e^x_n = a_n has been precomputed. We choose the first x_n, x0, to equal 2^7
         // because all larger powers are larger than MAX_NATURAL_EXPONENT, and therefore not present in the
         // decomposition.
@@ -458,7 +459,8 @@ library LogExpMath {
     }
 
     /**
-     * @dev Intrnal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point argument,
+     * @dev Intrnal high precision (36 decimal places) natural logarithm (ln(x)) with signed 18 decimal fixed point
+     * argument,
      * for x close to one.
      *
      * Should only be used if x is between LN_36_LOWER_BOUND and LN_36_UPPER_BOUND.

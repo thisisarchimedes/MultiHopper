@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity ^0.8.19.0;
 
 import { StdCheats, StdUtils, console2 } from "forge-std/Test.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";

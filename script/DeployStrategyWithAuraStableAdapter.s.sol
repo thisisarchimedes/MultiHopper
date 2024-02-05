@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { console2 } from "forge-std/console2.sol";
 import { WETH as IWETH } from "solmate/tokens/WETH.sol";
@@ -19,7 +19,6 @@ import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
  * @dev A contract for deploying and configuring a Single pool Strategy using an Aura Stable pool adapter
  *
  */
-
 contract DeployAuraStable is BaseScript {
     /**
      * @dev Address of the MultiPoolStrategyFactory contract obtained by running factory deployment script.

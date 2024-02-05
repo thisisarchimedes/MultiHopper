@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { BaseScript } from "./Base.s.sol";
 import "forge-std/Script.sol";
@@ -77,8 +77,7 @@ contract SetupTenderly is Script {
             AuraStablePoolAdapterImplementation,
             AuraComposableStablePoolAdapterImplementation,
             address(this)
-
-            );
+        );
         console2.log(
             "deployed MultiPoolStrategyFactory contract at address %s with monitor %s", address(factory), MONITOR
         );

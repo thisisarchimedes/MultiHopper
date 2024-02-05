@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import {
     ICurveBasePool,
@@ -123,26 +123,35 @@ contract ConvexPoolAdapter is Initializable {
     function _addCurvePoolLiquidity(uint256 _amount, uint256 _minCurveLpAmount) internal {
         uint256[5] memory amounts;
         amounts[uint256(uint128(underlyingTokenPoolIndex))] = _amount;
+
         if (zapper != address(0)) {
-            if (tokensLength == 2) {
-                IPoolFactory2(zapper).add_liquidity{ value: address(this).balance }(
-                    curvePool, [amounts[0], amounts[1]], _minCurveLpAmount
-                );
-            } else if (tokensLength == 3) {
-                IPoolFactory3(zapper).add_liquidity{ value: address(this).balance }(
-                    curvePool, [amounts[0], amounts[1], amounts[2]], _minCurveLpAmount
-                );
-            } else if (tokensLength == 4) {
-                IPoolFactory4(zapper).add_liquidity{ value: address(this).balance }(
-                    curvePool, [amounts[0], amounts[1], amounts[2], amounts[3]], _minCurveLpAmount
-                );
-            } else if (tokensLength == 5) {
-                IPoolFactory5(zapper).add_liquidity{ value: address(this).balance }(
-                    curvePool, [amounts[0], amounts[1], amounts[2], amounts[3], amounts[4]], _minCurveLpAmount
-                );
-            }
-            return;
+            _addLiquidityWithZapper(amounts, _minCurveLpAmount);
+        } else {
+            _addLiquidityWithoutZapper(amounts, _minCurveLpAmount);
         }
+    }
+
+    function _addLiquidityWithZapper(uint256[5] memory amounts, uint256 _minCurveLpAmount) internal {
+        if (tokensLength == 2) {
+            IPoolFactory2(zapper).add_liquidity{ value: address(this).balance }(
+                curvePool, [amounts[0], amounts[1]], _minCurveLpAmount
+            );
+        } else if (tokensLength == 3) {
+            IPoolFactory3(zapper).add_liquidity{ value: address(this).balance }(
+                curvePool, [amounts[0], amounts[1], amounts[2]], _minCurveLpAmount
+            );
+        } else if (tokensLength == 4) {
+            IPoolFactory4(zapper).add_liquidity{ value: address(this).balance }(
+                curvePool, [amounts[0], amounts[1], amounts[2], amounts[3]], _minCurveLpAmount
+            );
+        } else if (tokensLength == 5) {
+            IPoolFactory5(zapper).add_liquidity{ value: address(this).balance }(
+                curvePool, [amounts[0], amounts[1], amounts[2], amounts[3], amounts[4]], _minCurveLpAmount
+            );
+        }
+    }
+
+    function _addLiquidityWithoutZapper(uint256[5] memory amounts, uint256 _minCurveLpAmount) internal {
         if (tokensLength == 2) {
             IPool2(curvePool).add_liquidity{ value: address(this).balance }([amounts[0], amounts[1]], _minCurveLpAmount);
         } else if (tokensLength == 3) {

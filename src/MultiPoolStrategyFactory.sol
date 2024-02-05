@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { Clones } from "openzeppelin-contracts/proxy/Clones.sol";
 import { Ownable } from "openzeppelin-contracts/access/Ownable.sol";
 import { ConvexPoolAdapter } from "src/ConvexPoolAdapter.sol";
 import { MultiPoolStrategy } from "src/MultiPoolStrategy.sol";
-import { AuraWeightedPoolAdapter } from "src/AuraWeightedPoolAdapter.sol";
-import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
-import { AuraComposableStablePoolAdapter } from "src/AuraComposableStablePoolAdapter.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { AuraAdapterBase } from "src/AuraAdapterBase.sol";
 
@@ -68,7 +65,7 @@ contract MultiPoolStrategyFactory is Ownable {
             _underlyingTokenIndex
         );
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(convexAdapterImplementation,proxyAdmin,initData);
+            new TransparentUpgradeableProxy(convexAdapterImplementation, proxyAdmin, initData);
 
         convexAdapter = address(proxy);
     }
@@ -85,7 +82,7 @@ contract MultiPoolStrategyFactory is Ownable {
         bytes memory initData =
             abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(auraWeightedAdapterImplementation,proxyAdmin,initData);
+            new TransparentUpgradeableProxy(auraWeightedAdapterImplementation, proxyAdmin, initData);
         auraAdapter = address(proxy);
     }
 
@@ -101,7 +98,7 @@ contract MultiPoolStrategyFactory is Ownable {
         bytes memory initData =
             abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(auraStableAdapterImplementation,proxyAdmin,initData);
+            new TransparentUpgradeableProxy(auraStableAdapterImplementation, proxyAdmin, initData);
         auraAdapter = address(proxy);
     }
 
@@ -117,7 +114,7 @@ contract MultiPoolStrategyFactory is Ownable {
         bytes memory initData =
             abi.encodeWithSelector(AuraAdapterBase.initialize.selector, _poolId, _multiPoolStrategy, _auraPid);
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(auraComposableStablePoolAdapterImplementation,proxyAdmin,initData);
+            new TransparentUpgradeableProxy(auraComposableStablePoolAdapterImplementation, proxyAdmin, initData);
         auraAdapter = address(proxy);
     }
 
@@ -143,7 +140,7 @@ contract MultiPoolStrategyFactory is Ownable {
         bytes memory initData =
             abi.encodeWithSelector(MultiPoolStrategy.initialize.selector, _underlyingToken, monitor, _name, _symbol);
         TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(multiPoolStrategyImplementation,proxyAdmin,initData);
+            new TransparentUpgradeableProxy(multiPoolStrategyImplementation, proxyAdmin, initData);
         multiPoolStrategy = address(proxy);
         MultiPoolStrategy(multiPoolStrategy).transferOwnership(msg.sender);
     }

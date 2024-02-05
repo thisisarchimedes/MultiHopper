@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import { BaseScript } from "./Base.s.sol";
 import { MultiPoolStrategyFactory } from "src/MultiPoolStrategyFactory.sol";

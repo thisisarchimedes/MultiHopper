@@ -2,7 +2,7 @@
 
 /* solhint-disable */
 
-pragma solidity >=0.8.19;
+pragma solidity ^0.8.19.0;
 
 import "forge-std/Script.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -24,7 +24,6 @@ import { AuraStablePoolAdapter } from "src/AuraStablePoolAdapter.sol";
  * @dev A contract for deploying and configuring a Single pool Strategy using the ETH/msETH Curve pool
  *
  */
-
 contract DeployPoolHopperStrategy is Script {
     address public staker = makeAddr("staker");
     address public feeRecipient = makeAddr("feeRecipient");

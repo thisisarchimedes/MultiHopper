@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity ^0.8.19.0;
 
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -122,15 +122,15 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
             urlOrAlias: "mainnet",
             blockNumber: forkBlockNumber == 0 ? DEFAULT_FORK_BLOCK_NUMBER : forkBlockNumber
         });
-      
+
         multiPoolStrategy = MultiPoolStrategy(STRATEGY);
-        convexGenericAdapter = ConvexPoolAdapter(ADAPTER);           
+        convexGenericAdapter = ConvexPoolAdapter(ADAPTER);
 
         tokenDecimals = IERC20Metadata(UNDERLYING_ASSET).decimals();
 
         (address _curveLpToken,,,,,) = IBooster(CONVEX_BOOSTER).poolInfo(CONVEX_PID);
         curveLpToken = IERC20(_curveLpToken);
-        
+
         deal(UNDERLYING_ASSET, address(this), 10_000e18);
         deal(UNDERLYING_ASSET, staker, 50e18);
     }
@@ -148,12 +148,10 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
     }
 
     function testAdjustIn() public {
-
         // assume Monitor address so we can adjust
         address monitor = multiPoolStrategy.monitor();
         vm.startPrank(monitor);
         deal(UNDERLYING_ASSET, monitor, 10_000e18);
-
 
         // adjusting in
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
@@ -179,12 +177,10 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
     }
 
     function testAdjustOut() public {
-
-         // assume Monitor address so we can adjust
+        // assume Monitor address so we can adjust
         address monitor = multiPoolStrategy.monitor();
         vm.startPrank(monitor);
         deal(UNDERLYING_ASSET, monitor, 10_000e18);
-
 
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
@@ -213,7 +209,7 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
 
         multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
         uint256 storedAssetAfterAdjustTwo = multiPoolStrategy.storedTotalAssets();
-        
+
         assertEq(storedAssetsAfter, storedAssetsBefore - adjustOutAmount);
         assertAlmostEq(storedAssetAfterAdjustTwo, depositAmount, depositAmount * 2 / 100);
 
@@ -221,7 +217,7 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
     }
 
     function testWithdraw() public {
-         // assume Monitor address so we can adjust
+        // assume Monitor address so we can adjust
         address monitor = multiPoolStrategy.monitor();
         vm.startPrank(monitor);
         deal(UNDERLYING_ASSET, monitor, 10_000e18);
@@ -247,19 +243,17 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
         uint256 shares = multiPoolStrategy.balanceOf(monitor);
         multiPoolStrategy.redeem(shares, monitor, monitor, 0);
         uint256 underlyingBalanceInAdapterAfterWithdraw = convexGenericAdapter.underlyingBalance();
-        
+
         assertLt(underlyingBalanceInAdapterAfterWithdraw, underlyingBalanceInAdapterBeforeWithdraw);
-       
+
         vm.stopPrank();
     }
 
     function testClaimRewards() public {
-
-         // assume Monitor address so we can adjust
+        // assume Monitor address so we can adjust
         address monitor = multiPoolStrategy.monitor();
         vm.startPrank(monitor);
         deal(UNDERLYING_ASSET, monitor, 10_000e18);
-
 
         uint256 depositAmount = 500 * 10 ** tokenDecimals;
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount);
@@ -300,31 +294,29 @@ contract ConvexPoolAdapterGenericForkTest is PRBTest, StdCheats {
     }
 
     function testWithdrawExceedContractBalance() public {
-         // assume Monitor address so we can adjust
+        // assume Monitor address so we can adjust
         address monitor = multiPoolStrategy.monitor();
         vm.startPrank(monitor);
         deal(UNDERLYING_ASSET, monitor, 10_000e18);
 
-
         uint256 depositAmount = 100 * 10 ** tokenDecimals;
         IERC20(UNDERLYING_ASSET).approve(address(multiPoolStrategy), depositAmount / 2);
         multiPoolStrategy.deposit(depositAmount / 2, monitor);
-        
+
         harvest(depositAmount);
         vm.warp(block.timestamp + 10 days);
-        
+
         uint256 stakerShares = multiPoolStrategy.balanceOf(staker);
         uint256 withdrawAmount = multiPoolStrategy.convertToAssets(stakerShares);
         uint256 stakerUnderlyingBalanceBefore = IERC20(UNDERLYING_ASSET).balanceOf(address(staker));
-        
-        
+
         multiPoolStrategy.withdraw(withdrawAmount, monitor, monitor, 0);
 
         uint256 stakerSharesAfter = multiPoolStrategy.balanceOf(monitor);
         uint256 stakerUnderlyingBalanceAfter = IERC20(UNDERLYING_ASSET).balanceOf(monitor);
         console2.log("balance", stakerUnderlyingBalanceAfter - stakerUnderlyingBalanceBefore);
         console2.log("withdrawAmount", withdrawAmount);
-       
+
         assertGt(withdrawAmount, depositAmount / 2);
         assertEq(stakerSharesAfter, 0);
         assertAlmostEq(

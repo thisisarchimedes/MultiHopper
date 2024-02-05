@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.19.0;
 
 interface IZapper {
     /**
@@ -31,7 +31,8 @@ interface IZapper {
      * @dev Deposits asset into the MultiPoolStrategy contract.
      * @param amount The asset amount user wants to deposit.
      * @param token The deposited asset address (like: USDT address).
-     * @param minAmount Minimum amount of underlying asset to receive after the swap of the provided asset (please pay attention to decimals).
+     * @param minAmount Minimum amount of underlying asset to receive after the swap of the provided asset (please pay
+     * attention to decimals).
      * @param receiver The address to receive the shares.
      * @param strategyAddress The address of the MultiPoolStrategy contract to deposit into.
      * @return shares The amount of shares received.
@@ -67,7 +68,8 @@ interface IZapper {
     /**
      * 1. User specifies how much USDT (param: amount) they want to get (from a USDC strategy)
      *         2. Withdraw estimates the amount of USDC we should ask from the strategy (preview_swap(USDT->USDC))
-     *         3. Withdraw(USDC amount): take shares from user and withdraw USDC to zapper (param: minWithdrawAmount - might not be needed because we revert on minSwapAmount alter)
+     *         3. Withdraw(USDC amount): take shares from user and withdraw USDC to zapper (param: minWithdrawAmount -
+     * might not be needed because we revert on minSwapAmount alter)
      *         4. Swap: USDC -> USDT (param: minSwapAmount) - Curve checks that
      *         5. Send USDT to user
      */
