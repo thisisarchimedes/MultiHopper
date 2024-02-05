@@ -133,7 +133,7 @@ jobs:
 
       - name: "Run the tests: Zapper"
         run: |        
-          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw|testRedeem3CRV|testRedeemDAI|testRedeemUSDT" --match-path "test/zapper/*" -v
+          forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw|testRedeem3CRV|testRedeemDAI|testRedeemUSDT|testRedeemCRVFRAX|testRedeemFRAX" --match-path "test/zapper/*" -v
 
       - name: "Calculate Test Duration"
         run: |
