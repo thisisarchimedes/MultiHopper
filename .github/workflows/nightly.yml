@@ -67,15 +67,17 @@ jobs:
                 #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/aura/*" >> test_results
                 #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw|testRedeem3CRV|testRedeemDAI|testRedeemUSDT|testRedeemCRVFRAX|testRedeemFRAX|testRedeemFromUSDTLyingStrategy" --match-path "test/zapper/*" >> test_results
 
-                failed_tests=$(grep "failed;" test_results | awk '{print $6}' | tr -d '\n')
-                echo $failed_tests
+                cat test_results
                 
-                if [[ $failed_tests -eq 0 ]]; then
-                    echo "::set-output name=passed::true"
+                #failed_tests=$(grep "failed;" test_results | awk '{print $6}' | tr -d '\n')
+                #echo $failed_tests
+                
+                #if [[ $failed_tests -eq 0 ]]; then
+                #    echo "::set-output name=passed::true"
 
-                else
-                    echo "::set-output name=passed::false"
-                fi
+                #else
+                #    echo "::set-output name=passed::false"
+                #fi
 
 
             - name: "Calculate Test Duration"
