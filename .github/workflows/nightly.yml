@@ -67,8 +67,9 @@ jobs:
                 #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/aura/*" >> test_results
                 #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw|testRedeem3CRV|testRedeemDAI|testRedeemUSDT|testRedeemCRVFRAX|testRedeemFRAX|testRedeemFromUSDTLyingStrategy" --match-path "test/zapper/*" >> test_results
 
-                cat failed_tests
+                cat test_results
                 failed_tests=$(cat test_results | grep -oP '\b[0-9]+ failed\b' | grep -oP '[0-9]+')
+                cat $failed_tests
 
                 echo "::set-output name=passed::$failed_tests"
                 echo "Test pass: $failed_tests"
