@@ -62,7 +62,7 @@ jobs:
             - name: "Run the tests"
               continue-on-error: true
               run: |
-                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/generic/*" >> test_results
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/generic/*" > test_results
                 #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/convex/*" >> test_results
                 #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/aura/*" >> test_results
                 #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw|testRedeem3CRV|testRedeemDAI|testRedeemUSDT|testRedeemCRVFRAX|testRedeemFRAX|testRedeemFromUSDTLyingStrategy" --match-path "test/zapper/*" >> test_results
