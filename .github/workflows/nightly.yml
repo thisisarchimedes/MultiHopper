@@ -62,33 +62,26 @@ jobs:
             - name: "Run the tests"
               continue-on-error: true
               run: |
-                #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/generic/*" >> test_results
-                #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/convex/*" >> test_results
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/generic/*" >> test_results
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/convex/*" >> test_results
                 forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw" --match-path "test/aura/*" >> test_results
-                #forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw|testRedeem3CRV|testRedeemDAI|testRedeemUSDT|testRedeemCRVFRAX|testRedeemFRAX|testRedeemFromUSDTLyingStrategy" --match-path "test/zapper/*" >> test_results
+                forge test --rpc-url https://eth-mainnet.g.alchemy.com/v2/$API_KEY_ALCHEMY --no-match-test "testWithdrawExceedContractBalance|testClaimRewards|testHardWorkDepositWithdraw|testRedeem3CRV|testRedeemDAI|testRedeemUSDT|testRedeemCRVFRAX|testRedeemFRAX|testRedeemFromUSDTLyingStrategy" --match-path "test/zapper/*" >> test_results
 
                 failed_tests=$(grep "failed;" test_results | awk '{print $6}')
                 echo $failed_tests
                 
                 if [[ $failed_tests -eq 0 ]]; then
-                    echo "::set-output name=passed::true"
+                  echo "TEST_PASS=true" >> $GITHUB_ENV
                 else
-                    echo "::set-output name=passed::false"
+                  echo "TEST_PASS=false" >> $GITHUB_ENV
                  fi
-
+                
             - name: "Calculate Test Duration"
               run: |
                 end=$(date +%s)
                 duration=$((end-${{ env.DURATION_START }}))
                 echo "DURATION=$duration" >> $GITHUB_ENV
 
-            - name: Set Test Result Env Variable
-              run: |
-                if [ ${{ steps.test_suite.outputs.passed }} -eq 0 ]; then
-                echo "TEST_PASS=true" >> $GITHUB_ENV
-                else
-                echo "TEST_PASS=false" >> $GITHUB_ENV
-                fi
 
             - name: Calculating test coverage
               continue-on-error: true
