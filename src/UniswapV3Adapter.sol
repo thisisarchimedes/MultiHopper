@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19 .0;
 
-import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
@@ -12,7 +12,7 @@ import "univ3-periphery/interfaces/ISwapRouter.sol";
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgradeable {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Metadata;
     using OracleLibrary for int24;
 
     IUniswapV3Pool public pool;
@@ -21,11 +21,22 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
 
     int24 public limitLower;
     int24 public limitUpper;
-    IERC20 public token0;
-    IERC20 public token1;
+    IERC20Metadata public token0;
+    IERC20Metadata public token1;
     bool mintCalled;
     uint256 constant PRECISION = 1e36;
     uint24 poolFee;
+
+    struct DepositParams {
+        uint256 amount;
+        address recipient;
+        uint256 minOutput;
+    }
+
+    struct WithdrawParams {
+        uint256 shares;
+        uint256 minAmountExpect;
+    }
 
     function initialize(
         IUniswapV3Pool _pool,
@@ -38,19 +49,13 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     {
         __ERC20_init("UniswapV3Adapter", "UVA");
         pool = _pool;
-        token0 = IERC20(pool.token0());
-        token1 = IERC20(pool.token1());
+        token0 = IERC20Metadata(pool.token0());
+        token1 = IERC20Metadata(pool.token1());
         limitLower = _limitLower;
         limitUpper = _limitUpper;
         isToken0 = _isToken0;
         swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
         poolFee = pool.fee();
-    }
-
-    struct DepositParams {
-        uint256 amount;
-        uint256 amountToSwap;
-        uint256 minOutput;
     }
 
     function deposit(bytes calldata _params) external {
@@ -61,19 +66,22 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             ? token0.safeTransferFrom(msg.sender, address(this), params.amount)
             : token1.safeTransferFrom(msg.sender, address(this), params.amount);
         //swap logic
-        if (params.amountToSwap > 0) {
+        uint256 amountToSwap = _calcAmountToSell(
+            params.amount, limitLower, limitUpper, currentTick(), token0.decimals(), token1.decimals()
+        );
+        if (amountToSwap > 0) {
             bytes memory path = abi.encodePacked(
                 isToken0 ? address(token0) : address(token1), poolFee, isToken0 ? address(token1) : address(token0)
             );
             isToken0
-                ? token0.safeApprove(address(swapRouter), params.amountToSwap)
-                : token1.safeApprove(address(swapRouter), params.amountToSwap);
+                ? token0.safeApprove(address(swapRouter), amountToSwap)
+                : token1.safeApprove(address(swapRouter), amountToSwap);
             swapRouter.exactInput(
                 ISwapRouter.ExactInputParams({
                     path: path,
                     recipient: address(this),
                     deadline: block.timestamp,
-                    amountIn: params.amountToSwap,
+                    amountIn: amountToSwap,
                     amountOutMinimum: params.minOutput
                 })
             );
@@ -83,7 +91,16 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         uint256 token1Bal = token1.balanceOf(address(this));
         uint128 liquidity = _liquidityForAmounts(limitLower, limitUpper, token0Bal, token1Bal);
         _mintLiquidity(limitLower, limitUpper, liquidity, address(this), token0Bal, token1Bal);
-        _mint(msg.sender, shares);
+        _mint(params.recipient, shares);
+    }
+
+    function withdraw(bytes calldata _params) external {
+        WithdrawParams memory params = abi.decode(_params, (WithdrawParams));
+        _burn(msg.sender, params.shares);
+    }
+
+    function previewWithdraw(uint256 _shares) external {
+        uint256 underlyingBal = underlyingBalance();
     }
 
     function underlyingBalance() public view returns (uint256) {
@@ -217,11 +234,49 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     }
 
     function _calcShares(uint256 amount) internal view returns (uint256) {
-        uint256 underlyingBal = underlyingBalance();
         uint256 supply = totalSupply();
         if (supply == 0 || amount == 0) {
             return amount;
         }
-        return (amount * supply) / underlyingBal;
+        return (amount * supply) / underlyingBalance();
+    }
+
+    function _calcAmountToSell(
+        uint256 amount,
+        int24 lowerTick,
+        int24 upperTick,
+        int24 _currentTick,
+        uint8 token0Decimal,
+        uint8 token1Decimal
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        if (_currentTick > upperTick) {
+            return isToken0 ? amount : 0;
+        }
+        if (_currentTick < lowerTick) {
+            return isToken0 ? 0 : amount;
+        }
+
+        bool _isToken0 = isToken0; // gas saving
+        uint256 token0InToken1 =
+            _currentTick.getQuoteAtTick(uint128(10 ** token0Decimal), address(token0), address(token1));
+        uint256 token1InToken0 =
+            _currentTick.getQuoteAtTick(uint128(10 ** token1Decimal), address(token1), address(token0));
+        uint256 _amount = _isToken0 ? token0InToken1 * amount / 10 ** token0Decimal : amount;
+
+        uint128 liq = LiquidityAmounts.getLiquidityForAmount1(
+            TickMath.getSqrtRatioAtTick(lowerTick), TickMath.getSqrtRatioAtTick(_currentTick), 10 ** token1Decimal
+        );
+        uint256 amount0 = LiquidityAmounts.getAmount0ForLiquidity(
+            TickMath.getSqrtRatioAtTick(_currentTick), TickMath.getSqrtRatioAtTick(upperTick), liq
+        );
+        uint256 ratio = amount0 * token0InToken1 / 10 ** token0Decimal;
+
+        return _isToken0
+            ? (_amount * 10 ** token1Decimal / (ratio + 10 ** token1Decimal)) * token1InToken0 / 10 ** token1Decimal
+            : _amount - (_amount * 10 ** token1Decimal / (ratio + 10 ** token1Decimal));
     }
 }

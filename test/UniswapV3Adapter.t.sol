@@ -33,50 +33,60 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         uniswapV3Adapter = new UniswapV3Adapter();
     }
 
-    // function testUnderlyingBalance() public {
-    //     deal(WETH, address(uniswapV3Adapter), 50e18);
-    //     deal(WBTC, address(uniswapV3Adapter), 1e8);
-
-    //     (int24 lowerTick, int24 upperTick) = chooseTicks(99, 101);
-
-    //     uniswapV3Adapter.initialize(IUniswapV3Pool(WETH_WBTC_POOL), lowerTick, upperTick, false);
-    //     uniswapV3Adapter.deposit(1e8, 0);
-    //     uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
-    // }
-
-    // function testProvideLiquidityInRange() public { }
-
     function testProvideLiquidityOutRangeRight() public {
         deal(WETH, address(this), 1e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 1e18);
-        (int24 lowerTick, int24 upperTick, int24 tick) = chooseTicks(101, 102);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(101, 102);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(1e18, 1e18, 0));
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(1e18, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalance, 1e18, 0.02e18);
     }
 
-    // function testProvideLiquidityOutRangeLeft() public {
-    //     deal(WETH, address(uniswapV3Adapter), 5e18);
-    //     (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
-    //     uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
-    //     uniswapV3Adapter.deposit(0, 0);
-    //     uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
-    //     assertAlmostEq(underlyingBalance, 5e18, 0.02e18);
-    // }
+    function testProvideLiquidityOutRangeLeft() public {
+        deal(WETH, address(this), 5e18);
+        IERC20(WETH).approve(address(uniswapV3Adapter), 5e18);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e18, address(this), 0));
+        uniswapV3Adapter.deposit(params);
+        uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
+        assertAlmostEq(underlyingBalance, 5e18, 1); // some rounding error
+    }
+
+    function testProvideLiquidityOutRangeLeftBTC() public {
+        deal(WBTC, address(this), 5e8);
+        IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true);
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e8, address(this), 0));
+        uniswapV3Adapter.deposit(params);
+        uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
+        uint256 expectedError = 5e8 * 3 / 1000;
+        assertAlmostEq(underlyingBalance, 5e8, expectedError);
+    }
+
+    function testProvideLiquidityOutRangeRightBTC() public {
+        deal(WBTC, address(this), 5e8);
+        IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(101, 103);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true);
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e8, address(this), 0));
+        uniswapV3Adapter.deposit(params);
+        uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
+        assertAlmostEq(underlyingBalance, 5e8, 1); // some rounding error
+    }
 
     function testProvideLiquidityInRange() public {
         deal(WETH, address(this), 50e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
-        bool isToken0 = uniswapV3Adapter.isToken0();
-        uint256 amountToSwap = getAmountToSwap(50e18, lowerTick, upperTick, currentTick, isToken0, 8, 18);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e18, amountToSwap, 0));
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e18, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
-        uint256 expectedError = 50e18 * 5 / 1000;
+        uint256 expectedError = 50e18 * 2 / 1000;
         assertAlmostEq(underlyingBalance, 50e18, expectedError);
     }
 
@@ -85,12 +95,10 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         IERC20(WBTC).approve(address(uniswapV3Adapter), 50e8);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true);
-        bool isToken0 = uniswapV3Adapter.isToken0();
-        uint256 amountToSwap = getAmountToSwap(50e8, lowerTick, upperTick, currentTick, isToken0, 8, 18);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e8, amountToSwap, 0));
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e8, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
-        uint256 expectedError = 50e8 * 5 / 1000;
+        uint256 expectedError = 50e8 * 2 / 1000;
         assertAlmostEq(underlyingBalance, 50e8, expectedError);
     }
 

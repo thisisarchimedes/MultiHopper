@@ -145,7 +145,7 @@ def find_amount_to_sell_with_formula(
         price_in_token1(current_tick, token0_decimals, token1_decimals) ** 0.5,
     )
     ratio = price_in_token1(current_tick, token0_decimals, token1_decimals) * amount0
-
+    
     result = (
         int(
             (
