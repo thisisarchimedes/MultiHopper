@@ -10,6 +10,7 @@ import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "univ3-periphery/libraries/OracleLibrary.sol";
 import "univ3-periphery/interfaces/ISwapRouter.sol";
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import { console2 } from "forge-std/console2.sol";
 
 contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgradeable {
     using SafeERC20 for IERC20Metadata;
@@ -60,20 +61,23 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
 
     function deposit(bytes calldata _params) external {
         DepositParams memory params = abi.decode(_params, (DepositParams));
+        bool _isToken0 = isToken0; // gas saving
         //calculate shares
         uint256 shares = _calcShares(params.amount);
-        isToken0
+        _isToken0
             ? token0.safeTransferFrom(msg.sender, address(this), params.amount)
             : token1.safeTransferFrom(msg.sender, address(this), params.amount);
         //swap logic
-        uint256 amountToSwap = _calcAmountToSell(
+        uint256 amountToSwap = _calcAmountToSwap(
             params.amount, limitLower, limitUpper, currentTick(), token0.decimals(), token1.decimals()
         );
+        uint256 token0Before = token0.balanceOf(address(this));
+        uint256 token1Before = token1.balanceOf(address(this));
         if (amountToSwap > 0) {
             bytes memory path = abi.encodePacked(
-                isToken0 ? address(token0) : address(token1), poolFee, isToken0 ? address(token1) : address(token0)
+                _isToken0 ? address(token0) : address(token1), poolFee, isToken0 ? address(token1) : address(token0)
             );
-            isToken0
+            _isToken0
                 ? token0.safeApprove(address(swapRouter), amountToSwap)
                 : token1.safeApprove(address(swapRouter), amountToSwap);
             swapRouter.exactInput(
@@ -87,10 +91,15 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             );
         }
 
-        uint256 token0Bal = token0.balanceOf(address(this));
-        uint256 token1Bal = token1.balanceOf(address(this));
-        uint128 liquidity = _liquidityForAmounts(limitLower, limitUpper, token0Bal, token1Bal);
-        _mintLiquidity(limitLower, limitUpper, liquidity, address(this), token0Bal, token1Bal);
+        uint256 token0BalAfter = amountToSwap > 0 && amountToSwap != params.amount
+            ? _isToken0 ? token0Before - amountToSwap : token0.balanceOf(address(this)) - token0Before
+            : token0.balanceOf(address(this));
+        uint256 token1BalAfter = amountToSwap > 0 && amountToSwap != params.amount
+            ? _isToken0 ? token1.balanceOf(address(this)) - token1Before : token1Before - amountToSwap
+            : token1.balanceOf(address(this));
+        uint128 liquidity = _liquidityForAmounts(limitLower, limitUpper, token0BalAfter, token1BalAfter);
+        (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(limitLower, limitUpper, liquidity);
+        _mintLiquidity(limitLower, limitUpper, liquidity, address(this), min0Amount, min1Amount);
         _mint(params.recipient, shares);
     }
 
@@ -191,7 +200,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             mintCalled = true;
             (uint256 amount0, uint256 amount1) =
                 pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
-            // require(amount0 >= amount0Min && amount1 >= amount1Min, "PSC");
+            require(amount0 >= amount0Min && amount1 >= amount1Min, "PSC");
         }
     }
 
@@ -241,7 +250,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         return (amount * supply) / underlyingBalance();
     }
 
-    function _calcAmountToSell(
+    function _calcAmountToSwap(
         uint256 amount,
         int24 lowerTick,
         int24 upperTick,
@@ -263,20 +272,22 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         bool _isToken0 = isToken0; // gas saving
         uint256 token0InToken1 =
             _currentTick.getQuoteAtTick(uint128(10 ** token0Decimal), address(token0), address(token1));
-        uint256 token1InToken0 =
-            _currentTick.getQuoteAtTick(uint128(10 ** token1Decimal), address(token1), address(token0));
-        uint256 _amount = _isToken0 ? token0InToken1 * amount / 10 ** token0Decimal : amount;
 
+        uint256 _amount = _isToken0 ? token0InToken1 * amount / 10 ** token0Decimal : amount;
         uint128 liq = LiquidityAmounts.getLiquidityForAmount1(
             TickMath.getSqrtRatioAtTick(lowerTick), TickMath.getSqrtRatioAtTick(_currentTick), 10 ** token1Decimal
         );
         uint256 amount0 = LiquidityAmounts.getAmount0ForLiquidity(
             TickMath.getSqrtRatioAtTick(_currentTick), TickMath.getSqrtRatioAtTick(upperTick), liq
         );
-        uint256 ratio = amount0 * token0InToken1 / 10 ** token0Decimal;
-
+        uint256 amount0inToken1 = amount0 * token0InToken1 / 10 ** token0Decimal;
+        uint256 token1InToken0;
+        if (_isToken0) {
+            token1InToken0 = _currentTick.getQuoteAtTick(uint128(10 ** token1Decimal), address(token1), address(token0));
+        }
         return _isToken0
-            ? (_amount * 10 ** token1Decimal / (ratio + 10 ** token1Decimal)) * token1InToken0 / 10 ** token1Decimal
-            : _amount - (_amount * 10 ** token1Decimal / (ratio + 10 ** token1Decimal));
+            ? (_amount * 10 ** token1Decimal / (amount0inToken1 + 10 ** token1Decimal)) * token1InToken0
+                / 10 ** token1Decimal
+            : _amount - (_amount * 10 ** token1Decimal / (amount0inToken1 + 10 ** token1Decimal));
     }
 }

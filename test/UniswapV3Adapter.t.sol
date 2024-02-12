@@ -36,7 +36,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
     function testProvideLiquidityOutRangeRight() public {
         deal(WETH, address(this), 1e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 1e18);
-        (int24 lowerTick, int24 upperTick,) = chooseTicks(101, 102);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(102, 103);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(1e18, address(this), 0));
         uniswapV3Adapter.deposit(params);
