@@ -102,6 +102,27 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         assertAlmostEq(underlyingBalance, 50e8, expectedError);
     }
 
+    function testProvideLiquidityInRangeAndWithdraw() public {
+        deal(WETH, address(this), 50e18);
+        IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e18, address(this), 0));
+        uniswapV3Adapter.deposit(params);
+        uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
+        uint256 expectedError = 50e18 * 2 / 1000;
+        assertAlmostEq(underlyingBalance, 50e18, expectedError);
+        uint256 shares = uniswapV3Adapter.balanceOf(address(this));
+        bytes memory withdrawParams = abi.encode(UniswapV3Adapter.WithdrawParams(shares, 0));
+        uniswapV3Adapter.withdraw(withdrawParams);
+        uint256 wethBal = IERC20(WETH).balanceOf(address(uniswapV3Adapter));
+        assertEq(wethBal, 0);
+        uint256 wbtcBal = IERC20(WBTC).balanceOf(address(uniswapV3Adapter));
+        assertEq(wbtcBal, 0);
+        uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
+        assertAlmostEq(underlyingBalanceAfter, 0, 1);
+    }
+
     function chooseTicks(int24 lowerPercentile, int24 upperPercentile) public view returns (int24, int24, int24) {
         (, int24 tick,,,,,) = WETH_WBTC_POOL.slot0();
         int24 tickSpacing = WETH_WBTC_POOL.tickSpacing();

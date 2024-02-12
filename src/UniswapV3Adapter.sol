@@ -74,21 +74,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         uint256 token0Before = token0.balanceOf(address(this));
         uint256 token1Before = token1.balanceOf(address(this));
         if (amountToSwap > 0) {
-            bytes memory path = abi.encodePacked(
-                _isToken0 ? address(token0) : address(token1), poolFee, isToken0 ? address(token1) : address(token0)
-            );
-            _isToken0
-                ? token0.safeApprove(address(swapRouter), amountToSwap)
-                : token1.safeApprove(address(swapRouter), amountToSwap);
-            swapRouter.exactInput(
-                ISwapRouter.ExactInputParams({
-                    path: path,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountIn: amountToSwap,
-                    amountOutMinimum: params.minOutput
-                })
-            );
+            _swapTokens(amountToSwap, params.minOutput, _isToken0);
         }
 
         uint256 token0BalAfter = amountToSwap > 0 && amountToSwap != params.amount
@@ -103,13 +89,28 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         _mint(params.recipient, shares);
     }
 
-    function withdraw(bytes calldata _params) external {
+    function withdraw(bytes calldata _params) external returns (uint256 totalReceive) {
         WithdrawParams memory params = abi.decode(_params, (WithdrawParams));
-        _burn(msg.sender, params.shares);
-    }
+        bool _isToken0 = isToken0; // gas saving
+        uint256 token0Before = token0.balanceOf(address(this));
+        uint256 token1Before = token1.balanceOf(address(this));
+        uint256 token0FromBal = token0Before * params.shares / totalSupply();
+        uint256 token1FromBal = token1Before * params.shares / totalSupply();
+        uint128 liqForShares = _liquidityForShares(limitLower, limitUpper, params.shares);
 
-    function previewWithdraw(uint256 _shares) external {
-        uint256 underlyingBal = underlyingBalance();
+        _burnLiquidity(limitLower, limitUpper, liqForShares, address(this), true, 0, 0);
+        uint256 token0After = token0.balanceOf(address(this));
+        uint256 token1After = token1.balanceOf(address(this));
+        uint256 receivedAmount = _swapTokens(
+            isToken0 ? token1After - token1Before + token1FromBal : token0After - token0Before + token0FromBal,
+            0,
+            !_isToken0
+        );
+        _burn(msg.sender, params.shares);
+        totalReceive = receivedAmount
+            + (isToken0 ? token0After - token0Before + token0FromBal : token1After - token1Before + token1FromBal);
+        require(totalReceive >= params.minAmountExpect, "PSC");
+        _isToken0 ? token0.safeTransfer(msg.sender, totalReceive) : token1.safeTransfer(msg.sender, totalReceive);
     }
 
     function underlyingBalance() public view returns (uint256) {
@@ -185,7 +186,6 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     /// @param payer Payer Data
     /// @param amount0Min Minimum amount of token0 that should be paid
     /// @param amount1Min Minimum amount of token1 that should be paid
-
     function _mintLiquidity(
         int24 tickLower,
         int24 tickUpper,
@@ -201,6 +201,40 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             (uint256 amount0, uint256 amount1) =
                 pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
             require(amount0 >= amount0Min && amount1 >= amount1Min, "PSC");
+        }
+    }
+
+    /// @notice Burn liquidity from the sender and collect tokens owed for the liquidity
+    /// @param tickLower The lower tick of the position for which to burn liquidity
+    /// @param tickUpper The upper tick of the position for which to burn liquidity
+    /// @param liquidity The amount of liquidity to burn
+    /// @param to The address which should receive the fees collected
+    /// @param collectAll If true, collect all tokens owed in the pool, else collect the owed tokens of the burn
+    /// @return amount0 The amount of fees collected in token0
+    /// @return amount1 The amount of fees collected in token1
+    function _burnLiquidity(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity,
+        address to,
+        bool collectAll,
+        uint256 amount0Min,
+        uint256 amount1Min
+    )
+        internal
+        returns (uint256 amount0, uint256 amount1)
+    {
+        if (liquidity > 0) {
+            /// Burn liquidity
+            (uint256 owed0, uint256 owed1) = pool.burn(tickLower, tickUpper, liquidity);
+            require(owed0 >= amount0Min && owed1 >= amount1Min, "PSC");
+
+            // Collect amount owed
+            uint128 collect0 = collectAll ? type(uint128).max : _uint128Safe(owed0);
+            uint128 collect1 = collectAll ? type(uint128).max : _uint128Safe(owed1);
+            if (collect0 > 0 || collect1 > 0) {
+                (amount0, amount1) = pool.collect(to, tickLower, tickUpper, collect0, collect1);
+            }
         }
     }
 
@@ -221,12 +255,12 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         amount1 = uint128(_amount1) + (tokensOwed1);
         liquidity = positionLiquidity;
     }
+
     /// @notice Get the amounts of the given numbers of liquidity tokens
     /// @param tickLower The lower tick of the position
     /// @param tickUpper The upper tick of the position
     /// @param liquidity The amount of liquidity tokens
     /// @return Amount of token0 and token1
-
     function _amountsForLiquidity(
         int24 tickLower,
         int24 tickUpper,
@@ -289,5 +323,46 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             ? (_amount * 10 ** token1Decimal / (amount0inToken1 + 10 ** token1Decimal)) * token1InToken0
                 / 10 ** token1Decimal
             : _amount - (_amount * 10 ** token1Decimal / (amount0inToken1 + 10 ** token1Decimal));
+    }
+
+    /// @notice Get the liquidity amount for given liquidity tokens
+    /// @param tickLower The lower tick of the position
+    /// @param tickUpper The upper tick of the position
+    /// @param shares Shares of position
+    /// @return The amount of liquidity toekn for shares
+    function _liquidityForShares(int24 tickLower, int24 tickUpper, uint256 shares) internal view returns (uint128) {
+        (uint128 position,,) = _position(tickLower, tickUpper);
+        return _uint128Safe(uint256(position) * (shares) / (totalSupply()));
+    }
+
+    function _uint128Safe(uint256 x) internal pure returns (uint128) {
+        assert(x <= type(uint128).max);
+        return uint128(x);
+    }
+
+    function _swapTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        bool fromToken0
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
+        fromToken0
+            ? token0.safeApprove(address(swapRouter), amountIn)
+            : token1.safeApprove(address(swapRouter), amountIn);
+        bytes memory path = abi.encodePacked(
+            fromToken0 ? address(token0) : address(token1), poolFee, fromToken0 ? address(token1) : address(token0)
+        );
+
+        receivedAmount = swapRouter.exactInput(
+            ISwapRouter.ExactInputParams({
+                path: path,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: amountOutMin
+            })
+        );
     }
 }
