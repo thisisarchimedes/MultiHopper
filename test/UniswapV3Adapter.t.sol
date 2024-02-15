@@ -116,11 +116,29 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         bytes memory withdrawParams = abi.encode(UniswapV3Adapter.WithdrawParams(shares, 0));
         uniswapV3Adapter.withdraw(withdrawParams);
         uint256 wethBal = IERC20(WETH).balanceOf(address(uniswapV3Adapter));
-        assertEq(wethBal, 0);
         uint256 wbtcBal = IERC20(WBTC).balanceOf(address(uniswapV3Adapter));
-        assertEq(wbtcBal, 0);
         uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
+        assertEq(wbtcBal, 0);
+        assertEq(wethBal, 0);
         assertAlmostEq(underlyingBalanceAfter, 0, 1);
+    }
+
+    function testProvideLiquidityInRangeAndWithdrawHalf() public {
+        uint256 depositAmount = 50e18;
+        deal(WETH, address(this), depositAmount);
+        IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(depositAmount, address(this), 0));
+        uniswapV3Adapter.deposit(params);
+        uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
+        uint256 expectedError = depositAmount * 2 / 1000;
+        assertAlmostEq(underlyingBalance, depositAmount, expectedError);
+        uint256 shares = uniswapV3Adapter.balanceOf(address(this)) / 2;
+        bytes memory withdrawParams = abi.encode(UniswapV3Adapter.WithdrawParams(shares, 0));
+        uniswapV3Adapter.withdraw(withdrawParams);
+        uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
+        assertAlmostEq(underlyingBalanceAfter, depositAmount / 2, expectedError / 2);
     }
 
     function chooseTicks(int24 lowerPercentile, int24 upperPercentile) public view returns (int24, int24, int24) {
