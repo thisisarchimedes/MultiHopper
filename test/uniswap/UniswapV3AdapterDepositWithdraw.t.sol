@@ -12,13 +12,14 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "univ3-periphery/libraries/OracleLibrary.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
-contract UniswapV3AdapterTest is PRBTest, StdCheats {
+contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
     using OracleLibrary for int24;
 
     UniswapV3Adapter uniswapV3Adapter;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     IUniswapV3Pool public constant WETH_WBTC_POOL = IUniswapV3Pool(0xCBCdF9626bC03E24f779434178A73a0B4bad62eD);
+    address feeRecipient = makeAddr("feeRecipient");
 
     function setUp() public virtual {
         // solhint-disable-previous-line no-empty-blocks
@@ -37,7 +38,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WETH, address(this), 1e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 1e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(102, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(1e18, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
@@ -48,7 +49,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WETH, address(this), 5e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 5e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e18, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
@@ -59,7 +60,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 5e8);
         IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e8, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
@@ -71,7 +72,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 5e8);
         IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(101, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e8, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
@@ -82,7 +83,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WETH, address(this), 50e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e18, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
@@ -94,7 +95,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 50e8);
         IERC20(WBTC).approve(address(uniswapV3Adapter), 50e8);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e8, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
@@ -106,7 +107,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WETH, address(this), 50e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e18, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
@@ -128,7 +129,7 @@ contract UniswapV3AdapterTest is PRBTest, StdCheats {
         deal(WETH, address(this), depositAmount);
         IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
         bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(depositAmount, address(this), 0));
         uniswapV3Adapter.deposit(params);
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
