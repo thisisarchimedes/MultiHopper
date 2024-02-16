@@ -39,6 +39,11 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         uint256 minAmountExpect;
     }
 
+    error NotEnoughToken();
+    error callerNotPool();
+    error notOnMinting();
+    error notEnoughTokenUsed();
+
     function initialize(
         IUniswapV3Pool _pool,
         int24 _limitLower,
@@ -109,7 +114,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         _burn(msg.sender, params.shares);
         totalReceive = receivedAmount
             + (isToken0 ? token0After - token0Before + token0FromBal : token1After - token1Before + token1FromBal);
-        require(totalReceive >= params.minAmountExpect, "PSC");
+        if (totalReceive < params.minAmountExpect) revert NotEnoughToken();
         _isToken0 ? token0.safeTransfer(msg.sender, totalReceive) : token1.safeTransfer(msg.sender, totalReceive);
     }
 
@@ -172,8 +177,8 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
 
     /// @notice Callback function of uniswapV3Pool mint
     function uniswapV3MintCallback(uint256 amount0, uint256 amount1, bytes calldata data) external override {
-        require(msg.sender == address(pool));
-        require(mintCalled == true);
+        if (msg.sender != address(pool)) revert callerNotPool();
+        if (!mintCalled) revert notOnMinting();
         mintCalled = false;
         if (amount0 > 0) token0.safeTransfer(msg.sender, amount0);
         if (amount1 > 0) token1.safeTransfer(msg.sender, amount1);
@@ -200,7 +205,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             mintCalled = true;
             (uint256 amount0, uint256 amount1) =
                 pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
-            require(amount0 >= amount0Min && amount1 >= amount1Min, "PSC");
+            if (amount0 < amount0Min || amount1 < amount1Min) revert notEnoughTokenUsed();
         }
     }
 
