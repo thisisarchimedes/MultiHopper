@@ -37,18 +37,49 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
         uniswapV3Adapter = new UniswapV3Adapter();
     }
 
-    function testProvideLiquidityInRangeAndGetFees() public {
+    function testProvideLiquidityInRangeAndUserShouldEarnFromFees() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
         _deposit(50e18);
         _createSwapVolumeWithWBTC(1000e8, 100);
         _deposit(50e18);
         uint256 shares = uniswapV3Adapter.balanceOf(address(this));
-        bytes memory withdrawParams = abi.encode(UniswapV3Adapter.WithdrawParams(shares, 0));
         uint256 wethBalBefore = IERC20(WETH).balanceOf(address(this));
-        uniswapV3Adapter.withdraw(withdrawParams);
+        uniswapV3Adapter.redeem(shares, address(this), address(this), 0);
         uint256 wethBalAfter = IERC20(WETH).balanceOf(address(this));
         assertGt(wethBalAfter - wethBalBefore, 100e18);
+    }
+
+    function testProvideLiquidityInRangeAndFeeRecipientShouldGetFees() public {
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
+        uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
+        _deposit(50e18);
+        _createSwapVolumeWithWBTC(1000e8, 100);
+        _deposit(50e18);
+        uint256 feeRecipientBalAfterWeth = IERC20(WETH).balanceOf(feeRecipient);
+        uint256 feeRecipientBalAfterWbtc = IERC20(WBTC).balanceOf(feeRecipient);
+        assertGt(feeRecipientBalAfterWeth - feeRecipientBalBeforeWeth, 0);
+        assertGt(feeRecipientBalAfterWbtc - feeRecipientBalBeforeWbtc, 0);
+    }
+
+    function testDoHardWork() public {
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
+        uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
+        _deposit(50e18);
+        (uint128 liquidityBefore,,) = uniswapV3Adapter.getPosition();
+        _createSwapVolumeWithWBTC(1000e8, 100);
+        uniswapV3Adapter.doHardWork();
+        (uint128 liquidityAfter,,) = uniswapV3Adapter.getPosition();
+
+        uint256 feeRecipientBalAfterWeth = IERC20(WETH).balanceOf(feeRecipient);
+        uint256 feeRecipientBalAfterWbtc = IERC20(WBTC).balanceOf(feeRecipient);
+        assertGt(feeRecipientBalAfterWeth - feeRecipientBalBeforeWeth, 0);
+        assertGt(feeRecipientBalAfterWbtc - feeRecipientBalBeforeWbtc, 0);
+        assertGt(liquidityAfter - liquidityBefore, 0);
     }
 
     function chooseTicks(int24 lowerPercentile, int24 upperPercentile) public view returns (int24, int24, int24) {
@@ -109,7 +140,6 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
     function _deposit(uint256 amount) internal {
         deal(WETH, address(this), amount);
         IERC20(WETH).approve(address(uniswapV3Adapter), amount);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(amount, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(amount, address(this));
     }
 }

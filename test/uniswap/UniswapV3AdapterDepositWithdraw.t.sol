@@ -39,8 +39,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WETH).approve(address(uniswapV3Adapter), 1e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(102, 103);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(1e18, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(1e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalance, 1e18, 0.02e18);
     }
@@ -50,8 +49,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WETH).approve(address(uniswapV3Adapter), 5e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e18, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(5e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalance, 5e18, 1); // some rounding error
     }
@@ -61,8 +59,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e8, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(5e8, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 5e8 * 3 / 1000;
         assertAlmostEq(underlyingBalance, 5e8, expectedError);
@@ -73,8 +70,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(101, 103);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(5e8, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(5e8, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalance, 5e8, 1); // some rounding error
     }
@@ -84,8 +80,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e18, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(50e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 50e18 * 2 / 1000;
         assertAlmostEq(underlyingBalance, 50e18, expectedError);
@@ -96,8 +91,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WBTC).approve(address(uniswapV3Adapter), 50e8);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e8, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(50e8, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 50e8 * 2 / 1000;
         assertAlmostEq(underlyingBalance, 50e8, expectedError);
@@ -108,14 +102,12 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(50e18, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(50e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 50e18 * 2 / 1000;
         assertAlmostEq(underlyingBalance, 50e18, expectedError);
         uint256 shares = uniswapV3Adapter.balanceOf(address(this));
-        bytes memory withdrawParams = abi.encode(UniswapV3Adapter.WithdrawParams(shares, 0));
-        uniswapV3Adapter.withdraw(withdrawParams);
+        uniswapV3Adapter.redeem(shares, address(this), address(this), 0);
         uint256 wethBal = IERC20(WETH).balanceOf(address(uniswapV3Adapter));
         uint256 wbtcBal = IERC20(WBTC).balanceOf(address(uniswapV3Adapter));
         uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
@@ -130,14 +122,12 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
         uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
-        bytes memory params = abi.encode(UniswapV3Adapter.DepositParams(depositAmount, address(this), 0));
-        uniswapV3Adapter.deposit(params);
+        uniswapV3Adapter.deposit(depositAmount, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = depositAmount * 2 / 1000;
         assertAlmostEq(underlyingBalance, depositAmount, expectedError);
         uint256 shares = uniswapV3Adapter.balanceOf(address(this)) / 2;
-        bytes memory withdrawParams = abi.encode(UniswapV3Adapter.WithdrawParams(shares, 0));
-        uniswapV3Adapter.withdraw(withdrawParams);
+        uniswapV3Adapter.redeem(shares, address(this), address(this), 0);
         uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalanceAfter, depositAmount / 2, expectedError / 2);
     }

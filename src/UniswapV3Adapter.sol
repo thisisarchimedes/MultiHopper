@@ -10,9 +10,10 @@ import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "univ3-periphery/libraries/OracleLibrary.sol";
 import "univ3-periphery/interfaces/ISwapRouter.sol";
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { console2 } from "forge-std/console2.sol";
 
-contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgradeable {
+contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgradeable, OwnableUpgradeable {
     using SafeERC20 for IERC20Metadata;
     using OracleLibrary for int24;
 
@@ -27,22 +28,11 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     bool mintCalled;
     uint256 constant PRECISION = 1e36;
     uint256 constant BASE = 10_000;
+    uint256 public acceptedSlippage;
     uint24 poolFee;
-    uint256 public storedToken0Amount;
-    uint256 public storedToken1Amount;
+
     address public feeRecipient;
     uint256 public fee;
-
-    struct DepositParams {
-        uint256 amount;
-        address recipient;
-        uint256 minOutput;
-    }
-
-    struct WithdrawParams {
-        uint256 shares;
-        uint256 minAmountExpect;
-    }
 
     error NotEnoughToken();
     error callerNotPool();
@@ -60,6 +50,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         initializer
     {
         __ERC20_init("UniswapV3Adapter", "UVA");
+        __Ownable_init();
         pool = _pool;
         token0 = IERC20Metadata(pool.token0());
         token1 = IERC20Metadata(pool.token1());
@@ -69,54 +60,64 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
         poolFee = pool.fee();
         feeRecipient = _feeRecipient;
+        fee = 1500;
+        acceptedSlippage = 9950;
     }
 
-    function deposit(bytes calldata _params) external {
-        DepositParams memory params = abi.decode(_params, (DepositParams));
+    function deposit(uint256 amount, address receiver) external {
         bool _isToken0 = isToken0; // gas saving
         int24 _limitLower = limitLower;
         int24 _limitUpper = limitUpper;
         //calculate shares
-        uint256 shares = _calcShares(params.amount);
+        uint256 shares = _calcShares(amount);
         _zeroBurn(_limitLower, _limitUpper);
         _isToken0
-            ? token0.safeTransferFrom(msg.sender, address(this), params.amount)
-            : token1.safeTransferFrom(msg.sender, address(this), params.amount);
+            ? token0.safeTransferFrom(msg.sender, address(this), amount)
+            : token1.safeTransferFrom(msg.sender, address(this), amount);
         //swap logic
-        uint256 amountToSwap = _calcAmountToSwap(
-            params.amount, _limitLower, _limitUpper, currentTick(), token0.decimals(), token1.decimals()
-        );
+        uint256 amountToSwap =
+            _calcAmountToSwap(amount, _limitLower, _limitUpper, currentTick(), token0.decimals(), token1.decimals());
         uint256 token0Before = token0.balanceOf(address(this));
         uint256 token1Before = token1.balanceOf(address(this));
         if (amountToSwap > 0) {
-            _swapTokens(amountToSwap, params.minOutput, _isToken0);
+            _swapTokens(amountToSwap, 0, _isToken0);
         }
 
-        uint256 token0BalAfter = amountToSwap > 0 && amountToSwap != params.amount
+        uint256 token0BalAfter = amountToSwap > 0 && amountToSwap != amount
             ? _isToken0 ? token0Before - amountToSwap : token0.balanceOf(address(this)) - token0Before
             : token0.balanceOf(address(this));
-        uint256 token1BalAfter = amountToSwap > 0 && amountToSwap != params.amount
+        uint256 token1BalAfter = amountToSwap > 0 && amountToSwap != amount
             ? _isToken0 ? token1.balanceOf(address(this)) - token1Before : token1Before - amountToSwap
             : token1.balanceOf(address(this));
+        _checkReceivedAmount(
+            amount, _isToken0 ? token0BalAfter : token1BalAfter, _isToken0 ? token1BalAfter : token0BalAfter, _isToken0
+        );
         uint128 liquidity = _liquidityForAmounts(_limitLower, _limitUpper, token0BalAfter, token1BalAfter);
         (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_limitLower, _limitUpper, liquidity);
         _mintLiquidity(_limitLower, _limitUpper, liquidity, address(this), min0Amount, min1Amount);
-        _mint(params.recipient, shares);
-        storedToken0Amount = token0.balanceOf(address(this));
-        storedToken1Amount = token1.balanceOf(address(this));
+        _mint(receiver, shares);
     }
 
-    function withdraw(bytes calldata _params) external returns (uint256 totalReceive) {
-        WithdrawParams memory params = abi.decode(_params, (WithdrawParams));
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner, // TODO implement logic around that
+        uint256 minimumReceive
+    )
+        external
+        returns (uint256 totalReceive)
+    {
         int24 _limitLower = limitLower;
         int24 _limitUpper = limitUpper;
+        uint256 _shares = shares;
+        address _receiver = receiver;
         _zeroBurn(_limitLower, _limitUpper);
         bool _isToken0 = isToken0; // gas saving
         uint256 token0Before = token0.balanceOf(address(this));
         uint256 token1Before = token1.balanceOf(address(this));
-        uint256 token0FromBal = token0Before * params.shares / totalSupply();
-        uint256 token1FromBal = token1Before * params.shares / totalSupply();
-        uint128 liqForShares = _liquidityForShares(_limitLower, _limitUpper, params.shares);
+        uint256 token0FromBal = token0Before * _shares / totalSupply();
+        uint256 token1FromBal = token1Before * _shares / totalSupply();
+        uint128 liqForShares = _liquidityForShares(_limitLower, _limitUpper, _shares);
 
         _burnLiquidity(_limitLower, _limitUpper, liqForShares, address(this), true, 0, 0);
         uint256 token0After = token0.balanceOf(address(this));
@@ -126,13 +127,11 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             0,
             !_isToken0
         );
-        _burn(msg.sender, params.shares);
+        _burn(msg.sender, _shares);
         totalReceive = receivedAmount
             + (isToken0 ? token0After - token0Before + token0FromBal : token1After - token1Before + token1FromBal);
-        if (totalReceive < params.minAmountExpect) revert NotEnoughToken();
-        _isToken0 ? token0.safeTransfer(msg.sender, totalReceive) : token1.safeTransfer(msg.sender, totalReceive);
-        storedToken0Amount = token0.balanceOf(address(this));
-        storedToken1Amount = token1.balanceOf(address(this));
+        if (totalReceive < minimumReceive) revert NotEnoughToken();
+        _isToken0 ? token0.safeTransfer(_receiver, totalReceive) : token1.safeTransfer(_receiver, totalReceive);
     }
 
     function underlyingBalance() public view returns (uint256) {
@@ -389,22 +388,50 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     }
 
     function _zeroBurn(int24 tickLower, int24 tickUpper) internal returns (uint128 liquidity) {
-        /// update fees for inclusion
-        uint256 externalToken0Fee = token0.balanceOf(address(this)) - storedToken0Amount;
-        uint256 externalToken1Fee = token1.balanceOf(address(this)) - storedToken1Amount;
         (liquidity,,) = _position(tickLower, tickUpper);
         if (liquidity > 0) {
             pool.burn(tickLower, tickUpper, 0);
             (uint256 owed0, uint256 owed1) =
                 pool.collect(address(this), tickLower, tickUpper, type(uint128).max, type(uint128).max);
             if (owed0 > 0) {
-                uint256 feeAmount0 = (externalToken0Fee + owed0) * fee / BASE;
+                uint256 feeAmount0 = (owed0) * fee / BASE;
                 token0.safeTransfer(feeRecipient, feeAmount0);
             }
             if (owed1 > 0) {
-                uint256 feeAmount1 = (externalToken1Fee + owed1) * fee / BASE;
+                uint256 feeAmount1 = (owed1) * fee / BASE;
                 token1.safeTransfer(feeRecipient, feeAmount1);
             }
         }
+    }
+
+    function _checkReceivedAmount(
+        uint256 initialAmount,
+        uint256 currentUnderlyingAmount,
+        uint256 receivedAmount,
+        bool _isToken0
+    )
+        internal
+        view
+    {
+        int24 _currentTick = currentTick();
+        uint256 amountInOtherToken = _isToken0
+            ? _currentTick.getQuoteAtTick(uint128(receivedAmount), address(token1), address(token0))
+            : _currentTick.getQuoteAtTick(uint128(receivedAmount), address(token0), address(token1));
+        uint256 acceptableAmount = initialAmount * acceptedSlippage / BASE;
+        if (currentUnderlyingAmount + amountInOtherToken < acceptableAmount) revert NotEnoughToken();
+    }
+
+    /// @notice Compound pending fees
+    function doHardWork() external onlyOwner {
+        int24 _limitLower = limitLower;
+        int24 _limitUpper = limitUpper;
+        // update fees for compounding
+        _zeroBurn(_limitLower, _limitUpper);
+
+        uint128 liquidity = _liquidityForAmounts(
+            _limitLower, _limitUpper, token0.balanceOf(address(this)), token1.balanceOf(address(this))
+        );
+        (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_limitLower, _limitUpper, liquidity);
+        _mintLiquidity(_limitLower, _limitUpper, liquidity, address(this), min0Amount, min1Amount);
     }
 }
