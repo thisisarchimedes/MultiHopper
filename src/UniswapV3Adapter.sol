@@ -35,9 +35,16 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     uint256 public fee;
 
     error NotEnoughToken();
-    error callerNotPool();
-    error notOnMinting();
-    error notEnoughTokenUsed();
+    error CallerNotPool();
+    error NotOnMinting();
+    error NotEnoughTokenUsed();
+    error InvalidRange();
+
+    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+
+    event Withdraw(
+        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
+    );
 
     function initialize(
         IUniswapV3Pool _pool,
@@ -68,34 +75,36 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         bool _isToken0 = isToken0; // gas saving
         int24 _limitLower = limitLower;
         int24 _limitUpper = limitUpper;
+        uint256 _amount = amount;
         //calculate shares
         uint256 shares = _calcShares(amount);
         _zeroBurn(_limitLower, _limitUpper);
         _isToken0
-            ? token0.safeTransferFrom(msg.sender, address(this), amount)
-            : token1.safeTransferFrom(msg.sender, address(this), amount);
+            ? token0.safeTransferFrom(msg.sender, address(this), _amount)
+            : token1.safeTransferFrom(msg.sender, address(this), _amount);
         //swap logic
         uint256 amountToSwap =
-            _calcAmountToSwap(amount, _limitLower, _limitUpper, currentTick(), token0.decimals(), token1.decimals());
+            _calcAmountToSwap(_amount, _limitLower, _limitUpper, currentTick(), token0.decimals(), token1.decimals());
         uint256 token0Before = token0.balanceOf(address(this));
         uint256 token1Before = token1.balanceOf(address(this));
         if (amountToSwap > 0) {
             _swapTokens(amountToSwap, 0, _isToken0);
         }
 
-        uint256 token0BalAfter = amountToSwap > 0 && amountToSwap != amount
+        uint256 token0BalAfter = amountToSwap > 0 && amountToSwap != _amount
             ? _isToken0 ? token0Before - amountToSwap : token0.balanceOf(address(this)) - token0Before
             : token0.balanceOf(address(this));
-        uint256 token1BalAfter = amountToSwap > 0 && amountToSwap != amount
+        uint256 token1BalAfter = amountToSwap > 0 && amountToSwap != _amount
             ? _isToken0 ? token1.balanceOf(address(this)) - token1Before : token1Before - amountToSwap
             : token1.balanceOf(address(this));
         _checkReceivedAmount(
-            amount, _isToken0 ? token0BalAfter : token1BalAfter, _isToken0 ? token1BalAfter : token0BalAfter, _isToken0
+            _amount, _isToken0 ? token0BalAfter : token1BalAfter, _isToken0 ? token1BalAfter : token0BalAfter, _isToken0
         );
         uint128 liquidity = _liquidityForAmounts(_limitLower, _limitUpper, token0BalAfter, token1BalAfter);
         (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_limitLower, _limitUpper, liquidity);
         _mintLiquidity(_limitLower, _limitUpper, liquidity, address(this), min0Amount, min1Amount);
         _mint(receiver, shares);
+        emit Deposit(msg.sender, receiver, _amount, shares);
     }
 
     function redeem(
@@ -105,33 +114,16 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         uint256 minimumReceive
     )
         external
-        returns (uint256 totalReceive)
+        returns (uint256)
     {
-        int24 _limitLower = limitLower;
-        int24 _limitUpper = limitUpper;
-        uint256 _shares = shares;
-        address _receiver = receiver;
+        (int24 _limitLower, int24 _limitUpper, bool _isToken0) = (limitLower, limitUpper, isToken0);
         _zeroBurn(_limitLower, _limitUpper);
-        bool _isToken0 = isToken0; // gas saving
-        uint256 token0Before = token0.balanceOf(address(this));
-        uint256 token1Before = token1.balanceOf(address(this));
-        uint256 token0FromBal = token0Before * _shares / totalSupply();
-        uint256 token1FromBal = token1Before * _shares / totalSupply();
-        uint128 liqForShares = _liquidityForShares(_limitLower, _limitUpper, _shares);
-
-        _burnLiquidity(_limitLower, _limitUpper, liqForShares, address(this), true, 0, 0);
-        uint256 token0After = token0.balanceOf(address(this));
-        uint256 token1After = token1.balanceOf(address(this));
-        uint256 receivedAmount = _swapTokens(
-            _isToken0 ? token1After - token1Before + token1FromBal : token0After - token0Before + token0FromBal,
-            0,
-            !_isToken0
-        );
-        _burn(msg.sender, _shares);
-        totalReceive = receivedAmount
-            + (isToken0 ? token0After - token0Before + token0FromBal : token1After - token1Before + token1FromBal);
-        if (totalReceive < minimumReceive) revert NotEnoughToken();
-        _isToken0 ? token0.safeTransfer(_receiver, totalReceive) : token1.safeTransfer(_receiver, totalReceive);
+        uint256 totalAmountToSend = _calcAssetsAndBurnLiquidity(_limitLower, _limitUpper, shares, _isToken0);
+        _burn(msg.sender, shares);
+        if (totalAmountToSend < minimumReceive) revert NotEnoughToken();
+        _isToken0 ? token0.safeTransfer(receiver, totalAmountToSend) : token1.safeTransfer(receiver, totalAmountToSend);
+        emit Withdraw(msg.sender, receiver, owner, totalAmountToSend, shares);
+        return totalAmountToSend;
     }
 
     function underlyingBalance() public view returns (uint256) {
@@ -193,8 +185,8 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
 
     /// @notice Callback function of uniswapV3Pool mint
     function uniswapV3MintCallback(uint256 amount0, uint256 amount1, bytes calldata data) external override {
-        if (msg.sender != address(pool)) revert callerNotPool();
-        if (!mintCalled) revert notOnMinting();
+        if (msg.sender != address(pool)) revert CallerNotPool();
+        if (!mintCalled) revert NotOnMinting();
         mintCalled = false;
         if (amount0 > 0) token0.safeTransfer(msg.sender, amount0);
         if (amount1 > 0) token1.safeTransfer(msg.sender, amount1);
@@ -221,7 +213,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             mintCalled = true;
             (uint256 amount0, uint256 amount1) =
                 pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
-            if (amount0 < amount0Min || amount1 < amount1Min) revert notEnoughTokenUsed();
+            if (amount0 < amount0Min || amount1 < amount1Min) revert NotEnoughTokenUsed();
         }
     }
 
@@ -433,5 +425,61 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         );
         (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_limitLower, _limitUpper, liquidity);
         _mintLiquidity(_limitLower, _limitUpper, liquidity, address(this), min0Amount, min1Amount);
+    }
+
+    function rebalance(
+        int24 _limitLower,
+        int24 _limitUpper,
+        uint256 amount0OutMin,
+        uint256 amount1OutMin
+    )
+        external
+        onlyOwner
+    {
+        int24 tickSpacing = pool.tickSpacing();
+        if (_limitLower >= _limitUpper) revert InvalidRange();
+        if (_limitLower % tickSpacing != 0 || _limitUpper % tickSpacing != 0) revert InvalidRange();
+        int24 _currentLimitLower = limitLower;
+        int24 _currentLimitUpper = limitUpper;
+        _zeroBurn(_currentLimitLower, _currentLimitUpper);
+        (uint128 liquidity,,) = _position(_currentLimitLower, _currentLimitUpper);
+        _burnLiquidity(
+            _currentLimitLower, _currentLimitUpper, liquidity, address(this), true, amount0OutMin, amount1OutMin
+        );
+        limitLower = _limitLower;
+        limitUpper = _limitUpper;
+
+        uint128 newLiquidity = _liquidityForAmounts(
+            _limitLower, _limitUpper, token0.balanceOf(address(this)), token1.balanceOf(address(this))
+        );
+        (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_limitLower, _limitUpper, newLiquidity);
+        _mintLiquidity(_limitLower, _limitUpper, newLiquidity, address(this), min0Amount, min1Amount);
+    }
+
+    function _calcAssetsAndBurnLiquidity(
+        int24 _limitLower,
+        int24 _limitUpper,
+        uint256 _shares,
+        bool _isToken0
+    )
+        internal
+        returns (uint256 totalAmountToSend)
+    {
+        uint256 token0BalBefore = token0.balanceOf(address(this));
+        uint256 token1BalBefore = token1.balanceOf(address(this));
+        uint256 token0FromBal = token0.balanceOf(address(this));
+        uint256 token1FromBal = token1BalBefore * _shares / totalSupply();
+        uint128 liqShares = _liquidityForShares(_limitLower, _limitUpper, _shares);
+
+        _burnLiquidity(_limitLower, _limitUpper, liqShares, address(this), true, 0, 0);
+        uint256 token0After = token0.balanceOf(address(this));
+        uint256 token1After = token1.balanceOf(address(this));
+        uint256 receivedAmount = _swapTokens(
+            _isToken0 ? token1After - token1BalBefore + token1FromBal : token0After - token0BalBefore + token0FromBal,
+            0,
+            !_isToken0
+        );
+        totalAmountToSend = receivedAmount
+            + (isToken0 ? token0After - token0BalBefore + token0FromBal : token1After - token1BalBefore + token1FromBal);
     }
 }
