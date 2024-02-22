@@ -84,18 +84,13 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         //swap logic
         uint256 amountToSwap =
             _calcAmountToSwap(_amount, _limitLower, _limitUpper, currentTick(), token0.decimals(), token1.decimals());
-        uint256 token0Before = token0.balanceOf(address(this));
-        uint256 token1Before = token1.balanceOf(address(this));
+        uint256 token0BalBefore = token0.balanceOf(address(this));
+        uint256 token1BalBefore = token1.balanceOf(address(this));
         if (amountToSwap > 0) {
             _swapTokens(amountToSwap, 0, _isToken0);
         }
-
-        uint256 token0BalAfter = amountToSwap > 0 && amountToSwap != _amount
-            ? _isToken0 ? token0Before - amountToSwap : token0.balanceOf(address(this)) - token0Before
-            : token0.balanceOf(address(this));
-        uint256 token1BalAfter = amountToSwap > 0 && amountToSwap != _amount
-            ? _isToken0 ? token1.balanceOf(address(this)) - token1Before : token1Before - amountToSwap
-            : token1.balanceOf(address(this));
+        (uint256 token0BalAfter, uint256 token1BalAfter) =
+            _calcDepositAfterBalances(_amount, _isToken0, amountToSwap, token0BalBefore, token1BalBefore);
         _checkReceivedAmount(
             _amount, _isToken0 ? token0BalAfter : token1BalAfter, _isToken0 ? token1BalAfter : token0BalAfter, _isToken0
         );
@@ -109,16 +104,19 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     function redeem(
         uint256 shares,
         address receiver,
-        address owner, // TODO implement logic around that
+        address owner,
         uint256 minimumReceive
     )
         external
         returns (uint256)
     {
+        if (owner != msg.sender) {
+            _spendAllowance(msg.sender, owner, shares);
+        }
         (int24 _limitLower, int24 _limitUpper, bool _isToken0) = (limitLower, limitUpper, isToken0);
         _collectFees(_limitLower, _limitUpper);
         uint256 totalAmountToSend = _calcAssetsAndBurnLiquidity(_limitLower, _limitUpper, shares, _isToken0);
-        _burn(msg.sender, shares);
+        _burn(owner, shares);
         if (totalAmountToSend < minimumReceive) revert NotEnoughToken();
         _isToken0 ? token0.safeTransfer(receiver, totalAmountToSend) : token1.safeTransfer(receiver, totalAmountToSend);
         emit Withdraw(msg.sender, receiver, owner, totalAmountToSend, shares);
@@ -484,6 +482,31 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             (uint256 amount0, uint256 amount1) =
                 pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
             if (amount0 < amount0Min || amount1 < amount1Min) revert NotEnoughTokenUsed();
+        }
+    }
+
+    function _calcDepositAfterBalances(
+        uint256 amount,
+        bool _isToken0,
+        uint256 amountToSwap,
+        uint256 token0BalBefore,
+        uint256 token1BalBefore
+    )
+        internal
+        view
+        returns (uint256 token0BalAfter, uint256 token1BalAfter)
+    {
+        if (amountToSwap > 0 && amountToSwap != amount) {
+            if (_isToken0) {
+                token0BalAfter = token0BalBefore - amountToSwap;
+                token1BalAfter = token1.balanceOf(address(this)) - token1BalBefore;
+            } else {
+                token0BalAfter = token0.balanceOf(address(this)) - token0BalBefore;
+                token1BalAfter = token1BalBefore - amountToSwap;
+            }
+        } else {
+            token0BalAfter = token0.balanceOf(address(this));
+            token1BalAfter = token1.balanceOf(address(this));
         }
     }
 }

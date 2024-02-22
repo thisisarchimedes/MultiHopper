@@ -187,9 +187,9 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         uint256 wethBalBefore = IERC20(WETH).balanceOf(address(this));
         assertAlmostEq(shares, sharesStaker + sharesStaker2, expectedError);
         vm.prank(staker);
-        uniswapV3Adapter.redeem(sharesStaker, address(this), address(this), 0);
+        uniswapV3Adapter.redeem(sharesStaker, address(this), staker, 0);
         vm.prank(staker2);
-        uniswapV3Adapter.redeem(sharesStaker2, address(this), address(this), 0);
+        uniswapV3Adapter.redeem(sharesStaker2, address(this), staker2, 0);
         uniswapV3Adapter.redeem(shares, address(this), address(this), 0);
         uint256 wethBalAfter = IERC20(WETH).balanceOf(address(this));
         uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
@@ -198,36 +198,25 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         assertAlmostEq(wethBalAfter - wethBalBefore, 100e18, expectedError);
     }
 
+    function testRedeemShouldRevertIfOwnerDidNotApprove() public {
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uint256 depositAmount = 50e18;
+        deal(WETH, address(staker), depositAmount);
+        vm.startPrank(staker);
+        IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
+        uniswapV3Adapter.deposit(depositAmount, address(staker));
+        uint256 shares = uniswapV3Adapter.balanceOf(address(staker));
+        vm.stopPrank();
+        vm.expectRevert("ERC20: insufficient allowance");
+        uniswapV3Adapter.redeem(shares, address(this), address(staker), 0);
+    }
+
     function chooseTicks(int24 lowerPercentile, int24 upperPercentile) public view returns (int24, int24, int24) {
         (, int24 tick,,,,,) = WETH_WBTC_POOL.slot0();
         int24 tickSpacing = WETH_WBTC_POOL.tickSpacing();
         int24 lowerTick = (int24(int128(tick) * lowerPercentile / 100)) / tickSpacing * tickSpacing;
         int24 upperTick = (int24(int128(tick) * upperPercentile / 100)) / tickSpacing * tickSpacing;
         return (lowerTick, upperTick, tick);
-    }
-
-    function getAmountToSwap(
-        uint256 amount,
-        int24 lowerTick,
-        int24 upperTick,
-        int24 currentTick,
-        bool isToken0,
-        uint8 token0Decimal,
-        uint8 token1Decimal
-    )
-        internal
-        returns (uint256 _amountToSell)
-    {
-        string[] memory inputs = new string[](9);
-        inputs[0] = "python3";
-        inputs[1] = "test/calc.py";
-        inputs[2] = vm.toString(amount);
-        inputs[3] = vm.toString(lowerTick);
-        inputs[4] = vm.toString(upperTick);
-        inputs[5] = vm.toString(currentTick);
-        inputs[6] = vm.toString(isToken0);
-        inputs[7] = vm.toString(token0Decimal);
-        inputs[8] = vm.toString(token1Decimal);
-        return abi.decode(vm.ffi(inputs), (uint256));
     }
 }
