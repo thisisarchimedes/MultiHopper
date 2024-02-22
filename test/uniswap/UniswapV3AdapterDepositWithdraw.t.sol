@@ -20,6 +20,8 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     IUniswapV3Pool public constant WETH_WBTC_POOL = IUniswapV3Pool(0xCBCdF9626bC03E24f779434178A73a0B4bad62eD);
     address feeRecipient = makeAddr("feeRecipient");
+    address staker = makeAddr("staker");
+    address staker2 = makeAddr("staker2");
 
     function setUp() public virtual {
         // solhint-disable-previous-line no-empty-blocks
@@ -130,6 +132,70 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         uniswapV3Adapter.redeem(shares, address(this), address(this), 0);
         uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalanceAfter, depositAmount / 2, expectedError / 2);
+    }
+
+    function testCalculateMultipleStakersSharesProperly() public {
+        uint256 depositAmount = 50e18;
+        deal(WETH, address(this), depositAmount);
+        deal(WETH, staker, depositAmount / 2);
+        deal(WETH, staker2, depositAmount / 2);
+        IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
+        vm.prank(staker);
+        IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
+        vm.prank(staker2);
+        IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
+
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.deposit(depositAmount, address(this));
+        vm.prank(staker);
+        uniswapV3Adapter.deposit(depositAmount / 2, staker);
+        vm.prank(staker2);
+        uniswapV3Adapter.deposit(depositAmount / 2, staker2);
+
+        uint256 shares = uniswapV3Adapter.balanceOf(address(this));
+        uint256 sharesStaker = uniswapV3Adapter.balanceOf(staker);
+        uint256 sharesStaker2 = uniswapV3Adapter.balanceOf(staker2);
+        uint256 expectedError = shares * 2 / 1000;
+        assertAlmostEq(shares, sharesStaker + sharesStaker2, expectedError);
+    }
+
+    function testCalculateMultipleStakersSharesProperlyAndWithdraw() public {
+        uint256 depositAmount = 50e18;
+        uint256 stakersDepositAmount = 25e18;
+        deal(WETH, address(this), depositAmount);
+        deal(WETH, staker, stakersDepositAmount);
+        deal(WETH, staker2, stakersDepositAmount);
+        IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
+        vm.prank(staker);
+        IERC20(WETH).approve(address(uniswapV3Adapter), stakersDepositAmount);
+        vm.prank(staker2);
+        IERC20(WETH).approve(address(uniswapV3Adapter), stakersDepositAmount);
+
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.deposit(depositAmount, address(this));
+        vm.prank(staker);
+        uniswapV3Adapter.deposit(stakersDepositAmount, staker);
+        vm.prank(staker2);
+        uniswapV3Adapter.deposit(stakersDepositAmount, staker2);
+
+        uint256 shares = uniswapV3Adapter.balanceOf(address(this));
+        uint256 sharesStaker = uniswapV3Adapter.balanceOf(staker);
+        uint256 sharesStaker2 = uniswapV3Adapter.balanceOf(staker2);
+        uint256 expectedError = shares * 2 / 1000;
+        uint256 wethBalBefore = IERC20(WETH).balanceOf(address(this));
+        assertAlmostEq(shares, sharesStaker + sharesStaker2, expectedError);
+        vm.prank(staker);
+        uniswapV3Adapter.redeem(sharesStaker, address(this), address(this), 0);
+        vm.prank(staker2);
+        uniswapV3Adapter.redeem(sharesStaker2, address(this), address(this), 0);
+        uniswapV3Adapter.redeem(shares, address(this), address(this), 0);
+        uint256 wethBalAfter = IERC20(WETH).balanceOf(address(this));
+        uint256 underlyingBalanceAfter = uniswapV3Adapter.underlyingBalance();
+        assertEq(underlyingBalanceAfter, 0);
+        expectedError = (depositAmount + stakersDepositAmount * 2) * 3 / 1000;
+        assertAlmostEq(wethBalAfter - wethBalBefore, 100e18, expectedError);
     }
 
     function chooseTicks(int24 lowerPercentile, int24 upperPercentile) public view returns (int24, int24, int24) {

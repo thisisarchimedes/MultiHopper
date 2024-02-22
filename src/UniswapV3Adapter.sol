@@ -77,7 +77,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         uint256 _amount = amount;
         //calculate shares
         uint256 shares = _calcShares(amount);
-        _zeroBurn(_limitLower, _limitUpper);
+        _collectFees(_limitLower, _limitUpper);
         _isToken0
             ? token0.safeTransferFrom(msg.sender, address(this), _amount)
             : token1.safeTransferFrom(msg.sender, address(this), _amount);
@@ -116,7 +116,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         returns (uint256)
     {
         (int24 _limitLower, int24 _limitUpper, bool _isToken0) = (limitLower, limitUpper, isToken0);
-        _zeroBurn(_limitLower, _limitUpper);
+        _collectFees(_limitLower, _limitUpper);
         uint256 totalAmountToSend = _calcAssetsAndBurnLiquidity(_limitLower, _limitUpper, shares, _isToken0);
         _burn(msg.sender, shares);
         if (totalAmountToSend < minimumReceive) revert NotEnoughToken();
@@ -147,31 +147,6 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         if (amount1 > 0) token1.safeTransfer(msg.sender, amount1);
     }
 
-    /// @notice Adds the liquidity for the given position
-    /// @param tickLower The lower tick of the position in which to add liquidity
-    /// @param tickUpper The upper tick of the position in which to add liquidity
-    /// @param liquidity The amount of liquidity to mint
-    /// @param payer Payer Data
-    /// @param amount0Min Minimum amount of token0 that should be paid
-    /// @param amount1Min Minimum amount of token1 that should be paid
-    function _mintLiquidity(
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 liquidity,
-        address payer,
-        uint256 amount0Min,
-        uint256 amount1Min
-    )
-        internal
-    {
-        if (liquidity > 0) {
-            mintCalled = true;
-            (uint256 amount0, uint256 amount1) =
-                pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
-            if (amount0 < amount0Min || amount1 < amount1Min) revert NotEnoughTokenUsed();
-        }
-    }
-
     /// @return tick Uniswap pool's current price tick
     function currentTick() public view returns (int24 tick) {
         (, tick,,,,,) = pool.slot0();
@@ -194,14 +169,14 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     function doHardWork() external onlyOwner {
         int24 _limitLower = limitLower;
         int24 _limitUpper = limitUpper;
-        // update fees for compounding
-        _zeroBurn(_limitLower, _limitUpper);
+        _collectFees(_limitLower, _limitUpper);
 
         uint128 liquidity = _liquidityForAmounts(
             _limitLower, _limitUpper, token0.balanceOf(address(this)), token1.balanceOf(address(this))
         );
         (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_limitLower, _limitUpper, liquidity);
         _mintLiquidity(_limitLower, _limitUpper, liquidity, address(this), min0Amount, min1Amount);
+        // TODO add event
     }
 
     function rebalance(
@@ -214,11 +189,13 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         onlyOwner
     {
         int24 tickSpacing = pool.tickSpacing();
+        // _limitLower = _limitLower / tickSpacing * tickSpacing;
+        // _limitUpper = _limitUpper / tickSpacing * tickSpacing;
         if (_limitLower >= _limitUpper) revert InvalidRange();
         if (_limitLower % tickSpacing != 0 || _limitUpper % tickSpacing != 0) revert InvalidRange();
         int24 _currentLimitLower = limitLower;
         int24 _currentLimitUpper = limitUpper;
-        _zeroBurn(_currentLimitLower, _currentLimitUpper);
+        _collectFees(_currentLimitLower, _currentLimitUpper);
         (uint128 liquidity,,) = _position(_currentLimitLower, _currentLimitUpper);
         _burnLiquidity(
             _currentLimitLower, _currentLimitUpper, liquidity, address(this), true, amount0OutMin, amount1OutMin
@@ -231,6 +208,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         );
         (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_limitLower, _limitUpper, newLiquidity);
         _mintLiquidity(_limitLower, _limitUpper, newLiquidity, address(this), min0Amount, min1Amount);
+        // TODO add event
     }
 
     /// INTERNAL FUNCTIONS
@@ -261,7 +239,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         );
     }
 
-    function _zeroBurn(int24 tickLower, int24 tickUpper) internal returns (uint128 liquidity) {
+    function _collectFees(int24 tickLower, int24 tickUpper) internal returns (uint128 liquidity) {
         (liquidity,,) = _position(tickLower, tickUpper);
         if (liquidity > 0) {
             pool.burn(tickLower, tickUpper, 0);
@@ -306,7 +284,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     {
         uint256 token0BalBefore = token0.balanceOf(address(this));
         uint256 token1BalBefore = token1.balanceOf(address(this));
-        uint256 token0FromBal = token0.balanceOf(address(this));
+        uint256 token0FromBal = token0BalBefore * _shares / totalSupply();
         uint256 token1FromBal = token1BalBefore * _shares / totalSupply();
         uint128 liqShares = _liquidityForShares(_limitLower, _limitUpper, _shares);
 
@@ -482,5 +460,30 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             amount0,
             amount1
         );
+    }
+
+    /// @notice Adds the liquidity for the given position
+    /// @param tickLower The lower tick of the position in which to add liquidity
+    /// @param tickUpper The upper tick of the position in which to add liquidity
+    /// @param liquidity The amount of liquidity to mint
+    /// @param payer Payer Data
+    /// @param amount0Min Minimum amount of token0 that should be paid
+    /// @param amount1Min Minimum amount of token1 that should be paid
+    function _mintLiquidity(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity,
+        address payer,
+        uint256 amount0Min,
+        uint256 amount1Min
+    )
+        internal
+    {
+        if (liquidity > 0) {
+            mintCalled = true;
+            (uint256 amount0, uint256 amount1) =
+                pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
+            if (amount0 < amount0Min || amount1 < amount1Min) revert NotEnoughTokenUsed();
+        }
     }
 }
