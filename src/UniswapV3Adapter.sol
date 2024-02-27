@@ -46,6 +46,9 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     );
 
     event DoHardWork(uint256 amount0Collected, uint256 amount1Collected, uint256 amount0Fee, uint256 amount1Fee);
+    event Rebalance(
+        int24 oldLowerTick, int24 oldUpperTick, int24 newLowerTick, int24 newUpperTick, uint256 amount0, uint256 amount1
+    );
 
     function initialize(
         IUniswapV3Pool _pool,
@@ -198,8 +201,9 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             _lowerTick, _upperTick, token0.balanceOf(address(this)), token1.balanceOf(address(this))
         );
         (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_lowerTick, _upperTick, newLiquidity);
-        _mintLiquidity(_lowerTick, _upperTick, newLiquidity, address(this), min0Amount, min1Amount);
-        // TODO add event
+        (uint256 amount0Used, uint256 amount1Used) =
+            _mintLiquidity(_lowerTick, _upperTick, newLiquidity, address(this), min0Amount, min1Amount);
+        emit Rebalance(_currentlowerTick, _currentupperTick, _lowerTick, _upperTick, amount0Used, amount1Used);
     }
 
     function underlyingBalance() external view returns (uint256) {
@@ -489,11 +493,11 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         uint256 amount1Min
     )
         internal
+        returns (uint256 amount0, uint256 amount1)
     {
         if (liquidity > 0) {
             mintCalled = true;
-            (uint256 amount0, uint256 amount1) =
-                pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
+            (amount0, amount1) = pool.mint(address(this), tickLower, tickUpper, liquidity, abi.encode(payer));
             if (amount0 < amount0Min || amount1 < amount1Min) revert NotEnoughTokenUsed();
         }
     }
@@ -521,5 +525,17 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
             token0BalAfter = token0.balanceOf(address(this));
             token1BalAfter = token1.balanceOf(address(this));
         }
+    }
+
+    function setFeeRecipient(address _feeRecipient) external onlyOwner {
+        feeRecipient = _feeRecipient;
+    }
+
+    function setFee(uint256 _fee) external onlyOwner {
+        fee = _fee;
+    }
+
+    function setAcceptedSlippage(uint256 _acceptedSlippage) external onlyOwner {
+        acceptedSlippage = _acceptedSlippage;
     }
 }
