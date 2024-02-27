@@ -300,12 +300,16 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
 
         uint256 balance0ToSwap = token0.balanceOf(address(this)) - token0BalBefore + token0FromBal;
         uint256 balance1ToSwap = token1.balanceOf(address(this)) - token1BalBefore + token1FromBal;
-        uint256 receivedAmount =
-            _swapTokens(_isValueTokenToken0 ? balance1ToSwap : balance0ToSwap, 0, !_isValueTokenToken0);
 
         // we swapped risk token to value token, now we add the newly recieved value token and the value token we
         // already had
-        totalAmountToSend = receivedAmount + (_isValueTokenToken0 ? balance0ToSwap : balance1ToSwap);
+        if (_isValueTokenToken0) {
+            uint256 receivedAmount = _swapTokens(balance1ToSwap, 0, !_isValueTokenToken0);
+            totalAmountToSend = receivedAmount + balance0ToSwap;
+        } else {
+            uint256 receivedAmount = _swapTokens(balance0ToSwap, 0, !_isValueTokenToken0);
+            totalAmountToSend = receivedAmount + balance1ToSwap;
+        }
     }
 
     /// @notice Get the liquidity amount for given liquidity tokens
