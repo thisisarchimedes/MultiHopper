@@ -86,26 +86,22 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
      * @param receiver The address of the receiver of the deposited tokens.
      */
     function deposit(uint256 amount, address receiver) external {
-        bool _isValueTokenToken0 = isValueTokenToken0; // gas saving
-        int24 _lowerTick = lowerTick;
-        int24 _upperTick = upperTick;
-        uint256 _amount = amount;
+        // local cache for gas saving
+        (bool _isValueTokenToken0, int24 _lowerTick, int24 _upperTick) = (isValueTokenToken0, lowerTick, upperTick);
 
         _collectFees(_lowerTick, _upperTick);
 
-        uint256 shares = _calcShares(_amount, _isValueTokenToken0);
+        uint256 shares = _calcShares(amount, _isValueTokenToken0);
 
-        _transferTokensFromUser(_isValueTokenToken0, _amount);
+        _transferTokensFromUser(_isValueTokenToken0, amount);
 
-        swapValueTokenToProportionOfRiskAndValueTokens(_amount, _isValueTokenToken0, _lowerTick, _upperTick);
+        _swapValueTokenToProportionOfRiskAndValueTokens(amount, _isValueTokenToken0, _lowerTick, _upperTick);
 
-        uint128 liquidity = _liquidityForAmounts(
-            _lowerTick, _upperTick, token0.balanceOf(address(this)), token1.balanceOf(address(this))
-        );
-        (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_lowerTick, _upperTick, liquidity);
-        _mintLiquidity(_lowerTick, _upperTick, liquidity, address(this), min0Amount, min1Amount);
+        _depositTokensToUniPool(_lowerTick, _upperTick);
+
         _mint(receiver, shares);
-        emit Deposit(msg.sender, receiver, _amount, shares);
+
+        emit Deposit(msg.sender, receiver, amount, shares);
     }
 
     function redeem(
@@ -542,7 +538,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         }
     }
 
-    function swapValueTokenToProportionOfRiskAndValueTokens(
+    function _swapValueTokenToProportionOfRiskAndValueTokens(
         uint256 _amount,
         bool _isValueTokenToken0,
         int24 _lowerTick,
@@ -565,6 +561,14 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
                 _isValueTokenToken0
             );
         }
+    }
+
+    function _depositTokensToUniPool(int24 _lowerTick, int24 _upperTick) internal {
+        uint128 liquidity = _liquidityForAmounts(
+            _lowerTick, _upperTick, token0.balanceOf(address(this)), token1.balanceOf(address(this))
+        );
+        (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_lowerTick, _upperTick, liquidity);
+        _mintLiquidity(_lowerTick, _upperTick, liquidity, address(this), min0Amount, min1Amount);
     }
 
     function setFeeRecipient(address _feeRecipient) external onlyOwner {
