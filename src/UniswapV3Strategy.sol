@@ -85,13 +85,13 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
      * @param amount The amount of tokens to deposit.
      * @param receiver The address of the receiver of the deposited tokens.
      */
-    function deposit(uint256 amount, address receiver) external {
+    function deposit(uint256 amount, address receiver) external returns (uint256 shares) {
         // local cache for gas saving
         (bool _isValueTokenToken0, int24 _lowerTick, int24 _upperTick) = (isValueTokenToken0, lowerTick, upperTick);
 
         _collectFees(_lowerTick, _upperTick);
 
-        uint256 shares = _calcShares(amount, _isValueTokenToken0);
+        shares = _calcShares(amount, _isValueTokenToken0);
 
         _transferTokensFromUser(_isValueTokenToken0, amount);
 
@@ -118,10 +118,13 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
         }
         (int24 _lowerTick, int24 _upperTick, bool _isValueTokenToken0) = (lowerTick, upperTick, isValueTokenToken0);
         _collectFees(_lowerTick, _upperTick);
-        uint256 totalAmountToSend = _calcAssetsAndBurnLiquidity(_lowerTick, _upperTick, shares, _isValueTokenToken0);
-        _burn(owner, shares);
+
+        uint256 totalAmountToSend = _calcAssetsAndWithdrawLiquidity(_lowerTick, _upperTick, shares, _isValueTokenToken0);
         if (totalAmountToSend < minimumReceive) revert NotEnoughToken();
+
+        _burn(owner, shares);
         _transferTokensToUser(_isValueTokenToken0, totalAmountToSend, receiver);
+
         emit Withdraw(msg.sender, receiver, owner, totalAmountToSend, shares);
         return totalAmountToSend;
     }
@@ -281,7 +284,7 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
         if (currentUnderlyingAmount + amountInOtherToken < acceptableAmount) revert NotEnoughToken();
     }
 
-    function _calcAssetsAndBurnLiquidity(
+    function _calcAssetsAndWithdrawLiquidity(
         int24 _lowerTick,
         int24 _upperTick,
         uint256 _shares,
