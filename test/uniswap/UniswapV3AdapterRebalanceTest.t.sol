@@ -39,7 +39,7 @@ contract UniswapV3AdapterRebalanceTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeAndRebalance() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         _deposit(50e18);
         (int24 newLowerTick, int24 newUpperTick,) = chooseTicks(95, 105);
         uniswapV3Adapter.rebalance(newLowerTick, newUpperTick, 0, 0);

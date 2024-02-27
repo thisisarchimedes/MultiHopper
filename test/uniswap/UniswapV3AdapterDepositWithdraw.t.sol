@@ -40,7 +40,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WETH, address(this), 1e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 1e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(102, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Adapter.deposit(1e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalance, 1e18, 0.02e18);
@@ -50,7 +50,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WETH, address(this), 5e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 5e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Adapter.deposit(5e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalance, 5e18, 1); // some rounding error
@@ -60,7 +60,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 5e8);
         IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WBTC, feeRecipient);
         uniswapV3Adapter.deposit(5e8, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 5e8 * 3 / 1000;
@@ -71,7 +71,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 5e8);
         IERC20(WBTC).approve(address(uniswapV3Adapter), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(101, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WBTC, feeRecipient);
         uniswapV3Adapter.deposit(5e8, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         assertAlmostEq(underlyingBalance, 5e8, 1); // some rounding error
@@ -81,7 +81,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WETH, address(this), 50e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Adapter.deposit(50e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 50e18 * 2 / 1000;
@@ -92,7 +92,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 50e8);
         IERC20(WBTC).approve(address(uniswapV3Adapter), 50e8);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, true, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WBTC, feeRecipient);
         uniswapV3Adapter.deposit(50e8, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 50e8 * 2 / 1000;
@@ -103,7 +103,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WETH, address(this), 50e18);
         IERC20(WETH).approve(address(uniswapV3Adapter), 50e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Adapter.deposit(50e18, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = 50e18 * 2 / 1000;
@@ -123,7 +123,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WETH, address(this), depositAmount);
         IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Adapter.deposit(depositAmount, address(this));
         uint256 underlyingBalance = uniswapV3Adapter.underlyingBalance();
         uint256 expectedError = depositAmount * 2 / 1000;
@@ -146,7 +146,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WETH).approve(address(uniswapV3Adapter), depositAmount);
 
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Adapter.deposit(depositAmount, address(this));
         vm.prank(staker);
         uniswapV3Adapter.deposit(depositAmount / 2, staker);
@@ -173,7 +173,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         IERC20(WETH).approve(address(uniswapV3Adapter), stakersDepositAmount);
 
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Adapter.deposit(depositAmount, address(this));
         vm.prank(staker);
         uniswapV3Adapter.deposit(stakersDepositAmount, staker);
@@ -200,7 +200,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testRedeemShouldRevertIfOwnerDidNotApprove() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uint256 depositAmount = 50e18;
         deal(WETH, address(staker), depositAmount);
         vm.startPrank(staker);

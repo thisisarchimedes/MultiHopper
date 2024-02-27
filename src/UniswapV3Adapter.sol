@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
-pragma solidity ^0.8.19 .0;
+pragma solidity ^0.8.19;
 
 import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
@@ -16,8 +16,10 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     using SafeERC20 for IERC20Metadata;
     using OracleLibrary for int24;
 
+    address constant UNISWAP_ROUTER_ADDRESS = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+
     IUniswapV3Pool public pool;
-    bool public isToken0;
+    bool isValueTokenToken0;
     ISwapRouter public swapRouter;
 
     int24 public lowerTick;
@@ -54,7 +56,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         IUniswapV3Pool _pool,
         int24 _lowerTick,
         int24 _upperTick,
-        bool _isToken0,
+        address _stakingToken,
         address _feeRecipient
     )
         external
@@ -65,14 +67,17 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         pool = _pool;
         token0 = IERC20Metadata(pool.token0());
         token1 = IERC20Metadata(pool.token1());
+        if (address(token0) != _stakingToken && address(token1) != _stakingToken) {
+            revert("UniswapV3Adapter: staking token should be token0 or token1"); // TODO change to custom error message
+        }
+        isValueTokenToken0 = address(token0) == _stakingToken ? true : false;
         lowerTick = _lowerTick;
         upperTick = _upperTick;
-        isToken0 = _isToken0;
-        swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+        swapRouter = ISwapRouter(UNISWAP_ROUTER_ADDRESS);
         poolFee = pool.fee();
         feeRecipient = _feeRecipient;
-        fee = 1500;
-        acceptedSlippage = 9950;
+        fee = 1000; // 10% protocol fee (out of profits)
+        acceptedSlippage = 9950; // 0.5% slippage
     }
 
     /**
@@ -81,30 +86,22 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
      * @param receiver The address of the receiver of the deposited tokens.
      */
     function deposit(uint256 amount, address receiver) external {
-        bool _isToken0 = isToken0; // gas saving
+        bool _isValueTokenToken0 = isValueTokenToken0; // gas saving
         int24 _lowerTick = lowerTick;
         int24 _upperTick = upperTick;
         uint256 _amount = amount;
-        //calculate shares
-        uint256 shares = _calcShares(amount, _isToken0);
+
         _collectFees(_lowerTick, _upperTick);
-        _isToken0
-            ? token0.safeTransferFrom(msg.sender, address(this), _amount)
-            : token1.safeTransferFrom(msg.sender, address(this), _amount);
-        //swap logic
-        uint256 amountToSwap =
-            _calcAmountToSwap(_amount, _lowerTick, _upperTick, currentTick(), token0.decimals(), token1.decimals());
-        uint256 token0BalBefore = token0.balanceOf(address(this));
-        uint256 token1BalBefore = token1.balanceOf(address(this));
-        if (amountToSwap > 0) {
-            _swapTokens(amountToSwap, 0, _isToken0);
-        }
-        (uint256 token0BalAfter, uint256 token1BalAfter) =
-            _calcDepositAfterBalances(_amount, _isToken0, amountToSwap, token0BalBefore, token1BalBefore);
-        _checkReceivedAmount(
-            _amount, _isToken0 ? token0BalAfter : token1BalAfter, _isToken0 ? token1BalAfter : token0BalAfter, _isToken0
+
+        uint256 shares = _calcShares(_amount, _isValueTokenToken0);
+
+        _transferTokensFromUser(_isValueTokenToken0, _amount);
+
+        swapValueTokenToProportionOfRiskAndValueTokens(_amount, _isValueTokenToken0, _lowerTick, _upperTick);
+
+        uint128 liquidity = _liquidityForAmounts(
+            _lowerTick, _upperTick, token0.balanceOf(address(this)), token1.balanceOf(address(this))
         );
-        uint128 liquidity = _liquidityForAmounts(_lowerTick, _upperTick, token0BalAfter, token1BalAfter);
         (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_lowerTick, _upperTick, liquidity);
         _mintLiquidity(_lowerTick, _upperTick, liquidity, address(this), min0Amount, min1Amount);
         _mint(receiver, shares);
@@ -123,12 +120,12 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         if (owner != msg.sender) {
             _spendAllowance(msg.sender, owner, shares);
         }
-        (int24 _lowerTick, int24 _upperTick, bool _isToken0) = (lowerTick, upperTick, isToken0);
+        (int24 _lowerTick, int24 _upperTick, bool _isValueTokenToken0) = (lowerTick, upperTick, isValueTokenToken0);
         _collectFees(_lowerTick, _upperTick);
-        uint256 totalAmountToSend = _calcAssetsAndBurnLiquidity(_lowerTick, _upperTick, shares, _isToken0);
+        uint256 totalAmountToSend = _calcAssetsAndBurnLiquidity(_lowerTick, _upperTick, shares, _isValueTokenToken0);
         _burn(owner, shares);
         if (totalAmountToSend < minimumReceive) revert NotEnoughToken();
-        _isToken0 ? token0.safeTransfer(receiver, totalAmountToSend) : token1.safeTransfer(receiver, totalAmountToSend);
+        _transferTokensToUser(_isValueTokenToken0, totalAmountToSend, receiver);
         emit Withdraw(msg.sender, receiver, owner, totalAmountToSend, shares);
         return totalAmountToSend;
     }
@@ -207,7 +204,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
     }
 
     function underlyingBalance() external view returns (uint256) {
-        return _underlyingBalance(isToken0);
+        return _underlyingBalance(isValueTokenToken0);
     }
     /// INTERNAL FUNCTIONS
 
@@ -292,7 +289,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         int24 _lowerTick,
         int24 _upperTick,
         uint256 _shares,
-        bool _isToken0
+        bool _isValueTokenToken0
     )
         internal
         returns (uint256 totalAmountToSend)
@@ -304,15 +301,22 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         uint128 liqShares = _liquidityForShares(_lowerTick, _upperTick, _shares);
 
         _burnLiquidity(_lowerTick, _upperTick, liqShares, address(this), true, 0, 0);
+
         uint256 token0After = token0.balanceOf(address(this));
         uint256 token1After = token1.balanceOf(address(this));
         uint256 receivedAmount = _swapTokens(
-            _isToken0 ? token1After - token1BalBefore + token1FromBal : token0After - token0BalBefore + token0FromBal,
+            _isValueTokenToken0
+                ? token1After - token1BalBefore + token1FromBal
+                : token0After - token0BalBefore + token0FromBal,
             0,
-            !_isToken0
+            !_isValueTokenToken0
         );
         totalAmountToSend = receivedAmount
-            + (isToken0 ? token0After - token0BalBefore + token0FromBal : token1After - token1BalBefore + token1FromBal);
+            + (
+                _isValueTokenToken0
+                    ? token0After - token0BalBefore + token0FromBal
+                    : token1After - token1BalBefore + token1FromBal
+            );
     }
 
     /// @notice Get the liquidity amount for given liquidity tokens
@@ -366,13 +370,13 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         returns (uint256)
     {
         if (_currentTick > _upperTick) {
-            return isToken0 ? amount : 0;
+            return isValueTokenToken0 ? amount : 0;
         }
         if (_currentTick < _lowerTick) {
-            return isToken0 ? 0 : amount;
+            return isValueTokenToken0 ? 0 : amount;
         }
 
-        bool _isToken0 = isToken0; // gas saving
+        bool _isToken0 = isValueTokenToken0; // gas saving
         uint256 token0InToken1 =
             _currentTick.getQuoteAtTick(uint128(10 ** token0Decimal), address(token0), address(token1));
 
@@ -502,7 +506,7 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         }
     }
 
-    function _calcDepositAfterBalances(
+    function _calcUserDepositAfterSwap(
         uint256 amount,
         bool _isToken0,
         uint256 amountToSwap,
@@ -513,17 +517,53 @@ contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgrade
         view
         returns (uint256 token0BalAfter, uint256 token1BalAfter)
     {
-        if (amountToSwap > 0 && amountToSwap != amount) {
-            if (_isToken0) {
-                token0BalAfter = token0BalBefore - amountToSwap;
-                token1BalAfter = token1.balanceOf(address(this)) - token1BalBefore;
-            } else {
-                token0BalAfter = token0.balanceOf(address(this)) - token0BalBefore;
-                token1BalAfter = token1BalBefore - amountToSwap;
-            }
+        if (_isToken0) {
+            token0BalAfter = amount - amountToSwap;
+            token1BalAfter = token1.balanceOf(address(this)) - token1BalBefore;
         } else {
-            token0BalAfter = token0.balanceOf(address(this));
-            token1BalAfter = token1.balanceOf(address(this));
+            token0BalAfter = token0.balanceOf(address(this)) - token0BalBefore;
+            token1BalAfter = amount - amountToSwap;
+        }
+    }
+
+    function _transferTokensFromUser(bool _isValueTokenToken0, uint256 _amount) internal {
+        if (_isValueTokenToken0) {
+            token0.safeTransferFrom(msg.sender, address(this), _amount);
+        } else {
+            token1.safeTransferFrom(msg.sender, address(this), _amount);
+        }
+    }
+
+    function _transferTokensToUser(bool _isValueTokenToken0, uint256 _amount, address _receiver) internal {
+        if (_isValueTokenToken0) {
+            token0.safeTransfer(_receiver, _amount);
+        } else {
+            token1.safeTransfer(_receiver, _amount);
+        }
+    }
+
+    function swapValueTokenToProportionOfRiskAndValueTokens(
+        uint256 _amount,
+        bool _isValueTokenToken0,
+        int24 _lowerTick,
+        int24 _upperTick
+    )
+        internal
+    {
+        uint256 amountToSwap =
+            _calcAmountToSwap(_amount, _lowerTick, _upperTick, currentTick(), token0.decimals(), token1.decimals());
+        uint256 token0Bal = token0.balanceOf(address(this));
+        uint256 token1Bal = token1.balanceOf(address(this));
+        if (amountToSwap > 0) {
+            _swapTokens(amountToSwap, 0, _isValueTokenToken0);
+            (token0Bal, token1Bal) =
+                _calcUserDepositAfterSwap(_amount, _isValueTokenToken0, amountToSwap, token0Bal, token1Bal);
+            _checkReceivedAmount(
+                _amount,
+                _isValueTokenToken0 ? token0Bal : token1Bal,
+                _isValueTokenToken0 ? token1Bal : token0Bal,
+                _isValueTokenToken0
+            );
         }
     }
 

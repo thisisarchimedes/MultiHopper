@@ -39,7 +39,7 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeAndUserShouldEarnFromFees() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         _deposit(50e18);
         _createSwapVolumeWithWBTC(1000e8, 100);
         _deposit(50e18);
@@ -52,7 +52,7 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeAndFeeRecipientShouldGetFees() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
         uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
         _deposit(50e18);
@@ -66,7 +66,7 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function testDoHardWork() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, false, feeRecipient);
+        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
         uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
         _deposit(50e18);
