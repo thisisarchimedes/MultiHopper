@@ -298,21 +298,14 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
 
         _burnLiquidity(_lowerTick, _upperTick, liqShares, address(this), true, 0, 0);
 
-        uint256 token0After = token0.balanceOf(address(this));
-        uint256 token1After = token1.balanceOf(address(this));
-        uint256 receivedAmount = _swapTokens(
-            _isValueTokenToken0
-                ? token1After - token1BalBefore + token1FromBal
-                : token0After - token0BalBefore + token0FromBal,
-            0,
-            !_isValueTokenToken0
-        );
-        totalAmountToSend = receivedAmount
-            + (
-                _isValueTokenToken0
-                    ? token0After - token0BalBefore + token0FromBal
-                    : token1After - token1BalBefore + token1FromBal
-            );
+        uint256 balance0ToSwap = token0.balanceOf(address(this)) - token0BalBefore + token0FromBal;
+        uint256 balance1ToSwap = token1.balanceOf(address(this)) - token1BalBefore + token1FromBal;
+        uint256 receivedAmount =
+            _swapTokens(_isValueTokenToken0 ? balance1ToSwap : balance0ToSwap, 0, !_isValueTokenToken0);
+
+        // we swapped risk token to value token, now we add the newly recieved value token and the value token we
+        // already had
+        totalAmountToSend = receivedAmount + (_isValueTokenToken0 ? balance0ToSwap : balance1ToSwap);
     }
 
     /// @notice Get the liquidity amount for given liquidity tokens
