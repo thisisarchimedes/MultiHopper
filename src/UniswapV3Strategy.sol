@@ -12,7 +12,7 @@ import "univ3-periphery/interfaces/ISwapRouter.sol";
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract UniswapV3Adapter is Initializable, IUniswapV3MintCallback, ERC20Upgradeable, OwnableUpgradeable {
+contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgradeable, OwnableUpgradeable {
     using SafeERC20 for IERC20Metadata;
     using OracleLibrary for int24;
 

@@ -7,7 +7,7 @@ import { PRBTest } from "@prb/test/PRBTest.sol";
 
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
-import { UniswapV3Adapter } from "src/UniswapV3Adapter.sol";
+import { UniswapV3Strategy } from "src/UniswapV3Strategy.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "univ3-periphery/libraries/OracleLibrary.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
@@ -17,7 +17,7 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
     using OracleLibrary for int24;
 
-    UniswapV3Adapter uniswapV3Adapter;
+    UniswapV3Strategy uniswapV3Strategy;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     IUniswapV3Pool public constant WETH_WBTC_POOL = IUniswapV3Pool(0xCBCdF9626bC03E24f779434178A73a0B4bad62eD);
@@ -34,25 +34,25 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 19_183_629 });
 
-        uniswapV3Adapter = new UniswapV3Adapter();
+        uniswapV3Strategy = new UniswapV3Strategy();
     }
 
     function testProvideLiquidityInRangeAndUserShouldEarnFromFees() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         _deposit(50e18);
         _createSwapVolumeWithWBTC(1000e8, 100);
         _deposit(50e18);
-        uint256 shares = uniswapV3Adapter.balanceOf(address(this));
+        uint256 shares = uniswapV3Strategy.balanceOf(address(this));
         uint256 wethBalBefore = IERC20(WETH).balanceOf(address(this));
-        uniswapV3Adapter.redeem(shares, address(this), address(this), 0);
+        uniswapV3Strategy.redeem(shares, address(this), address(this), 0);
         uint256 wethBalAfter = IERC20(WETH).balanceOf(address(this));
         assertGt(wethBalAfter - wethBalBefore, 100e18);
     }
 
     function testProvideLiquidityInRangeAndFeeRecipientShouldGetFees() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
         uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
         _deposit(50e18);
@@ -66,14 +66,14 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function testDoHardWork() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Adapter.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
         uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
         _deposit(50e18);
-        (uint128 liquidityBefore,,) = uniswapV3Adapter.getPosition();
+        (uint128 liquidityBefore,,) = uniswapV3Strategy.getPosition();
         _createSwapVolumeWithWBTC(1000e8, 100);
-        uniswapV3Adapter.doHardWork();
-        (uint128 liquidityAfter,,) = uniswapV3Adapter.getPosition();
+        uniswapV3Strategy.doHardWork();
+        (uint128 liquidityAfter,,) = uniswapV3Strategy.getPosition();
 
         uint256 feeRecipientBalAfterWeth = IERC20(WETH).balanceOf(feeRecipient);
         uint256 feeRecipientBalAfterWbtc = IERC20(WBTC).balanceOf(feeRecipient);
@@ -139,7 +139,7 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function _deposit(uint256 amount) internal {
         deal(WETH, address(this), amount);
-        IERC20(WETH).approve(address(uniswapV3Adapter), amount);
-        uniswapV3Adapter.deposit(amount, address(this));
+        IERC20(WETH).approve(address(uniswapV3Strategy), amount);
+        uniswapV3Strategy.deposit(amount, address(this));
     }
 }
