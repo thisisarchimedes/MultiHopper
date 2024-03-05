@@ -9,10 +9,11 @@ import "univ3-periphery/libraries/LiquidityAmounts.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "univ3-periphery/libraries/OracleLibrary.sol";
 import "univ3-periphery/interfaces/ISwapRouter.sol";
-import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { ERC4626UpgradeableModified } from "src/ERC4626UpgradeableModified.sol";
+import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgradeable, OwnableUpgradeable {
+contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626UpgradeableModified, OwnableUpgradeable {
     using SafeERC20 for IERC20Metadata;
     using OracleLibrary for int24;
 
@@ -41,16 +42,14 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
     error NotEnoughTokenUsed();
     error InvalidRange();
 
-    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
-
-    event Withdraw(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
-    );
-
     event DoHardWork(uint256 amount0Collected, uint256 amount1Collected, uint256 amount0Fee, uint256 amount1Fee);
     event Rebalance(
         int24 oldLowerTick, int24 oldUpperTick, int24 newLowerTick, int24 newUpperTick, uint256 amount0, uint256 amount1
     );
+
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(
         IUniswapV3Pool _pool,
@@ -62,8 +61,9 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
         external
         initializer
     {
-        __ERC20_init("UniswapV3Adapter", "UVA");
+        __ERC4626_init(IERC20Upgradeable(_stakingToken));
         __Ownable_init();
+        __ERC20_init_unchained(string(abi.encodePacked("Univ3 strategy")), string(abi.encodePacked("PSPUNIV3")));
         pool = _pool;
         token0 = IERC20Metadata(pool.token0());
         token1 = IERC20Metadata(pool.token1());
@@ -85,23 +85,17 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
      * @param amount The amount of tokens to deposit.
      * @param receiver The address of the receiver of the deposited tokens.
      */
-    function deposit(uint256 amount, address receiver) external returns (uint256 shares) {
+    function deposit(uint256 amount, address receiver) public override returns (uint256 shares) {
         // local cache for gas saving
         (bool _isValueTokenToken0, int24 _lowerTick, int24 _upperTick) = (isValueTokenToken0, lowerTick, upperTick);
 
         _collectFees(_lowerTick, _upperTick);
 
-        shares = _calcShares(amount, _isValueTokenToken0);
-
-        _transferTokensFromUser(_isValueTokenToken0, amount);
+        shares = super.deposit(amount, receiver);
 
         _swapValueTokenToProportionOfRiskAndValueTokens(amount, _isValueTokenToken0, _lowerTick, _upperTick);
 
         _depositTokensToUniPool(_lowerTick, _upperTick);
-
-        _mint(receiver, shares);
-
-        emit Deposit(msg.sender, receiver, amount, shares);
     }
 
     function redeem(
@@ -110,23 +104,29 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
         address owner,
         uint256 minimumReceive
     )
-        external
+        public
+        override
         returns (uint256)
     {
-        if (owner != msg.sender) {
-            _spendAllowance(msg.sender, owner, shares);
+        if (shares > maxRedeem(owner)) {
+            revert RedeemExceedsMax();
         }
         (int24 _lowerTick, int24 _upperTick, bool _isValueTokenToken0) = (lowerTick, upperTick, isValueTokenToken0);
         _collectFees(_lowerTick, _upperTick);
 
-        uint256 totalAmountToSend = _calcAssetsAndWithdrawLiquidity(_lowerTick, _upperTick, shares, _isValueTokenToken0);
-        if (totalAmountToSend < minimumReceive) revert NotEnoughToken();
+        uint256 assets = _calcAssetsAndWithdrawLiquidity(_lowerTick, _upperTick, shares, _isValueTokenToken0);
+        if (assets < minimumReceive) revert NotEnoughToken();
 
-        _burn(owner, shares);
-        _transferTokensToUser(_isValueTokenToken0, totalAmountToSend, receiver);
+        _withdraw(_msgSender(), receiver, owner, assets, shares);
 
-        emit Withdraw(msg.sender, receiver, owner, totalAmountToSend, shares);
-        return totalAmountToSend;
+        return assets;
+    }
+
+    /**
+     * @notice Fetch all the underlying balances including this contract
+     */
+    function totalAssets() public view override returns (uint256) {
+        return _underlyingBalance(isValueTokenToken0);
     }
 
     /// @notice Callback function of uniswapV3Pool mint
@@ -343,14 +343,6 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC20Upgrad
         return LiquidityAmounts.getAmountsForLiquidity(
             sqrtRatioX96, TickMath.getSqrtRatioAtTick(tickLower), TickMath.getSqrtRatioAtTick(tickUpper), liquidity
         );
-    }
-
-    function _calcShares(uint256 amount, bool _isToken0) internal view returns (uint256) {
-        uint256 supply = totalSupply();
-        if (supply == 0 || amount == 0) {
-            return amount;
-        }
-        return (amount * supply) / _underlyingBalance(_isToken0);
     }
 
     function _calcAmountToSwap(

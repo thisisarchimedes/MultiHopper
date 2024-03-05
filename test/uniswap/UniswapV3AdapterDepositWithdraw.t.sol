@@ -11,6 +11,8 @@ import { UniswapV3Strategy } from "src/UniswapV3Strategy.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "univ3-periphery/libraries/OracleLibrary.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
     using OracleLibrary for int24;
@@ -32,15 +34,16 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 19_183_629 });
-
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
         uniswapV3Strategy = new UniswapV3Strategy();
     }
 
     function testProvideLiquidityOutRangeRight() public {
         deal(WETH, address(this), 1e18);
-        IERC20(WETH).approve(address(uniswapV3Strategy), 1e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(102, 103);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
+        IERC20(WETH).approve(address(uniswapV3Strategy), 1e18);
+
         uniswapV3Strategy.deposit(1e18, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         assertAlmostEq(underlyingBalance, 1e18, 0.02e18);
@@ -48,9 +51,10 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testProvideLiquidityOutRangeLeft() public {
         deal(WETH, address(this), 5e18);
-        IERC20(WETH).approve(address(uniswapV3Strategy), 5e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
+        IERC20(WETH).approve(address(uniswapV3Strategy), 5e18);
+
         uniswapV3Strategy.deposit(5e18, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         assertAlmostEq(underlyingBalance, 5e18, 1); // some rounding error
@@ -58,9 +62,10 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testProvideLiquidityOutRangeLeftBTC() public {
         deal(WBTC, address(this), 5e8);
-        IERC20(WBTC).approve(address(uniswapV3Strategy), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 99);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WBTC, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WBTC);
+        IERC20(WBTC).approve(address(uniswapV3Strategy), 5e8);
+
         uniswapV3Strategy.deposit(5e8, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         uint256 expectedError = 5e8 * 3 / 1000;
@@ -69,9 +74,10 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testProvideLiquidityOutRangeRightBTC() public {
         deal(WBTC, address(this), 5e8);
-        IERC20(WBTC).approve(address(uniswapV3Strategy), 5e8);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(101, 103);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WBTC, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WBTC);
+        IERC20(WBTC).approve(address(uniswapV3Strategy), 5e8);
+
         uniswapV3Strategy.deposit(5e8, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         assertAlmostEq(underlyingBalance, 5e8, 1); // some rounding error
@@ -79,9 +85,10 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRange() public {
         deal(WETH, address(this), 50e18);
-        IERC20(WETH).approve(address(uniswapV3Strategy), 50e18);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
+        IERC20(WETH).approve(address(uniswapV3Strategy), 50e18);
+
         uniswapV3Strategy.deposit(50e18, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         uint256 expectedError = 50e18 * 2 / 1000;
@@ -90,9 +97,10 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeBTC() public {
         deal(WBTC, address(this), 50e8);
-        IERC20(WBTC).approve(address(uniswapV3Strategy), 50e8);
         (int24 lowerTick, int24 upperTick, int24 currentTick) = chooseTicks(99, 101);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WBTC, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WBTC);
+        IERC20(WBTC).approve(address(uniswapV3Strategy), 50e8);
+
         uniswapV3Strategy.deposit(50e8, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         uint256 expectedError = 50e8 * 2 / 1000;
@@ -101,9 +109,10 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeAndWithdraw() public {
         deal(WETH, address(this), 50e18);
-        IERC20(WETH).approve(address(uniswapV3Strategy), 50e18);
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
+        IERC20(WETH).approve(address(uniswapV3Strategy), 50e18);
+
         uniswapV3Strategy.deposit(50e18, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         uint256 expectedError = 50e18 * 2 / 1000;
@@ -120,10 +129,11 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeAndWithdrawHalf() public {
         uint256 depositAmount = 50e18;
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         deal(WETH, address(this), depositAmount);
         IERC20(WETH).approve(address(uniswapV3Strategy), depositAmount);
-        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+
         uniswapV3Strategy.deposit(depositAmount, address(this));
         uint256 underlyingBalance = uniswapV3Strategy.underlyingBalance();
         uint256 expectedError = depositAmount * 2 / 1000;
@@ -139,14 +149,14 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WETH, address(this), depositAmount);
         deal(WETH, staker, depositAmount / 2);
         deal(WETH, staker2, depositAmount / 2);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         IERC20(WETH).approve(address(uniswapV3Strategy), depositAmount);
         vm.prank(staker);
         IERC20(WETH).approve(address(uniswapV3Strategy), depositAmount);
         vm.prank(staker2);
         IERC20(WETH).approve(address(uniswapV3Strategy), depositAmount);
 
-        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Strategy.deposit(depositAmount, address(this));
         vm.prank(staker);
         uniswapV3Strategy.deposit(depositAmount / 2, staker);
@@ -166,14 +176,14 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         deal(WETH, address(this), depositAmount);
         deal(WETH, staker, stakersDepositAmount);
         deal(WETH, staker2, stakersDepositAmount);
+        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         IERC20(WETH).approve(address(uniswapV3Strategy), depositAmount);
         vm.prank(staker);
         IERC20(WETH).approve(address(uniswapV3Strategy), stakersDepositAmount);
         vm.prank(staker2);
         IERC20(WETH).approve(address(uniswapV3Strategy), stakersDepositAmount);
 
-        (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
         uniswapV3Strategy.deposit(depositAmount, address(this));
         vm.prank(staker);
         uniswapV3Strategy.deposit(stakersDepositAmount, staker);
@@ -200,7 +210,7 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
     function testRedeemShouldRevertIfOwnerDidNotApprove() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(99, 101);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         uint256 depositAmount = 50e18;
         deal(WETH, address(staker), depositAmount);
         vm.startPrank(staker);
@@ -218,5 +228,15 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
         int24 lowerTick = (int24(int128(tick) * lowerPercentile / 100)) / tickSpacing * tickSpacing;
         int24 upperTick = (int24(int128(tick) * upperPercentile / 100)) / tickSpacing * tickSpacing;
         return (lowerTick, upperTick, tick);
+    }
+
+    function _deployProxyAndInitialize(int24 lowerTick, int24 upperTick, address token) internal {
+        bytes memory initData = abi.encodeWithSelector(
+            UniswapV3Strategy.initialize.selector, WETH_WBTC_POOL, lowerTick, upperTick, token, feeRecipient
+        );
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(uniswapV3Strategy), address(proxyAdmin), initData);
+        uniswapV3Strategy = UniswapV3Strategy(address(proxy));
     }
 }

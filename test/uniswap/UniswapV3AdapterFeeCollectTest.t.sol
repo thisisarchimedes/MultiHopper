@@ -13,6 +13,8 @@ import "univ3-periphery/libraries/OracleLibrary.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "univ3-periphery/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
+import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
     using OracleLibrary for int24;
@@ -39,7 +41,7 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeAndUserShouldEarnFromFees() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         _deposit(50e18);
         _createSwapVolumeWithWBTC(1000e8, 100);
         _deposit(50e18);
@@ -52,7 +54,7 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function testProvideLiquidityInRangeAndFeeRecipientShouldGetFees() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
         uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
         _deposit(50e18);
@@ -66,7 +68,7 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
 
     function testDoHardWork() public {
         (int24 lowerTick, int24 upperTick,) = chooseTicks(97, 103);
-        uniswapV3Strategy.initialize(WETH_WBTC_POOL, lowerTick, upperTick, WETH, feeRecipient);
+        _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         uint256 feeRecipientBalBeforeWeth = IERC20(WETH).balanceOf(feeRecipient);
         uint256 feeRecipientBalBeforeWbtc = IERC20(WBTC).balanceOf(feeRecipient);
         _deposit(50e18);
@@ -141,5 +143,15 @@ contract UniswapV3AdapterFeeCollectTest is PRBTest, StdCheats {
         deal(WETH, address(this), amount);
         IERC20(WETH).approve(address(uniswapV3Strategy), amount);
         uniswapV3Strategy.deposit(amount, address(this));
+    }
+
+    function _deployProxyAndInitialize(int24 lowerTick, int24 upperTick, address token) internal {
+        bytes memory initData = abi.encodeWithSelector(
+            UniswapV3Strategy.initialize.selector, WETH_WBTC_POOL, lowerTick, upperTick, token, feeRecipient
+        );
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(uniswapV3Strategy), address(proxyAdmin), initData);
+        uniswapV3Strategy = UniswapV3Strategy(address(proxy));
     }
 }
