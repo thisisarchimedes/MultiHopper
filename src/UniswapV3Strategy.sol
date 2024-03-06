@@ -122,6 +122,27 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
         return assets;
     }
 
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner,
+        uint256 minimumReceive
+    )
+        public
+        override
+        returns (uint256 shares)
+    {
+        if (assets > maxWithdraw(owner)) {
+            revert WithdrawExceedsMax();
+        }
+        (int24 _lowerTick, int24 _upperTick, bool _isValueTokenToken0) = (lowerTick, upperTick, isValueTokenToken0);
+        _collectFees(_lowerTick, _upperTick);
+        shares = previewWithdraw(assets);
+        assets = _calcAssetsAndWithdrawLiquidity(_lowerTick, _upperTick, shares, _isValueTokenToken0);
+        if (assets < minimumReceive) revert NotEnoughToken();
+        _withdraw(_msgSender(), receiver, owner, assets, shares);
+    }
+
     /**
      * @notice Fetch all the underlying balances including this contract
      */
