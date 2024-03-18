@@ -18,16 +18,14 @@ import { console2 } from "forge-std/console2.sol";
  * @notice we do this in its own script because of the size of the contract and the gas spent
  *
  */
-contract DeployFactory is Script {
+contract DeployUniswapStrategy is Script {
     address MONITOR = address(0); // TODO : set monitor address before deploy
-    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY"); // mainnet deployer private key
+    address deployerPrivateKey = vm.rememberKey(vm.envUint("PRIVATE_KEY")); // mainnet deployer private key
     IUniswapV3Pool public constant WETH_WBTC_POOL = IUniswapV3Pool(0xCBCdF9626bC03E24f779434178A73a0B4bad62eD);
     address public constant WETH = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    address feeRecipient = address(0x6e43eE4FE4Bf848211D0b04e8aA61C980DcdFF19);
+    address feeRecipient = address(0x446a6c8ED8cA715552381F34E7cF05beb4dB6519);
 
-    function run() public returns (UniswapV3Strategy strategy) {
-        require(MONITOR != address(0), "Deploy: monitor address not set");
-
+    function run() public {
         vm.startBroadcast(deployerPrivateKey);
 
         address proxyAdmin = address(0x6e43eE4FE4Bf848211D0b04e8aA61C980DcdFF19);
@@ -38,7 +36,6 @@ contract DeployFactory is Script {
         UniswapV3Strategy uniswapV3Strategy = new UniswapV3Strategy();
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(uniswapV3Strategy), address(proxyAdmin), initData);
-        strategy = UniswapV3Strategy(address(proxy));
 
         vm.stopBroadcast();
     }

@@ -61,9 +61,9 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
         external
         initializer
     {
+        __ERC20_init_unchained(string(abi.encodePacked("Univ3 strategy")), string(abi.encodePacked("PSPUNIV3")));
         __ERC4626_init(IERC20Upgradeable(_stakingToken));
         __Ownable_init();
-        __ERC20_init_unchained(string(abi.encodePacked("Univ3 strategy")), string(abi.encodePacked("PSPUNIV3")));
         pool = _pool;
         token0 = IERC20Metadata(pool.token0());
         token1 = IERC20Metadata(pool.token1());
