@@ -34,7 +34,6 @@ contract UniswapV3AdapterDepositWithdrawTest is PRBTest, StdCheats {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 19_183_629 });
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
         uniswapV3Strategy = new UniswapV3Strategy();
     }
 
