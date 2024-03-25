@@ -75,6 +75,10 @@ contract GenericZapper is Context, IGenericZapper {
 
         // transfer shares to receiver
         SafeERC20.safeTransfer(IERC20(strategyAddress), receiver, shares);
+        uint256 leftoverBal = IERC20(token).balanceOf(address(this));
+        if (leftoverBal > 0) {
+            SafeERC20.safeTransfer(IERC20(token), receiver, leftoverBal);
+        }
 
         return shares;
     }
