@@ -52,13 +52,17 @@ contract AuraAdapterBase is Initializable {
         if (msg.sender != multiPoolStrategy) revert Unauthorized();
         _;
     }
+
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initialize the contract.
      * @param _poolId Balancer Pool Id
      * @param _multiPoolStrategy Address of the MultiPoolStrategy contract
      * @param _auraPid PID of the pool in the Aura booster
      */
-
     function initialize(bytes32 _poolId, address _multiPoolStrategy, uint256 _auraPid) public initializer {
         if (_multiPoolStrategy == address(0)) revert ZeroAddress();
         poolId = _poolId;
