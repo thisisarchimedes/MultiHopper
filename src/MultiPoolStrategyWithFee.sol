@@ -8,6 +8,7 @@ import { IAdapter } from "src/interfaces/IAdapter.sol";
 import { ERC4626UpgradeableModified } from "src/ERC4626UpgradeableModified.sol";
 import { ReentrancyGuardUpgradeable } from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { SafeCastLib } from "solmate/utils/SafeCastLib.sol";
+import { console2 } from "forge-std/console2.sol";
 
 contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModified, ReentrancyGuardUpgradeable {
     using SafeCastLib for *;
@@ -181,10 +182,12 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
 
     function _getDailyPeriodFeeUpfront(uint256 assets) internal returns (uint256 fee) {
         uint256 feeDay = (block.timestamp / 1 days * 1 days) + feePeriodInDays;
+
         uint256 feePct = (feeDay - block.timestamp) * 10_000 / feePeriodInDays;
 
-        fee = assets * upfrontFee * feePct / 1e6;
-        SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(asset()), _msgSender(), address(this), fee);
+        fee = assets * upfrontFee * feePct / 1e8;
+
+        SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(asset()), _msgSender(), feeRecipient, fee);
     }
     /**
      * @dev See {IERC4626-withdraw}.
