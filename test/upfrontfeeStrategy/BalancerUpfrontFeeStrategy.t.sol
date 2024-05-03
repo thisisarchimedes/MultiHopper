@@ -168,9 +168,9 @@ contract BalancerComposableStableUpfrontFeeStrategyTest is PRBTest, StdCheats {
     function _calculateUpfrontFee(uint256 _amount) internal view returns (uint256 fee) {
         uint256 upfrontFee = multiPoolStrategy.upfrontFee();
         uint256 feePeriodInDays = multiPoolStrategy.feePeriodInDays();
-        uint256 feeDay = (block.timestamp / 1 days * 1 days) + feePeriodInDays;
+        uint256 nextFeeCycleTimestamp = multiPoolStrategy.nextFeeCycleTimestamp();
 
-        uint256 feePct = (feeDay - block.timestamp) * 10_000 / feePeriodInDays;
+        uint256 feePct = (nextFeeCycleTimestamp - block.timestamp) * 10_000 / feePeriodInDays;
 
         fee = _amount * upfrontFee * feePct / 1e8;
     }

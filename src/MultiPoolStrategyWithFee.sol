@@ -13,6 +13,7 @@ import { console2 } from "forge-std/console2.sol";
 contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModified, ReentrancyGuardUpgradeable {
     using SafeCastLib for *;
 
+    uint256 constant FEE_BASE = 10_000;
     /// @notice addresses of the adapters
     address[] public adapters;
     /// @notice Mapping for the whitelisted adapters
@@ -46,8 +47,8 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
 
     uint256 public storedTotalAssets;
 
-    uint256 public upfrontFee;
-    uint256 public nextFeeCycle;
+    uint256 public upfrontFee; // 10000 = 100%
+    uint256 public nextFeeCycleTimestamp;
     uint256 public feePeriodInDays;
 
     /// @notice Address of the LIFI diamond
@@ -137,7 +138,7 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
         feePercentage = 1000; // 10%
         upfrontFee = 20; // 0.2%
         feePeriodInDays = 7 days;
-        nextFeeCycle = (block.timestamp / feePeriodInDays * feePeriodInDays) + feePeriodInDays;
+        nextFeeCycleTimestamp = (block.timestamp / feePeriodInDays * feePeriodInDays) + feePeriodInDays;
     }
 
     /// OVERRIDEN FUNCTIONS
@@ -182,11 +183,11 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
     }
 
     function _getDailyPeriodFeeUpfront(uint256 assets) internal returns (uint256 fee) {
-        uint256 feeDay = (block.timestamp / 1 days * 1 days) + feePeriodInDays;
+        if (block.timestamp > nextFeeCycleTimestamp) return 0;
 
-        uint256 feePct = (feeDay - block.timestamp) * 10_000 / feePeriodInDays;
+        uint256 feePercentageProRataForPeriod = (nextFeeCycleTimestamp - block.timestamp) * FEE_BASE / feePeriodInDays;
 
-        fee = assets * upfrontFee * feePct / 1e8;
+        fee = (assets * upfrontFee * feePercentageProRataForPeriod) / (FEE_BASE * FEE_BASE);
 
         SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(asset()), _msgSender(), feeRecipient, fee);
     }
@@ -355,7 +356,7 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
         adjustIn(_adjustIns);
 
         uint256 _totalAssets = totalAssets();
-        if (storedTotalAssets < (_totalAssets * minPercentage) / 10_000) {
+        if (storedTotalAssets < (_totalAssets * minPercentage) / FEE_BASE) {
             revert AdjustmentWrong();
         }
         if (_sortedAdapters.length > 0) adapters = _sortedAdapters;
@@ -392,7 +393,7 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
 
         uint256 fee;
         if (totalClaimed > 0) {
-            fee = (totalClaimed * feePercentage) / 10_000;
+            fee = (totalClaimed * feePercentage) / FEE_BASE;
             if (fee > 0) {
                 SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(asset()), feeRecipient, fee);
             }
@@ -430,9 +431,9 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
 
     function claimFutureFeesUpfront(uint256 minimumReceive) external {
         if (_msgSender() != monitor && _msgSender() != owner()) revert Unauthorized();
-        if (block.timestamp < nextFeeCycle) revert SyncError();
+        if (block.timestamp < nextFeeCycleTimestamp) revert SyncError();
         uint256 currBal = storedTotalAssets;
-        uint256 fee = totalAssets() * upfrontFee / 10_000;
+        uint256 fee = totalAssets() * upfrontFee / FEE_BASE;
         // in the contract
         if (fee > currBal) {
             fee = _withdrawFromAdapter(fee, currBal, minimumReceive);
@@ -441,7 +442,7 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
         }
 
         SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(asset()), feeRecipient, fee);
-        nextFeeCycle = (block.timestamp / feePeriodInDays * feePeriodInDays) + feePeriodInDays;
+        nextFeeCycleTimestamp = (block.timestamp / feePeriodInDays * feePeriodInDays) + feePeriodInDays;
     }
     /**
      * @notice Add rewards to the storedTotalAssets if the rewards cycle has ended
@@ -541,7 +542,7 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
      */
     function changeAdapterHealthFactor(address _adapter, uint256 _healthFactor) external onlyOwner {
         // Health factor can't be more than 100%
-        if (_healthFactor <= 10_000) {
+        if (_healthFactor <= FEE_BASE) {
             revert HealthFactorTooHigh();
         }
         IAdapter(_adapter).setHealthFactor(_healthFactor);
@@ -570,6 +571,6 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
     function changeFeePeriodInDays(uint256 _feePeriodInDays) external onlyOwner {
         if (_feePeriodInDays < 3 days && _feePeriodInDays > 30 days) revert InvalidFeePeriod();
         feePeriodInDays = _feePeriodInDays;
-        nextFeeCycle = (block.timestamp / feePeriodInDays * feePeriodInDays) + feePeriodInDays;
+        nextFeeCycleTimestamp = (block.timestamp / feePeriodInDays * feePeriodInDays) + feePeriodInDays;
     }
 }
