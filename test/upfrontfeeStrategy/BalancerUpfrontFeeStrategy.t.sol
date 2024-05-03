@@ -40,50 +40,6 @@ contract BalancerComposableStableUpfrontFeeStrategyTest is PRBTest, StdCheats {
     uint256 DEFAULT_FORK_BLOCK_NUMBER = 19_784_773;
     uint8 tokenDecimals;
 
-    function getQuoteLiFi(
-        address srcToken,
-        address dstToken,
-        uint256 amount,
-        address fromAddress
-    )
-        internal
-        returns (uint256 _quote, bytes memory data)
-    {
-        string[] memory inputs = new string[](6);
-        inputs[0] = "python3";
-        inputs[1] = "test/get_quote_lifi.py";
-        inputs[2] = vm.toString(srcToken);
-        inputs[3] = vm.toString(dstToken);
-        inputs[4] = vm.toString(amount);
-        inputs[5] = vm.toString(fromAddress);
-
-        return abi.decode(vm.ffi(inputs), (uint256, bytes));
-    }
-
-    function _calculateAuraRewards(uint256 _balRewards) internal view returns (uint256) {
-        (,,, address _auraRewardPool,,) = IBooster(AURA_BOOSTER).poolInfo(AURA_PID);
-        uint256 rewardMultiplier = IBooster(AURA_BOOSTER).getRewardMultipliers(_auraRewardPool);
-        uint256 auraMaxSupply = 5e25; //50m
-        uint256 auraInitMintAmount = 5e25; //50m
-        uint256 totalCliffs = 500;
-        bytes32 slotVal = vm.load(AURA, bytes32(uint256(7)));
-        uint256 minterMinted = uint256(slotVal);
-        uint256 mintAmount = _balRewards * rewardMultiplier / 10_000;
-        uint256 emissionsMinted = IERC20(AURA).totalSupply() - auraInitMintAmount - minterMinted;
-        uint256 cliff = emissionsMinted / ICVX(AURA).reductionPerCliff();
-        uint256 auraRewardAmount;
-
-        if (cliff < totalCliffs) {
-            uint256 reduction = (totalCliffs - cliff) * 5 / 2 + 700;
-            auraRewardAmount = mintAmount * reduction / totalCliffs;
-            uint256 amtTillMax = auraMaxSupply - emissionsMinted;
-            if (auraRewardAmount > amtTillMax) {
-                auraRewardAmount = amtTillMax;
-            }
-        }
-        return auraRewardAmount;
-    }
-
     function getBlockNumber() internal view returns (uint256) {
         return DEFAULT_FORK_BLOCK_NUMBER;
     }
