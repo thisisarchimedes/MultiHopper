@@ -65,6 +65,7 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
     /// @dev thrown when syncing before cycle ends.
     error SyncError();
     error HealthFactorTooHigh();
+    error InvalidFeePeriod();
 
     ///STRUCTS
     struct Adjust {
@@ -567,7 +568,7 @@ contract MultiPoolStrategyWithFee is OwnableUpgradeable, ERC4626UpgradeableModif
     }
 
     function changeFeePeriodInDays(uint256 _feePeriodInDays) external onlyOwner {
-        if (block.timestamp < nextFeeCycle) revert SyncError();
+        if (_feePeriodInDays < 3 days && _feePeriodInDays > 30 days) revert InvalidFeePeriod();
         feePeriodInDays = _feePeriodInDays;
         nextFeeCycle = (block.timestamp / feePeriodInDays * feePeriodInDays) + feePeriodInDays;
     }

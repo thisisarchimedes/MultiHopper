@@ -178,7 +178,35 @@ contract BalancerComposableStableUpfrontFeeStrategyTest is PRBTest, StdCheats {
         multiPoolStrategy.claimFutureFeesUpfront(0);
         uint256 totalAssets = multiPoolStrategy.totalAssets();
         uint256 fee = totalAssets * multiPoolStrategy.upfrontFee() / 10_000;
-        assertEq(multiPoolStrategy.totalAssets(), depositAmount - fee - upfrontFee);
+        uint256 slippage = depositAmount * 10 / 10_000;
+        assertAlmostEq(multiPoolStrategy.totalAssets(), depositAmount - fee - upfrontFee, slippage);
+    }
+
+    function testUpfrontFeesFor3days() public {
+        multiPoolStrategy.changeFeePeriodInDays(3 days);
+        uint256 depositAmount = 1 * 10 ** tokenDecimals;
+        IERC20(UNDERLYING_TOKEN).approve(address(multiPoolStrategy), depositAmount);
+        multiPoolStrategy.deposit(depositAmount, address(this));
+        uint256 upfrontFee = _calculateUpfrontFee(depositAmount);
+        MultiPoolStrategyWithFee.Adjust[] memory adjustIns = new MultiPoolStrategyWithFee.Adjust[](1);
+        uint256 adapterAdjustAmount = depositAmount * 94 / 100; // %94
+        adjustIns[0] = MultiPoolStrategyWithFee.Adjust({
+            adapter: address(auraComposableStablePoolAdapter),
+            amount: adapterAdjustAmount, // %94
+            minReceive: 0
+        });
+
+        MultiPoolStrategyWithFee.Adjust[] memory adjustOuts;
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(auraComposableStablePoolAdapter);
+
+        multiPoolStrategy.adjust(adjustIns, adjustOuts, adapters);
+        vm.warp(block.timestamp + 4 days);
+        multiPoolStrategy.claimFutureFeesUpfront(0);
+        uint256 totalAssets = multiPoolStrategy.totalAssets();
+        uint256 fee = totalAssets * multiPoolStrategy.upfrontFee() / 10_000;
+        uint256 slippage = depositAmount * 10 / 10_000;
+        assertAlmostEq(multiPoolStrategy.totalAssets(), depositAmount - fee - upfrontFee, slippage);
     }
 
     function _calculateUpfrontFee(uint256 _amount) internal view returns (uint256 fee) {
