@@ -20,7 +20,7 @@ contract MonitorProxy is AccessControl {
         MultiPoolStrategy.Adjust[] memory _adjustOuts,
         address[] memory _sortedAdapters
     )
-        public
+        external
         onlyRole(MONITOR_ROLE)
     {
         MultiPoolStrategy(_strategy).adjust(_adjustIns, _adjustOuts, _sortedAdapters);
@@ -31,7 +31,7 @@ contract MonitorProxy is AccessControl {
         address[] calldata _adaptersToClaim,
         MultiPoolStrategy.SwapData[] calldata _swapDatas
     )
-        public
+        external
         onlyRole(MONITOR_ROLE)
     {
         MultiPoolStrategy(_strategy).doHardWork(_adaptersToClaim, _swapDatas);
