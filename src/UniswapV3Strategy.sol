@@ -1,22 +1,30 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity ^0.8.19;
 
-import { IERC20Metadata } from "openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20MetadataUpgradeable } from
+    "openzeppelin-contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import { SafeERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "univ3-periphery/libraries/LiquidityAmounts.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "univ3-periphery/libraries/OracleLibrary.sol";
 import "univ3-periphery/interfaces/ISwapRouter.sol";
-import "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { ERC4626UpgradeableModified } from "src/ERC4626UpgradeableModified.sol";
 import { IERC20Upgradeable } from "openzeppelin-contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626UpgradeableModified, OwnableUpgradeable {
-    using SafeERC20 for IERC20Metadata;
+contract UniswapV3Strategy is
+    Initializable,
+    IUniswapV3MintCallback,
+    ERC4626UpgradeableModified,
+    AccessControlUpgradeable
+{
+    using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
     using OracleLibrary for int24;
 
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
     address constant UNISWAP_ROUTER_ADDRESS = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
     IUniswapV3Pool public pool;
@@ -25,8 +33,8 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
 
     int24 public lowerTick;
     int24 public upperTick;
-    IERC20Metadata public token0;
-    IERC20Metadata public token1;
+    IERC20MetadataUpgradeable public token0;
+    IERC20MetadataUpgradeable public token1;
     bool mintCalled;
     uint256 constant PRECISION = 1e36;
     uint256 constant BASE = 10_000;
@@ -47,6 +55,13 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
         int24 oldLowerTick, int24 oldUpperTick, int24 newLowerTick, int24 newUpperTick, uint256 amount0, uint256 amount1
     );
 
+    struct RebalanceParams {
+        int24 lowerTick;
+        int24 upperTick;
+        uint256 amount0OutMin;
+        uint256 amount1OutMin;
+    }
+
     constructor() {
         _disableInitializers();
     }
@@ -63,12 +78,17 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
     {
         __ERC20_init_unchained(string(abi.encodePacked("Univ3 strategy")), string(abi.encodePacked("PSPUNIV3")));
         __ERC4626_init(IERC20Upgradeable(_stakingToken));
-        __Ownable_init();
+        __AccessControl_init_unchained();
+        _setupRole(ADMIN_ROLE, _msgSender());
+        _setupRole(MONITOR_ROLE, _msgSender());
+        _setRoleAdmin(MONITOR_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
+
         pool = _pool;
-        token0 = IERC20Metadata(pool.token0());
-        token1 = IERC20Metadata(pool.token1());
+        token0 = IERC20MetadataUpgradeable(pool.token0());
+        token1 = IERC20MetadataUpgradeable(pool.token1());
         if (address(token0) != _stakingToken && address(token1) != _stakingToken) {
-            revert("UniswapV3Adapter: staking token should be token0 or token1"); // TODO change to custom error message
+            revert("UniswapV3Adapter: staking token should be token0 or token1");
         }
         isValueTokenToken0 = address(token0) == _stakingToken ? true : false;
         lowerTick = _lowerTick;
@@ -178,7 +198,7 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
     }
 
     /// @notice Compound pending fees
-    function doHardWork() external onlyOwner {
+    function doHardWork() external onlyRole(MONITOR_ROLE) {
         int24 _lowerTick = lowerTick;
         int24 _upperTick = upperTick;
         (, uint256 amount0Collected, uint256 amount1Collected, uint256 amount0Fee, uint256 amount1Fee) =
@@ -192,35 +212,36 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
         emit DoHardWork(amount0Collected, amount1Collected, amount0Fee, amount1Fee);
     }
 
-    function rebalance(
-        int24 _lowerTick,
-        int24 _upperTick,
-        uint256 amount0OutMin,
-        uint256 amount1OutMin
-    )
-        external
-        onlyOwner
-    {
+    function rebalance(RebalanceParams memory params) external onlyRole(MONITOR_ROLE) {
         int24 tickSpacing = pool.tickSpacing();
-        if (_lowerTick >= _upperTick) revert InvalidRange();
-        if (_lowerTick % tickSpacing != 0 || _upperTick % tickSpacing != 0) revert InvalidRange();
+        if (params.lowerTick >= params.upperTick) revert InvalidRange();
+        if (params.lowerTick % tickSpacing != 0 || params.upperTick % tickSpacing != 0) revert InvalidRange();
         int24 _currentlowerTick = lowerTick;
         int24 _currentupperTick = upperTick;
         _collectFees(_currentlowerTick, _currentupperTick);
         (uint128 liquidity,,) = _position(_currentlowerTick, _currentupperTick);
         _burnLiquidity(
-            _currentlowerTick, _currentupperTick, liquidity, address(this), true, amount0OutMin, amount1OutMin
+            _currentlowerTick,
+            _currentupperTick,
+            liquidity,
+            address(this),
+            true,
+            params.amount0OutMin,
+            params.amount1OutMin
         );
-        lowerTick = _lowerTick;
-        upperTick = _upperTick;
+        lowerTick = params.lowerTick;
+        upperTick = params.upperTick;
 
         uint128 newLiquidity = _liquidityForAmounts(
-            _lowerTick, _upperTick, token0.balanceOf(address(this)), token1.balanceOf(address(this))
+            params.lowerTick, params.upperTick, token0.balanceOf(address(this)), token1.balanceOf(address(this))
         );
-        (uint256 min0Amount, uint256 min1Amount) = _amountsForLiquidity(_lowerTick, _upperTick, newLiquidity);
+        (uint256 min0Amount, uint256 min1Amount) =
+            _amountsForLiquidity(params.lowerTick, params.upperTick, newLiquidity);
         (uint256 amount0Used, uint256 amount1Used) =
-            _mintLiquidity(_lowerTick, _upperTick, newLiquidity, address(this), min0Amount, min1Amount);
-        emit Rebalance(_currentlowerTick, _currentupperTick, _lowerTick, _upperTick, amount0Used, amount1Used);
+            _mintLiquidity(params.lowerTick, params.upperTick, newLiquidity, address(this), min0Amount, min1Amount);
+        emit Rebalance(
+            _currentlowerTick, _currentupperTick, params.lowerTick, params.upperTick, amount0Used, amount1Used
+        );
     }
 
     function underlyingBalance() external view returns (uint256) {
@@ -584,15 +605,15 @@ contract UniswapV3Strategy is Initializable, IUniswapV3MintCallback, ERC4626Upgr
         _mintLiquidity(_lowerTick, _upperTick, liquidity, address(this), min0Amount, min1Amount);
     }
 
-    function setFeeRecipient(address _feeRecipient) external onlyOwner {
+    function setFeeRecipient(address _feeRecipient) external onlyRole(ADMIN_ROLE) {
         feeRecipient = _feeRecipient;
     }
 
-    function setFee(uint256 _fee) external onlyOwner {
+    function setFee(uint256 _fee) external onlyRole(ADMIN_ROLE) {
         fee = _fee;
     }
 
-    function setAcceptedSlippage(uint256 _acceptedSlippage) external onlyOwner {
+    function setAcceptedSlippage(uint256 _acceptedSlippage) external onlyRole(ADMIN_ROLE) {
         acceptedSlippage = _acceptedSlippage;
     }
 }

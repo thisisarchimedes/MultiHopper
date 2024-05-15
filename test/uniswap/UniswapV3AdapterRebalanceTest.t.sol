@@ -44,7 +44,9 @@ contract UniswapV3AdapterRebalanceTest is PRBTest, StdCheats {
         _deployProxyAndInitialize(lowerTick, upperTick, WETH);
         _deposit(50e18);
         (int24 newLowerTick, int24 newUpperTick,) = chooseTicks(95, 105);
-        uniswapV3Strategy.rebalance(newLowerTick, newUpperTick, 0, 0);
+        UniswapV3Strategy.RebalanceParams memory params =
+            UniswapV3Strategy.RebalanceParams(newLowerTick, newUpperTick, 0, 0);
+        uniswapV3Strategy.rebalance(params);
         int24 currentLowerTick = uniswapV3Strategy.lowerTick();
         int24 currentUpperTick = uniswapV3Strategy.upperTick();
         assertEq(currentLowerTick, newLowerTick);
