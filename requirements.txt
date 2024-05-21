@@ -30,7 +30,7 @@ protobuf==4.23.3
 pycryptodome==3.19.1
 pyrsistent==0.19.3
 regex==2023.6.3
-requests==2.31.0
+requests==2.32.0
 rlp==3.0.0
 slither==0.3.0
 slither-analyzer==0.9.6
